@@ -48,6 +48,7 @@
 #define MMP_Event unsigned int
 #else
 #include <mmprofile.h>
+#include <mmprofile_function.h>
 
 extern void MMProfileEnable(int enable);
 extern void MMProfileStart(int start);
@@ -384,7 +385,7 @@ struct M4U_DMA_STRUCT {
 
 #define MTK_M4U_T_SEC_INIT	    _IOW(MTK_M4U_MAGICNO, 50, int)
 
-#ifdef CONFIG_MACH_MT6763
+#ifdef CONFIG_MACH_MT6771
 int larb_clock_on(int larb, bool config_mtcmos);
 int larb_clock_off(int larb, bool config_mtcmos);
 #endif

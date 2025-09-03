@@ -339,6 +339,7 @@ enum DAL_STATUS DAL_OnDispPowerOn(void)
 	return DAL_STATUS_OK;
 }
 
+void *show_layers_va;
 MFC_HANDLE show_mfc_handle;
 enum DAL_COLOR color_wdma[24] = {
 	DAL_COLOR_PINK,
@@ -359,14 +360,14 @@ static const char *digit[24] = {
 	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
 };
 
-int show_layers_draw_wdma(MFC_HANDLE handle, struct Layer_draw_info *draw_info, void *buffer)
+int show_layers_draw_wdma(struct Layer_draw_info *draw_info)
 {
 	int i, j, k;
 	int layer_num;
 	int width_x, height_y;
 	void *buffer_pos;
 
-	if (buffer == NULL || handle == NULL)
+	if (show_layers_va == NULL || show_mfc_handle == NULL)
 		return -1;
 
 	layer_num = draw_info->layer_num;
@@ -375,7 +376,7 @@ int show_layers_draw_wdma(MFC_HANDLE handle, struct Layer_draw_info *draw_info, 
 		height_y = draw_info->frame_lower_right_y - draw_info->frame_upper_left_y;
 		for (j = draw_info->frame_upper_left_y[i];
 		j < draw_info->frame_upper_left_y[i] + draw_info->frame_width[i]; j++) {
-			buffer_pos = buffer + j * DAL_WIDTH * 3;
+			buffer_pos = show_layers_va + j * DAL_WIDTH * 3;
 			for (k = draw_info->frame_upper_left_x[i]; k <= draw_info->frame_lower_right_x[i]; k++) {
 				*(char *)(buffer_pos + 3 * k + 2) = (color_wdma[i] & 0xff0000) >> 16;
 				*(char *)(buffer_pos + 3 * k + 1) = (color_wdma[i] & 0x00ff00) >> 8;
@@ -384,7 +385,7 @@ int show_layers_draw_wdma(MFC_HANDLE handle, struct Layer_draw_info *draw_info, 
 		}
 		for (j = draw_info->frame_lower_right_y[i] - draw_info->frame_width[i] + 1;
 		j < draw_info->frame_lower_right_y[i] + 1; j++) {
-			buffer_pos = (void *)(buffer + j * DAL_WIDTH * 3);
+			buffer_pos = (void *)(show_layers_va + j * DAL_WIDTH * 3);
 			for (k = draw_info->frame_upper_left_x[i]; k <= draw_info->frame_lower_right_x[i]; k++) {
 				*(char *)(buffer_pos + 3 * k + 2) = (color_wdma[i] & 0xff0000) >> 16;
 				*(char *)(buffer_pos + 3 * k + 1) = (color_wdma[i] & 0x00ff00) >> 8;
@@ -392,7 +393,7 @@ int show_layers_draw_wdma(MFC_HANDLE handle, struct Layer_draw_info *draw_info, 
 			}
 		}
 		for (j = draw_info->frame_upper_left_y[i]; j < draw_info->frame_lower_right_y[i]; j++) {
-			buffer_pos = buffer + j * DAL_WIDTH * 3;
+			buffer_pos = show_layers_va + j * DAL_WIDTH * 3;
 			for (k = draw_info->frame_upper_left_x[i];
 			k < draw_info->frame_upper_left_x[i] + draw_info->frame_width[i]; k++) {
 				*(char *)(buffer_pos + 3 * k + 2) = (color_wdma[i] & 0xff0000) >> 16;
@@ -408,9 +409,9 @@ int show_layers_draw_wdma(MFC_HANDLE handle, struct Layer_draw_info *draw_info, 
 		}
 	}
 	for (i = 0; i < layer_num; i++) {
-		MFC_SetCursor(handle, draw_info->digit_x[i]/8, draw_info->digit_y[i]/16);
-		MFC_SetColor(handle, color_wdma[i], DAL_COLOR_WHITE);
-		MFC_Print(handle, digit[i]);
+		MFC_SetCursor(show_mfc_handle, draw_info->digit_x[i]/8, draw_info->digit_y[i]/16);
+		MFC_SetColor(show_mfc_handle, color_wdma[i], DAL_COLOR_WHITE);
+		MFC_Print(show_mfc_handle, digit[i]);
 	}
 	return 0;
 }

@@ -23,9 +23,4 @@ ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "ITE66121")
 ccflags-y += 	-DHDMI_ITE66121_SUPPORT
 endif
 
-ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "ITE66121_HDCP")
-ccflags-y += 	-DHDMI_ITE66121_SUPPORT
-ccflags-y += 	-DSUPPORT_HDCP
-endif
-
 obj-y	+= csc.o hdmi_drv.o hdmitx_drv.o hdmitx_hdcp.o hdmitx_input.o hdmitx_sys.o IO.o sha1.o utility.o

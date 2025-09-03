@@ -30,7 +30,19 @@
 #include <string.h>
 #elif defined(BUILD_UBOOT)
 #include <asm/arch/mt_gpio.h>
+#else
+#include <linux/wait.h>
+#include <linux/platform_device.h>
+#include <linux/gpio.h>
+#include <linux/pinctrl/consumer.h>
+#include <linux/of_gpio.h>
+#include <linux/gpio.h>
+#include <asm-generic/gpio.h>
+#include <linux/string.h>
+#include <linux/gpio.h>
+#include <linux/pinctrl/consumer.h>
 #endif
+
 
 #ifdef BUILD_LK
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
@@ -41,6 +53,8 @@
 #endif
 
 #define LCM_ID_NT35695 (0xf5)
+#define LONG_V_MODE
+#define ILI_CE_1
 
 static const unsigned int BL_MIN_LEVEL = 20;
 static LCM_UTIL_FUNCS lcm_util;
@@ -119,6 +133,8 @@ extern int gdouble_tap_enable_nvt;
 
 extern unsigned short fih_hwid;
 
+extern unsigned int g_fih_panelid;
+
 struct LCM_setting_table {
 	unsigned int cmd;
 	unsigned char count;
@@ -145,6 +161,7 @@ static struct LCM_setting_table init_setting_cmd[] = {
 	{0x55, 1, {0x00} },
 };
 
+#if 0
 static struct LCM_setting_table init_setting_vdo_preEVT[] = {
 	{0xFF, 1, {0x20} },
 	{REGFLAG_DELAY, 10, {} }, 
@@ -453,6 +470,7 @@ static struct LCM_setting_table init_setting_vdo_preEVT[] = {
 	{REGFLAG_DELAY, 120, {} },
 	{0x29, 0, {} },
 };
+#endif
 
 #if 0 //20180808@ray: for 4-lanes configuration
 static struct LCM_setting_table init_setting_vdo[] = {
@@ -472,6 +490,119 @@ static struct LCM_setting_table init_setting_vdo[] = {
 #endif
 
 static struct LCM_setting_table init_setting_vdo_3lane[] = {
+#ifdef ILI_CE_0
+	{0xFF, 3, {0x98, 0x81, 0x04} },
+	{0x00, 1, {0x83} },
+	{0x02, 1, {0x41} },
+	{0x0A, 1, {0x23} },
+	{0x0B, 1, {0x25} },
+	{0x0C, 1, {0x24} },
+	{0x0D, 1, {0x25} },
+	{0x0E, 1, {0x25} },
+	{0x0F, 1, {0x25} },
+	{0x10, 1, {0x26} },
+	{0x11, 1, {0x26} },
+	{0x12, 1, {0x25} },
+	{0x13, 1, {0x25} },
+	{0x14, 1, {0x24} },
+	{0x15, 1, {0x22} },
+	{0x16, 1, {0x06} },
+	{0x17, 1, {0x0D} },
+	{0x18, 1, {0x0F} },
+	{0x19, 1, {0x0A} },
+	{0x1A, 1, {0x07} },
+	{0x1B, 1, {0x0A} },
+	{0x1C, 1, {0x0B} },
+	{0x1D, 1, {0x09} },
+	{0x1E, 1, {0x05} },
+	{0x1F, 1, {0x01} },
+	{0x20, 1, {0x00} },
+	{0x21, 1, {0x23} },
+#elif defined ILI_CE_1
+	{0xFF, 3, {0x98, 0x81, 0x04} },
+	{0x00, 1, {0x83} },
+	{0x02, 1, {0x41} },
+	{0x0A, 1, {0x01} },
+	{0x0B, 1, {0x22} },
+	{0x0C, 1, {0x22} },
+	{0x0D, 1, {0x23} },
+	{0x0E, 1, {0x23} },
+	{0x0F, 1, {0x22} },
+	{0x10, 1, {0x22} },
+	{0x11, 1, {0x22} },
+	{0x12, 1, {0x21} },
+	{0x13, 1, {0x21} },
+	{0x14, 1, {0x00} },
+	{0x15, 1, {0x02} },
+	{0x16, 1, {0x09} },
+	{0x17, 1, {0x0F} },
+	{0x18, 1, {0x12} },
+	{0x19, 1, {0x10} },
+	{0x1A, 1, {0x0F} },
+	{0x1B, 1, {0x15} },
+	{0x1C, 1, {0x14} },
+	{0x1D, 1, {0x13} },
+	{0x1E, 1, {0x0D} },
+	{0x1F, 1, {0x08} },
+	{0x20, 1, {0x08} },
+	{0x21, 1, {0x05} },
+#elif defined ILI_CE_2
+	{0xFF, 3, {0x98, 0x81, 0x04} },
+	{0x00, 1, {0x83} },
+	{0x02, 1, {0x41} },
+	{0x0A, 1, {0x07} },
+	{0x0B, 1, {0x04} },
+	{0x0C, 1, {0x02} },
+	{0x0D, 1, {0x01} },
+	{0x0E, 1, {0x01} },
+	{0x0F, 1, {0x02} },
+	{0x10, 1, {0x02} },
+	{0x11, 1, {0x03} },
+	{0x12, 1, {0x04} },
+	{0x13, 1, {0x04} },
+	{0x14, 1, {0x05} },
+	{0x15, 1, {0x07} },
+	{0x16, 1, {0x0E} },
+	{0x17, 1, {0x16} },
+	{0x18, 1, {0x1A} },
+	{0x19, 1, {0x19} },
+	{0x1A, 1, {0x18} },
+	{0x1B, 1, {0x1D} },
+	{0x1C, 1, {0x1E} },
+	{0x1D, 1, {0x1F} },
+	{0x1E, 1, {0x17} },
+	{0x1F, 1, {0x10} },
+	{0x20, 1, {0x0E} },
+	{0x21, 1, {0x0B} },
+#elif defined ILI_CE_3
+	{0xFF, 3, {0x98, 0x81, 0x04} },
+	{0x00, 1, {0x83} },
+	{0x02, 1, {0x41} },
+	{0x0A, 1, {0x0D} },
+	{0x0B, 1, {0x0A} },
+	{0x0C, 1, {0x08} },
+	{0x0D, 1, {0x06} },
+	{0x0E, 1, {0x05} },
+	{0x0F, 1, {0x05} },
+	{0x10, 1, {0x05} },
+	{0x11, 1, {0x06} },
+	{0x12, 1, {0x08} },
+	{0x13, 1, {0x09} },
+	{0x14, 1, {0x0A} },
+	{0x15, 1, {0x0C} },
+	{0x16, 1, {0x12} },
+	{0x17, 1, {0x19} },
+	{0x18, 1, {0x1F} },
+	{0x19, 1, {0x1F} },
+	{0x1A, 1, {0x1E} },
+	{0x1B, 1, {0x1E} },
+	{0x1C, 1, {0x1E} },
+	{0x1D, 1, {0x1F} },
+	{0x1E, 1, {0x1A} },
+	{0x1F, 1, {0x15} },
+	{0x20, 1, {0x11} },
+	{0x21, 1, {0x11} },
+#endif
 	// 3-lanes configuration
 	{0xFF, 3, {0x98, 0x81, 0x06} },
 	{0x7C, 1, {0x40} }, 
@@ -482,7 +613,7 @@ static struct LCM_setting_table init_setting_vdo_3lane[] = {
 	{0x11, 1, {0x00} },
 	
 	/* Display ON */
-	{REGFLAG_DELAY, 100, {} },
+	{REGFLAG_DELAY, 80, {} },
 	{0x29, 1, {0x00} },
 	//{0x35, 1, {0x00} },    //TE enable     
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
@@ -604,21 +735,35 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
 	params->dsi.vertical_sync_active = 2;
+#ifdef LONG_V_MODE
+	params->dsi.vertical_backporch = 20;
+	params->dsi.vertical_frontporch = 240;
+#else
 	params->dsi.vertical_backporch = 8;
 	params->dsi.vertical_frontporch = 38;
+#endif
 //	params->dsi.vertical_frontporch_for_low_power = 620;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 10;
+#ifdef LONG_V_MODE
+	params->dsi.horizontal_backporch = 10;
+	params->dsi.horizontal_frontporch = 32;
+#else
 	params->dsi.horizontal_backporch = 90;
 	params->dsi.horizontal_frontporch = 100;
+#endif
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	/* params->dsi.ssc_disable                                                   = 1; */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 420;	/* this value must be in MTK suggested table */
 #else
+	#ifdef LONG_V_MODE
+	params->dsi.PLL_CLOCK =347;	/* this value must be in MTK suggested table */
+	#else
 	params->dsi.PLL_CLOCK =363;	/* this value must be in MTK suggested table */
+	#endif
 	//params->dsi.PLL_CLOCK =220;	/* this value must be in MTK suggested table */
 #endif
 	params->dsi.PLL_CK_CMD = 420;
@@ -696,11 +841,11 @@ static void lcm_init(void)
 	pr_debug("[LCM-tianma KPI] %s: RST start \n", __func__);
 
 	SET_RESET_PIN(1);
-	MDELAY(10);
+	MDELAY(5);
 	SET_RESET_PIN(0);
-	MDELAY(1);
+	MDELAY(5);
 	SET_RESET_PIN(1);
- 	MDELAY(30);
+	MDELAY(51);
 
 	pr_debug("[LCM-tianma KPI] %s: RST end \n", __func__);
 
@@ -709,15 +854,7 @@ static void lcm_init(void)
 		push_table(NULL, init_setting_cmd, sizeof(init_setting_cmd) / sizeof(struct LCM_setting_table), 1);
 		LCM_LOGI("ili9881----tianma----lcm mode = cmd mode :%d----\n", lcm_dsi_mode);
 	} else {
-		/* Detect PDA HW phase to decide the proper init command */
-		if ( (((fih_hwid>>8)==0x04) || ((fih_hwid>>8)==0x05)) && (int)((fih_hwid >> 4) & 0xF) >=3 ){
-			LCM_LOGI("[LCM-tianma] PDA evt or newer\n");
-			//push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
-			push_table(NULL, init_setting_vdo_3lane, sizeof(init_setting_vdo_3lane) / sizeof(struct LCM_setting_table), 1);
-		} else {
-			LCM_LOGI("[LCM-tianma] PDA pre-evt\n");
-			push_table(NULL, init_setting_vdo_preEVT, sizeof(init_setting_vdo_preEVT) / sizeof(struct LCM_setting_table), 1);
-		}
+		push_table(NULL, init_setting_vdo_3lane, sizeof(init_setting_vdo_3lane) / sizeof(struct LCM_setting_table), 1);
 		LCM_LOGI("ili9881----tianma----lcm mode = vdo mode :%d----\n", lcm_dsi_mode);
 	}
         lcm_init_isdone = 1;
@@ -1014,3 +1151,94 @@ LCM_DRIVER ili9881h_hdplus_dsi_vdo_tianma_rt5081_lcm_drv = {
 #endif
 
 };
+
+static int lcm_platform_probe(struct platform_device *pdev)
+{
+#if 0
+	unsigned int lcd_id0 = 0;
+	unsigned int lcd_id1 = 0;
+
+	pr_err("[LCM-ILI-TM]%s\n", __func__);
+	if ( (g_fih_panelid & FIH_LCM_PANEL_ID_HWID_MASK) >> FIH_LCM_PANEL_ID_HWID_SHIFT != FIH_LCM_HWID_ILI_TM )
+		return 0;
+
+	pr_err("[LCM-ILI-TM] Config panel id\n");
+	lcd_id0 = of_get_named_gpio(pdev->dev.of_node, "lcd_id_0", 0);
+	gpio_request(lcd_id0, "FIH_PANEL_ID0");
+	gpio_direction_output(lcd_id0, 0);
+	gpio_set_value(lcd_id0, 1);
+
+	lcd_id1 = of_get_named_gpio(pdev->dev.of_node, "lcd_id_1", 0);
+	gpio_request(lcd_id1, "FIH_PANEL_ID1");
+	gpio_direction_output(lcd_id1, 0);
+	gpio_set_value(lcd_id1, 0);
+
+	return 0;
+#else
+	int ret = 0;
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pinctrl_default;
+
+	pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR(pinctrl)) {
+		pr_err("[LCM-ILI-TM] Failed to get pinctrl\n");
+		ret = PTR_ERR(pinctrl);
+		return ret;
+	}
+
+	pinctrl_default = pinctrl_lookup_state(pinctrl, "panelid_default");
+	if (IS_ERR(pinctrl_default)) {
+		pr_err("[LCM-ILI-TM] Failed to get pinctrl state\n");
+		ret = PTR_ERR(pinctrl_default);
+		return ret;
+	}
+
+	pinctrl_select_state(pinctrl, pinctrl_default);
+
+	return ret;
+#endif
+}
+
+static int lcm_platform_remove(struct platform_device *pdev)
+{
+	return 0;
+}
+
+static const struct of_device_id lcm_platform_of_match[] = {
+        {.compatible = "fih,panelid"},
+        {},
+};
+MODULE_DEVICE_TABLE(of, lcm_platform_of_match);
+
+static struct platform_driver lcm_driver = {
+	.probe = lcm_platform_probe,
+	.remove = lcm_platform_remove,
+	.driver = {
+		   .name = "ili9881h_tianma",
+		   .owner = THIS_MODULE,
+		   .of_match_table = lcm_platform_of_match,
+		   },
+};
+
+static int __init lcm_panelid_init(void)
+{
+	pr_err("[LCM-ILI-TM]%s\n", __func__);
+	if (platform_driver_register(&lcm_driver)) {
+		pr_err("[LCM-ILI-TM]%s\n fail to register this driver", __func__);
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+static void __exit lcm_panelid_exit(void)
+{
+	platform_driver_unregister(&lcm_driver);
+}
+
+late_initcall(lcm_panelid_init);
+module_exit(lcm_panelid_exit);
+MODULE_AUTHOR("fih");
+MODULE_DESCRIPTION("LCM panel ID driver");
+MODULE_LICENSE("GPL");
+

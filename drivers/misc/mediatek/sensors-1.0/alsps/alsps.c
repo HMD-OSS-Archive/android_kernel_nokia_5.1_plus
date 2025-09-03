@@ -21,6 +21,11 @@ int last_als_report_data = -1;
 #define AAL_DELAY	200000000
 
 static struct alsps_init_info *alsps_init_list[MAX_CHOOSE_ALSPS_NUM] = {0};
+atomic_t prox_state;
+enum ProxState {
+	PROX_STATE_NEAR,
+	PROX_STATE_FAR,
+};
 
 int als_data_report(int value, int status)
 {
@@ -131,16 +136,17 @@ int ps_data_report(int value, int status)
 
 	memset(&event, 0, sizeof(struct sensor_event));
 
+	__pm_wakeup_event(&alsps_context_obj->ps_wake_lock, msecs_to_jiffies(100));
 	pr_notice("[ALS/PS]ps_data_report! %d, %d\n", value, status);
 	event.flush_action = DATA_ACTION;
 	event.word[0] = value + 1;
+	atomic_set(&prox_state, value);
 	event.status = status;
 	err = sensor_input_event(alsps_context_obj->ps_mdev.minor, &event);
 	if (err < 0)
 		pr_err_ratelimited("event buffer full, so drop this data\n");
 	return err;
 }
-
 int ps_cali_report(int *value)
 {
 	int err = 0;
@@ -296,6 +302,7 @@ static struct alsps_context *alsps_context_alloc_object(void)
 		ALSPS_PR_ERR("Alloc alsps object error!\n");
 		return NULL;
 	}
+	atomic_set(&prox_state, PROX_STATE_FAR);
 	atomic_set(&obj->delay_als, 200); /*5Hz, set work queue delay time 200ms */
 	atomic_set(&obj->delay_ps, 200); /* 5Hz,  set work queue delay time 200ms */
 	atomic_set(&obj->wake, 0);
@@ -702,7 +709,6 @@ static int ps_enable_and_batch(void)
 			ps_data_report(1, 3);
 		}
 #endif
-		ps_data_report(1, SENSOR_STATUS_ACCURACY_HIGH);
 		ALSPS_LOG("PS batch done\n");
 	}
 	return 0;
@@ -731,6 +737,7 @@ static ssize_t ps_store_active(struct device *dev, struct device_attribute *attr
 #else
 	err = ps_enable_and_batch();
 #endif
+	atomic_set(&prox_state, PROX_STATE_FAR);
 err_out:
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG(" ps_store_active done\n");
@@ -776,6 +783,8 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 #else
 	err = ps_enable_and_batch();
 #endif
+	pr_debug("prox_state:%d\n", atomic_read(&prox_state));
+	ps_data_report(atomic_read(&prox_state), SENSOR_STATUS_ACCURACY_HIGH);
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG("ps_store_batch done: %d\n", cxt->is_ps_batch_enable);
 	if (err)
@@ -828,7 +837,7 @@ static ssize_t ps_show_devnum(struct device *dev,
 }
 
 static ssize_t ps_store_cali(struct device *dev, struct device_attribute *attr,
-				  const char *buf, size_t count)
+			     const char *buf, size_t count)
 {
 	struct alsps_context *cxt = NULL;
 	int err = 0;
@@ -844,7 +853,7 @@ static ssize_t ps_store_cali(struct device *dev, struct device_attribute *attr,
 	if (cxt->ps_ctl.set_cali != NULL)
 		err = cxt->ps_ctl.set_cali(cali_buf, count);
 	if (err < 0)
-		pr_err("ps set cali err %d\n", err);
+		pr_err_ratelimited("ps set cali err %d\n", err);
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	vfree(cali_buf);
 	return count;
@@ -978,7 +987,7 @@ DEVICE_ATTR(psactive,		S_IWUSR | S_IRUGO, ps_show_active, ps_store_active);
 DEVICE_ATTR(psbatch,		S_IWUSR | S_IRUGO, ps_show_batch,  ps_store_batch);
 DEVICE_ATTR(psflush,		S_IWUSR | S_IRUGO, ps_show_flush,  ps_store_flush);
 DEVICE_ATTR(psdevnum,		S_IWUSR | S_IRUGO, ps_show_devnum,  NULL);
-DEVICE_ATTR(pscali,		0644, NULL, ps_store_cali);
+DEVICE_ATTR(pscali,		S_IWUSR | S_IRUGO, NULL, ps_store_cali);
 
 static struct attribute *als_attributes[] = {
 	&dev_attr_alsactive.attr,
@@ -1235,6 +1244,7 @@ static int alsps_probe(void)
 		ALSPS_PR_ERR("alsps real driver init fail\n");
 		goto real_driver_init_fail;
 	}
+	wakeup_source_init(&alsps_context_obj->ps_wake_lock, "ps_wake_lock");
 	ALSPS_LOG("----alsps_probe OK !!\n");
 	return 0;
 

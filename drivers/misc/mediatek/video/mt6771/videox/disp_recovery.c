@@ -875,6 +875,8 @@ static int primary_display_recovery_kthread(void *data)
 
 		if (ddp_path_check_smi_busy())
 			continue;
+		else
+			DISPMSG("SMI idle, check display engine status\n");
 
 		if (atomic_read(&enable_wdma_recovery)) {
 			if (ddp_path_need_mmsys_sw_reset(DISP_MODULE_WDMA0)) {

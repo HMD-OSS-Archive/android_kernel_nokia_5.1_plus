@@ -77,17 +77,5 @@
 #define MMC3630X_SENSITIVITY_Y		1024
 #define MMC3630X_SENSITIVITY_Z		1024
 
-
-#if 0
-#define ECOMPASS_IOC_SET_YPR		_IOW(MSENSOR, 0x21, int[CALIBRATION_DATA_SIZE])
-#define COMPAT_ECOMPASS_IOC_SET_YPR            _IOW(MSENSOR, 0x21, compat_int_t[CALIBRATION_DATA_SIZE])
-#endif
-#define COMPAT_MMC3630X_IOC_READ_REG           _IOWR(MSENSOR, 0x32, unsigned char)
-#define COMPAT_MMC3630X_IOC_WRITE_REG          _IOW(MSENSOR, 0x33, unsigned char[2])
-#define COMPAT_MMC3630X_IOC_READ_REGS          _IOWR(MSENSOR, 0x34, unsigned char[10])
-#define MMC3630X_IOC_READ_REG		    _IOWR(MSENSOR, 0x23, unsigned char)
-#define MMC3630X_IOC_WRITE_REG		    _IOW(MSENSOR,  0x24, unsigned char[2])
-#define MMC3630X_IOC_READ_REGS		    _IOWR(MSENSOR, 0x25, unsigned char[10])
-
 #endif /* __MMC3630x_H__ */
 

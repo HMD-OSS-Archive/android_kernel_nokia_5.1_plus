@@ -87,20 +87,22 @@ static int mmc_queue_thread(void *d)
 	int cmdq_full = 0;
 	unsigned int tmo;
 #endif
-	bool io_boost_done = false;
 	bool part_cmdq_en = false;
+	struct sched_param scheduler_params = {0};
+
+	scheduler_params.sched_priority = 1;
+	sched_setscheduler(current, SCHED_FIFO, &scheduler_params);
 
 	current->flags |= PF_MEMALLOC;
 
 	down(&mq->thread_sem);
 	mt_bio_queue_alloc(current, q);
 
+	mtk_iobst_register_tid(current->pid);
+
 	do {
 		struct request *req = NULL;
 		unsigned int cmd_flags = 0;
-
-		mtk_io_boost_test_and_add_tid(current->pid,
-			&io_boost_done);
 
 		spin_lock_irq(q->queue_lock);
 

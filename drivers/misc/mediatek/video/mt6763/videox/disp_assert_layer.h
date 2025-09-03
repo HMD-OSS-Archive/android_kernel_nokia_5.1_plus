@@ -86,9 +86,12 @@ enum DAL_STATUS DAL_OnDispPowerOn(void);
 enum DAL_STATUS DAL_LowMemoryOn(void);
 enum DAL_STATUS DAL_LowMemoryOff(void);
 int is_DAL_Enabled(void);
-int show_layers_draw_wdma(MFC_HANDLE handle, struct Layer_draw_info *draw_info, void *buffer);
+int show_layers_draw_wdma(struct Layer_draw_info *draw_info);
 extern enum MFC_STATUS DAL_CHECK_MFC_RET(enum MFC_STATUS expr);
+extern MFC_HANDLE show_mfc_handle;
 extern enum DAL_COLOR color_wdma[24];
+extern void *show_layers_va;
+
 
 
 #ifdef __cplusplus

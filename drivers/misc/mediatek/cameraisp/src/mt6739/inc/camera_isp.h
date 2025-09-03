@@ -33,6 +33,7 @@ extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
 /* #define KERNEL_LOG  //enable debug log flag if defined */
 #define ISR_LOG_ON		/* turn on log print at isr if defined */
 #define ISP_RAW_D_SUPPORT (0)
+#define HAL3_IPBASE (1)
 #define T_STAMP_2_0		/* time stamp workaround method. (increase timestamp baseon*/
 			/*	fix fps, not read at each isr) */
 
@@ -706,11 +707,12 @@ enum ISP_ED_BUFQUE_CTRL_ENUM {
 struct ISP_ED_BUFQUE_STRUCT {
 	enum ISP_ED_BUFQUE_CTRL_ENUM ctrl;
 	unsigned int processID;
-	unsigned int callerID;
+	unsigned long callerID;
 	int p2burstQIdx;
 	int p2dupCQIdx;
 	int frameNum;
 	unsigned int timeoutUs;
+	int p2Scenario;
 };
 
 enum ISP_ED_BUF_STATE_ENUM {

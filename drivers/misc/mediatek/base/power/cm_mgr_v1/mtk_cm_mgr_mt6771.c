@@ -54,6 +54,7 @@
 #include <linux/fb.h>
 #include <linux/notifier.h>
 
+#include <linux/pm_qos.h>
 #include <helio-dvfsrc-opp.h>
 #include <mtk_spm_vcore_dvfs.h>
 #ifdef USE_IDLE_NOTIFY
@@ -177,8 +178,9 @@ int cm_mgr_get_cpu_count(int cluster)
 static unsigned int cm_mgr_read_stall(int cpu)
 {
 	unsigned int val = 0;
+	unsigned long spinlock_save_flags;
 
-	if (spin_trylock(&sw_zq_tx_lock)) {
+	if (spin_trylock_irqsave(&sw_zq_tx_lock, spinlock_save_flags)) {
 
 		if (cpu < 4) {
 #ifdef CM_MGR_USE_PM_NOTIFY
@@ -198,7 +200,7 @@ static unsigned int cm_mgr_read_stall(int cpu)
 #endif /* CM_MGR_USE_PM_NOTIFY */
 				val = cm_mgr_read(CPU0_STALL_COUNTER + 4 * (cpu - 4));
 		}
-		spin_unlock(&sw_zq_tx_lock);
+		spin_unlock_irqrestore(&sw_zq_tx_lock, spinlock_save_flags);
 	}
 
 	return val;
@@ -517,6 +519,98 @@ void cm_mgr_ratio_timer_en(int enable)
 	}
 }
 
+static struct pm_qos_request ddr_opp_req;
+static int debounce_times_perf_down_local;
+static int pm_qos_update_request_status;
+void cm_mgr_perf_platform_set_status(int enable)
+{
+	if (enable) {
+		debounce_times_perf_down_local = 0;
+
+		if (cm_mgr_perf_enable == 0)
+			return;
+
+		if (cm_mgr_idx == CM_MGR_LP4X_2CH_3600) {
+			cpu_power_ratio_up[0] = 500;
+			cpu_power_ratio_up[1] = 500;
+			debounce_times_up_adb[1] = 0;
+		} else if (cm_mgr_idx == CM_MGR_LP4X_2CH_3200) {
+			cpu_power_ratio_up[0] = 500;
+			cpu_power_ratio_up[1] = 500;
+			debounce_times_up_adb[1] = 0;
+		} else if (cm_mgr_idx == CM_MGR_LP3_1CH_1866) {
+			cpu_power_ratio_up[0] = 500;
+			cpu_power_ratio_up[1] = 500;
+			debounce_times_up_adb[1] = 0;
+		}
+
+	} else {
+		if (++debounce_times_perf_down_local < debounce_times_perf_down)
+			return;
+
+		if (cm_mgr_idx == CM_MGR_LP4X_2CH_3600) {
+			cpu_power_ratio_up[0] = 100;
+			cpu_power_ratio_up[1] = 100;
+			debounce_times_up_adb[1] = 3;
+		} else if (cm_mgr_idx == CM_MGR_LP4X_2CH_3200) {
+			cpu_power_ratio_up[0] = 100;
+			cpu_power_ratio_up[1] = 100;
+			debounce_times_up_adb[1] = 3;
+		} else if (cm_mgr_idx == CM_MGR_LP3_1CH_1866) {
+			cpu_power_ratio_up[0] = 100;
+			cpu_power_ratio_up[1] = 100;
+			debounce_times_up_adb[1] = 3;
+		}
+
+		debounce_times_perf_down_local = 0;
+	}
+}
+
+void cm_mgr_perf_platform_set_force_status(int enable)
+{
+	if (enable) {
+		debounce_times_perf_down_local = 0;
+
+		if (cm_mgr_perf_enable == 0)
+			return;
+
+		if ((cm_mgr_perf_force_enable == 0) ||
+				(pm_qos_update_request_status == 1))
+			return;
+
+		if (cm_mgr_idx == CM_MGR_LP4X_2CH_3600)
+			pm_qos_update_request(&ddr_opp_req, 0);
+		else if (cm_mgr_idx == CM_MGR_LP4X_2CH_3200)
+			pm_qos_update_request(&ddr_opp_req, 0);
+		else if (cm_mgr_idx == CM_MGR_LP3_1CH_1866)
+			pm_qos_update_request(&ddr_opp_req, 0);
+
+		pm_qos_update_request_status = enable;
+	} else {
+		if (pm_qos_update_request_status == 0)
+			return;
+
+		if ((cm_mgr_perf_force_enable == 0) ||
+				(++debounce_times_perf_down_local >=
+				 debounce_times_perf_force_down)) {
+
+			if (cm_mgr_idx == CM_MGR_LP4X_2CH_3600) {
+				pm_qos_update_request(&ddr_opp_req,
+						PM_QOS_EMI_OPP_DEFAULT_VALUE);
+			} else if (cm_mgr_idx == CM_MGR_LP4X_2CH_3200) {
+				pm_qos_update_request(&ddr_opp_req,
+						PM_QOS_EMI_OPP_DEFAULT_VALUE);
+			} else if (cm_mgr_idx == CM_MGR_LP3_1CH_1866) {
+				pm_qos_update_request(&ddr_opp_req,
+						PM_QOS_EMI_OPP_DEFAULT_VALUE);
+			}
+
+			pm_qos_update_request_status = enable;
+			debounce_times_perf_down_local = 0;
+		}
+	}
+}
+
 int cm_mgr_register_init(void)
 {
 	struct device_node *node;
@@ -592,6 +686,9 @@ int cm_mgr_platform_init(void)
 	cm_mgr_ratio_timer.data = 0;
 
 	mt_cpufreq_set_governor_freq_registerCB(check_cm_mgr_status);
+
+	pm_qos_add_request(&ddr_opp_req, PM_QOS_EMI_OPP,
+			PM_QOS_EMI_OPP_DEFAULT_VALUE);
 
 	return r;
 }

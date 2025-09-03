@@ -1024,7 +1024,7 @@ static struct page *m4u_cache_get_page(unsigned long va)
 
 	start = va & (~M4U_PAGE_MASK);
 	pa = m4u_user_v2p(start);
-	if ((pa == 0)) {
+	if (pa == 0) {
 		M4UMSG("error m4u_get_phys user_v2p return 0 on va=0x%lx\n", start);
 		/* dump_page(page); */
 		m4u_dump_mmaps(start);
@@ -1491,7 +1491,6 @@ static int MTK_M4U_flush(struct file *filp, fl_owner_t a_id)
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 #include "m4u_sec_gp.h"
-
 static DEFINE_MUTEX(gM4u_sec_init);
 
 static int __m4u_sec_init(void)
@@ -1501,13 +1500,18 @@ static int __m4u_sec_init(void)
 	unsigned long pt_pa_nonsec;
 	unsigned int size;
 	struct m4u_sec_context *ctx;
-
+#ifdef CONFIG_MACH_MT6771
+	unsigned int i;
+#endif
 	ctx = m4u_sec_ctx_get(CMD_M4UTL_INIT);
 	if (!ctx)
 		return -EFAULT;
 
 	m4u_get_pgd(NULL, 0, &pgd_va, (void *)&pt_pa_nonsec, &size);
-
+#ifdef CONFIG_MACH_MT6771
+	for (i = 0; i < SMI_LARB_NR; i++)
+		larb_clock_on(i, 1);
+#endif
 	ctx->m4u_msg->cmd = CMD_M4UTL_INIT;
 	ctx->m4u_msg->init_param.nonsec_pt_pa = pt_pa_nonsec;
 	ctx->m4u_msg->init_param.l2_en = gM4U_L2_enable;
@@ -1519,7 +1523,10 @@ static int __m4u_sec_init(void)
 		M4UERR("m4u exec command fail\n");
 		goto out;
 	}
-
+#ifdef CONFIG_MACH_MT6771
+	for (i = 0; i < SMI_LARB_NR; i++)
+		larb_clock_off(i, 1);
+#endif
 	ret = ctx->m4u_msg->rsp;
 out:
 	m4u_sec_ctx_put(ctx);
@@ -1640,7 +1647,12 @@ int m4u_sec_init(void)
 	int ret;
 	enum mc_result mcRet;
 
-	M4UMSG("call m4u_sec_init in normal m4u driver\n");
+	M4UINFO("call m4u_sec_init in normal m4u driver\n");
+
+	if (m4u_tee_en) {
+		M4UMSG("warning: m4u secure has been inited, %d\n", m4u_tee_en);
+		goto m4u_sec_reinit;
+	}
 
 	/* Allocating WSM for DCI */
 	mcRet = mc_malloc_wsm(MC_DEVICE_ID_DEFAULT, 0, sizeof(struct m4u_msg), (uint8_t **) &m4u_dci_msg, 0);
@@ -1660,7 +1672,7 @@ int m4u_sec_init(void)
 		return -1;
 	}
 
-	M4UMSG("tz_m4u: open DCI session returned: %d\n", mcRet);
+	M4UINFO("tz_m4u: open DCI session returned: %d\n", mcRet);
 
 	{
 		volatile int i, j;
@@ -1680,16 +1692,17 @@ int m4u_sec_init(void)
 	} else {
 		M4UMSG("warning: m4u secure has been inited, %d\n", m4u_tee_en);
 	}
-
+m4u_sec_reinit:
 	ret = __m4u_sec_init();
 	if (ret < 0) {
 		m4u_sec_context_deinit();
 		M4UMSG("%s:init fail,ret=0x%x\n", __func__, ret);
+		m4u_tee_en = 0;
 		return ret;
 	}
 
 	/* don't deinit ta because of multiple init operation */
-	M4UMSG("%s:normal init done\n", __func__);
+	M4UINFO("%s:normal init done\n", __func__);
 	return 0;
 }
 
@@ -1722,7 +1735,6 @@ out:
 	return ret;
 }
 
-
 int m4u_config_port_array_tee(unsigned char *port_array)	/* native */
 {
 	int ret;
@@ -1750,7 +1762,6 @@ out:
 	m4u_sec_ctx_put(ctx);
 	return ret;
 }
-
 
 /*#ifdef TO_BE_IMPL*/
 int m4u_larb_backup_sec(unsigned int larb_idx)
@@ -1804,6 +1815,7 @@ out:
 }
 
 
+
 static int m4u_reg_backup_sec(void)
 {
 	int ret;
@@ -1827,7 +1839,6 @@ out:
 	m4u_sec_ctx_put(ctx);
 	return ret;
 }
-
 
 static int m4u_reg_restore_sec(void)
 {

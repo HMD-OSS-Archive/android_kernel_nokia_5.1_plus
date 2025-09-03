@@ -254,6 +254,11 @@ f_midi_complete(struct usb_ep *ep, struct usb_request *req)
 	struct usb_composite_dev *cdev = midi->func.config->cdev;
 	int status = req->status;
 
+	if (!midi) {
+		ERROR(cdev, "f_midi_complete: midi is NULL!\n");
+		return;
+	}
+
 	switch (status) {
 	case 0:			 /* normal completion */
 		if (ep == midi->out_ep) {
@@ -412,7 +417,8 @@ static void f_midi_old_unbind(struct usb_configuration *c, struct usb_function *
 	card = midi->card;
 	midi->card = NULL;
 	if (card)
-		snd_card_free(card);
+		snd_card_free_when_closed(card); //MTK Case: ALPS03972886
+		//snd_card_free(card);
 
 	kfree(midi->id);
 	midi->id = NULL;
@@ -1298,8 +1304,7 @@ static void f_midi_unbind(struct usb_configuration *c, struct usb_function *f)
 	card = midi->card;
 	midi->card = NULL;
 	if (card)
-		snd_card_free_when_closed(card); //MTK Case: ALPS03972886
-		//snd_card_free(card);
+		snd_card_free_when_closed(card);
 
 	usb_free_all_descriptors(f);
 }

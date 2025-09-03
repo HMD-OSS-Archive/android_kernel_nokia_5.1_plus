@@ -1859,6 +1859,11 @@ static int _DC_switch_to_DL_fast(void)
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
 	pgc->ovl2mem_path_handle = NULL;
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	if (dvfs_last_ovl_req > HRT_LEVEL_HPM)
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_UHPM);
+#endif
+
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode, MMPROFILE_FLAG_PULSE, 1, 1);
 
@@ -2361,6 +2366,7 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst, struct disp
 
 	if (src->buffer_source == DISP_BUFFER_ALPHA) {
 		dst->source = OVL_LAYER_SOURCE_RESERVED;	/* dim layer, constant alpha */
+		dst->dim_color = src->dim_color;
 	} else if (src->buffer_source == DISP_BUFFER_ION || src->buffer_source == DISP_BUFFER_MVA) {
 		dst->source = OVL_LAYER_SOURCE_MEM;	/* from memory */
 	} else {
@@ -3834,8 +3840,6 @@ int primary_display_wait_for_vsync(void *config)
 	}
 
 out:
-	if (c == NULL)
-		return ret;
 	c->vsync_ts = ts;
 	c->vsync_cnt++;
 	c->lcm_fps = pgc->lcm_refresh_rate;
@@ -7440,7 +7444,7 @@ int primary_display_resolution_test(void)
 
 		dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 
-		dpmgr_path_config(pgc->dpmgr_handle, &data_config2, CMDQ_DISABLE);
+		dpmgr_path_config(pgc->dpmgr_handle, &data_config2, NULL);
 		data_config2.dst_dirty = 0;
 		data_config2.ovl_dirty = 0;
 
@@ -7481,7 +7485,7 @@ int primary_display_resolution_test(void)
 	data_config2.dst_dirty = 1;
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 	dpmgr_path_connect(pgc->dpmgr_handle, CMDQ_DISABLE);
-	dpmgr_path_config(pgc->dpmgr_handle, &data_config2, CMDQ_DISABLE);
+	dpmgr_path_config(pgc->dpmgr_handle, &data_config2, NULL);
 	data_config2.dst_dirty = 0;
 	DSI_ForceConfig(0);
 	return ret;

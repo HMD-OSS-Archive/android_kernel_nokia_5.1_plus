@@ -65,7 +65,6 @@ struct clk *clk_btif; /*btif  clock*/
 
 /*BTIF_FAKELCR bits*/
 #define BTIF_FAKELCR_NORMAL_MODE 0x0
-#define BTIF_FAKELCR_DEBUG_MODE 0xbf
 
 /*BTIF_SLEEP_EN bits*/
 #define BTIF_SLEEP_EN_BIT (0x1 << 0)	/*enable Sleep mode */

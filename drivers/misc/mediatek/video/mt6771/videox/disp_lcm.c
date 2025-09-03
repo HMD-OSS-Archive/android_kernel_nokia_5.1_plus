@@ -25,6 +25,8 @@
 #include <linux/of.h>
 #endif
 
+unsigned int g_fih_panelid = 0;
+
 /* This macro and arrya is designed for multiple LCM support */
 /* for multiple LCM, we should assign I/F Port id in lcm driver, such as DPI0, DSI0/1 */
 /* static struct disp_lcm_handle _disp_lcm_driver[MAX_LCM_NUMBER]; */
@@ -884,6 +886,19 @@ void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
 }
 #endif
 
+void fih_read_panelid(void)
+{
+	char *p = NULL;
+
+	p = strstr(saved_command_line, "fih_panelid=0x");
+	if (p != NULL) {
+		p += strlen("fih_panelid=0x");
+		sscanf(p, "%x", (unsigned int *)&g_fih_panelid);
+	}
+
+	DISPMSG("fih panel id = 0x%08x\n", g_fih_panelid);
+}
+
 struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is_lcm_inited)
 {
 	int lcmindex = 0;
@@ -1005,6 +1020,7 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 #endif
 
 	{
+		fih_read_panelid();
 		plcm->drv->get_params(plcm->params);
 		plcm->lcm_if_id = plcm->params->lcm_if;
 

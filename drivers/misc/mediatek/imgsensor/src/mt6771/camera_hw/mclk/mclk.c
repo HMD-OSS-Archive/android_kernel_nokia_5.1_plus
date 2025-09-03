@@ -18,6 +18,7 @@ struct MCLK_PINCTRL_NAMES mclk_pinctrl_list[IMGSENSOR_SENSOR_IDX_MAX_NUM][MCLK_S
 	{{"cam1_mclk_off"}, {"cam1_mclk_on"} },
 	{{"cam2_mclk_off"}, {"cam2_mclk_on"} },
 	{{"cam3_mclk_off"}, {"cam3_mclk_on"} },
+	{{"cam4_mclk_off"}, {"cam4_mclk_on"} }
 };
 
 static struct mclk mclk_instance;
@@ -93,6 +94,7 @@ static enum IMGSENSOR_RETURN mclk_set(
 	struct mclk *pinst = (struct mclk *)pinstance;
 	struct pinctrl_state *ppinctrl_state;
 	enum   IMGSENSOR_RETURN ret = IMGSENSOR_RETURN_SUCCESS;
+	enum MCLK_STATE state_index = MCLK_STATE_DISABLE;
 
 	/*PK_DBG("%s : sensor_idx %d mclk_set pinctrl, PinIdx %d, Val %d\n",
 		*__func__, sensor_idx, pin, pin_state);
@@ -102,9 +104,9 @@ static enum IMGSENSOR_RETURN mclk_set(
 	    pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH) {
 		ret = IMGSENSOR_RETURN_ERROR;
 	} else {
-		pin_state = (pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_0) ? MCLK_STATE_ENABLE : MCLK_STATE_DISABLE;
+		state_index = (pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_0) ? MCLK_STATE_ENABLE : MCLK_STATE_DISABLE;
 
-		ppinctrl_state = pinst->ppinctrl_state[sensor_idx][pin_state];
+		ppinctrl_state = pinst->ppinctrl_state[sensor_idx][state_index];
 
 		mutex_lock(pinst->pmclk_mutex);
 

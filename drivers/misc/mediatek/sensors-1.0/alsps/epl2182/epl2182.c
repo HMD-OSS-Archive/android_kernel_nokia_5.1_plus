@@ -1766,7 +1766,7 @@ static int alsps_local_init(void)
 
 	if (-1 == alsps_init_flag)
 		return -1;
-	/* printk("fwq loccal init---\n"); */
+
 	return 0;
 }
 

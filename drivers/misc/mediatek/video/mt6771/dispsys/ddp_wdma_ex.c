@@ -1098,14 +1098,6 @@ static int wdma_config_l(enum DISP_MODULE_ENUM module, struct disp_ddp_path_conf
 	if (wdma_check_input_param(config) == 0) {
 		struct golden_setting_context *p_golden_setting;
 
-		if (!ufmt_get_rgb(config->outputFormat)) {
-			if ((config->clipX + config->srcWidth) % 2)
-				config->clipWidth -= 1;
-
-			if ((config->clipY + config->srcHeight) % 2)
-				config->clipHeight -= 1;
-		}
-
 		wdma_config(module,
 			    config->srcWidth,
 			    config->srcHeight,

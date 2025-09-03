@@ -201,9 +201,10 @@ enum ili9881_types {
 /*
  * Other settings
  */
-#define CSV_PATH			"/data/misc/touch"
+#define CSV_PATH			"/data/vendor/misc/touch"
 #define INI_NAME_PATH		"/vendor/etc/mp.ini"
 #define UPDATE_FW_PATH		"/vendor/firmware/ILITEK_FW"
+#define ILI_UPDATE_FW_PATH		"/sdcard/ILITEK_FW"
 #define POWER_STATUS_PATH 	"/sys/class/power_supply/battery/status"
 #define CHECK_BATTERY_TIME  2000
 #define CHECK_ESD_TIME		4000
@@ -251,7 +252,7 @@ enum ili9881_types {
 #endif
 /* Set gesture mode */
 //#define GESTURE_ENABLE //20180823 remove
-#define GESTURE_NORMAL_MODE          0
+#define GESTURE_NORMAL_MODE          1
 #define GESTURE_INFO_MPDE            1
 #define GESTURE_MODE GESTURE_NORMAL_MODE
 /* Check battery's status in order to avoid some effects from charge. */
@@ -264,6 +265,14 @@ static inline void ipio_kfree(void **mem)
 {
 	if(*mem != NULL) {
 		kfree(*mem);
+		*mem = NULL;
+	}
+}
+
+static inline void ipio_vfree(void **mem)
+{
+	if(*mem != NULL) {
+		vfree(*mem);
 		*mem = NULL;
 	}
 }

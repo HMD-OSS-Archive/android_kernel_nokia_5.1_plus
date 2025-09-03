@@ -810,7 +810,7 @@ void InitHDMITX(void)
 /* "Init HDMITX\n" */
 /* "-----------------------------------------------------\n"); */
 
-	DumpHDMITXReg();
+	/*DumpHDMITXReg();*/
 }
 
 bool getHDMITX_LinkStatus(void)
@@ -842,12 +842,7 @@ unsigned char CheckHDMITX(unsigned char *pHPD, unsigned char *pHPDChange)
 	unsigned char PrevHPD = hdmiTxDev[0].bHPD;
 	unsigned char HPD;
 
-
-	if (is_res_change == 1) {
-		is_res_change = 0;
-		hdmiTxDev[0].bAuthenticated = FALSE;
-		IT66121_LOG("[HDCP] resolution changed,HDCP should reset\n");
-	}
+	IT66121_LOG("hdmi_ite66121 %s\n", __func__);
 
 	sysstat = HDMITX_ReadI2C_Byte(REG_TX_SYS_STATUS);
 	/* HDMITX_DEBUG_PRINTF("REG_TX_SYS_STATUS = %X\n",sysstat); */
@@ -922,14 +917,13 @@ unsigned char CheckHDMITX(unsigned char *pHPD, unsigned char *pHPDChange)
 
 #ifdef SUPPORT_HDCP
 		if (intdata2 & B_TX_INT_AUTH_DONE) {
-			HDMITX_DEBUG_PRINTF("[HDCP]interrupt Authenticate Done.\n");
+			HDMITX_DEBUG_PRINTF("interrupt Authenticate Done.\n");
 			HDMITX_OrReg_Byte(REG_TX_INT_MASK2, (unsigned char) B_TX_AUTH_DONE_MASK);
 			/* hdmiTxDev[0].bAuthenticated = TRUE ; */
 			/* setHDMITX_AVMute(FALSE); */
 		}
 		if (intdata2 & B_TX_INT_AUTH_FAIL) {
 			hdmiTxDev[0].bAuthenticated = FALSE;
-			HDMITX_DEBUG_PRINTF("[HDCP]interrupt Authenticate fail.\n");
 			/* HDMITX_DEBUG_PRINTF("interrupt Authenticate Fail.\n"); */
 			hdmitx_AbortDDC();	/* @emily add */
 			/* hdmitx_hdcp_ResumeAuthentication(); */

@@ -49,13 +49,11 @@
 #define CURRENT_FREQ_REG         (scpreg.cfg  + 0x60)
 /*SCP_GPR_CM4_A_REBOOT*/
 #define SCP_A_GENERAL_REG5       (scpreg.cfg + 0x0064)
-#define SCP_A_GENERAL_REG6       (scpreg.cfg + 0x0068)
-#define SCP_A_GENERAL_REG7       (scpreg.cfg + 0x006C)
-
 #define SCP_GPR_CM4_A_REBOOT     (scpreg.cfg + 0x64)
 	#define CM4_A_READY_TO_REBOOT  0x34
 	#define CM4_A_REBOOT_OK        0x1
-
+#define SCP_A_GENERAL_REG6       (scpreg.cfg + 0x0068)
+#define SCP_A_GENERAL_REG7       (scpreg.cfg + 0x006C)
 
 #define SCP_SEMAPHORE	         (scpreg.cfg  + 0x90)
 #define SCP_SCP2SPM_VOL_LV		 (scpreg.cfg + 0x0094)
@@ -68,6 +66,8 @@
 #define SCP_WDT_PSP					(scpreg.cfg + 0x00C0)
 #define SCP_WDT_PC					(scpreg.cfg + 0x00C4)
 #define SCP_BUS_CTRL				(scpreg.cfg + 0x00F0)
+	#define dbg_irq_info_sel_shift 26
+	#define dbg_irq_info_sel_mask (0x3 << 26)
 #define SCP_DEBUG_ADDR_S2R			(scpreg.cfg + 0x00F4)
 #define SCP_DEBUG_ADDR_DMA			(scpreg.cfg + 0x00F8)
 #define SCP_DEBUG_ADDR_SPI0			(scpreg.cfg + 0x00FC)
@@ -86,6 +86,7 @@
 	#define SCP_B_IS_DEEPSLEEP      (1<<3)
 
 #define INFRA_CTRL_STATUS		(scpreg.cfg + 0x011C)
+#define SCP_DEBUG_IRQ_INFO		(scpreg.cfg + 0x0160)
 
 /* clk reg*/
 #define SCP_CLK_CTRL_BASE			(scpreg.clkctrl)

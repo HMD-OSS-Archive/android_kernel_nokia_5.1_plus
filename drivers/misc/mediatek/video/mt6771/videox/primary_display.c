@@ -439,10 +439,12 @@ static enum DISP_POWER_STATE primary_set_state(enum DISP_POWER_STATE new_state)
 /* AOD power mode API */
 enum mtkfb_power_mode primary_display_set_power_mode_nolock(enum mtkfb_power_mode new_mode)
 {
-	pgc->prev_pm = pgc->pm;
+	enum mtkfb_power_mode prev_mode;
+
+	prev_mode = pgc->pm;
 	pgc->pm = new_mode;
 
-	return pgc->prev_pm;
+	return prev_mode;
 }
 
 enum mtkfb_power_mode primary_display_set_power_mode(enum mtkfb_power_mode new_mode)
@@ -470,11 +472,6 @@ enum mtkfb_power_mode primary_display_get_power_mode(void)
 	_primary_path_unlock(__func__);
 
 	return mode;
-}
-
-enum mtkfb_power_mode primary_display_get_prev_power_mode_nolock(void)
-{
-	return pgc->prev_pm;
 }
 
 bool primary_is_aod_supported(void)
@@ -2300,7 +2297,14 @@ static int _DL_switch_to_DC_fast(int block)
 
 	/* move ovl config info from dl to dc */
 	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config,
-	       sizeof(data_config_dl->ovl_config));
+		sizeof(data_config_dl->ovl_config));
+	memcpy(&data_config_dc->rsz_enable, &data_config_dl->rsz_enable,
+		sizeof(data_config_dl->rsz_enable));
+	memcpy(&data_config_dc->rsz_src_roi, &data_config_dl->rsz_src_roi,
+		sizeof(data_config_dl->rsz_src_roi));
+	memcpy(&data_config_dc->rsz_dst_roi, &data_config_dl->rsz_dst_roi,
+		sizeof(data_config_dl->rsz_dst_roi));
+
 	data_config_dc->ovl_dirty = 1;
 	data_config_dc->p_golden_setting_context = data_config_dl->p_golden_setting_context;
 	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc,
@@ -4328,8 +4332,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	init_cmdq_slots(&(pgc->dsi_vfp_line), 1, 0);
 	init_cmdq_slots(&(pgc->night_light_params), 17, 0);
 
-	pgc->prev_pm = MTKFB_POWER_MODE_UNKNOWN;
-
 
 	/* init night light related variable */
 	mem_config.m_ccorr_config.is_dirty = 1;
@@ -5072,6 +5074,9 @@ int primary_suspend_release_fence(void)
 		DISPDBG("mtkfb_release_layer_fence session=0x%x,layerid=%d\n", session, i);
 		mtkfb_release_layer_fence(session, i);
 	}
+	/* release present fence */
+	mtkfb_release_present_fence(primary_session_id, gCurrentPresentFenceIndex);
+
 	return 0;
 }
 
@@ -5648,7 +5653,7 @@ done:
 	if (disp_helper_get_option(DISP_OPT_CV_BYSUSPEND))
 		DSI_ForceConfig(0);
 
-	if (primary_display_get_prev_power_mode_nolock() == DOZE_SUSPEND)
+	if (primary_display_get_power_mode_nolock() == DOZE)
 		primary_display_esd_check_enable(1);
 
 	DISPDBG("hold the wakelock...\n");
@@ -6528,7 +6533,7 @@ static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
 	}
 
 	path = HRT_GET_PATH_ID(HRT_GET_PATH_SCENARIO(cfg->overlap_layer_num));
-	if ((path != 2 && path != 3) && (rsz == true)) {
+	if ((path != 2 && path != 3 && path != 4) && (rsz == true)) {
 		struct disp_input_config *c = &cfg->input_cfg[i];
 
 		DISPERR("not RPO but L%d(%u,%u,%ux%u)->(%u,%u,%ux%u)\n",
@@ -6538,6 +6543,53 @@ static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
 	}
 
 	return rsz;
+}
+
+static void rsz_in_out_roi(struct disp_frame_cfg_t *cfg, struct disp_ddp_path_config *data_config)
+{
+	int i = 0;
+	struct disp_rect dst_layer_roi = {0, 0, 0, 0};
+	struct disp_rect dst_total_roi = {0, 0, 0, 0};
+	struct disp_rect src_layer_roi = {0, 0, 0, 0};
+	struct disp_rect src_total_roi = {0, 0, 0, 0};
+	struct disp_input_config *input_cfg = NULL;
+
+	data_config->rsz_enable = FALSE;
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+
+		input_cfg = &cfg->input_cfg[i];
+
+		if (input_cfg->layer_enable) {
+
+			if (i == 0 && input_cfg->buffer_source == DISP_BUFFER_ALPHA)
+				continue;
+
+			if (input_cfg->src_width < input_cfg->tgt_width ||
+				input_cfg->src_height < input_cfg->tgt_height) {
+				rect_make(&src_layer_roi,
+					(input_cfg->tgt_offset_x * input_cfg->src_width) / input_cfg->tgt_width,
+					(input_cfg->tgt_offset_y * input_cfg->src_height) / input_cfg->tgt_height,
+					input_cfg->src_width,
+					input_cfg->src_height);
+				rect_make(&dst_layer_roi, input_cfg->tgt_offset_x, input_cfg->tgt_offset_y,
+					input_cfg->tgt_width, input_cfg->tgt_height);
+				rect_join(&src_layer_roi, &src_total_roi, &src_total_roi);
+				rect_join(&dst_layer_roi, &dst_total_roi, &dst_total_roi);
+				data_config->rsz_enable = TRUE;
+			} else
+				break;
+		}
+	}
+
+	data_config->rsz_src_roi = src_total_roi;
+	data_config->rsz_dst_roi = dst_total_roi;
+
+	DISPINFO("[RPO] rsz_src(x,y,w,h)=(%d,%d,%d,%d),rsz_dst(x,y,w,h)=(%d,%d,%d,%d)\n",
+			data_config->rsz_src_roi.x, data_config->rsz_src_roi.y,
+			data_config->rsz_src_roi.width, data_config->rsz_src_roi.height,
+			data_config->rsz_dst_roi.x, data_config->rsz_dst_roi.y,
+			data_config->rsz_dst_roi.width, data_config->rsz_dst_roi.height);
 }
 
 static u64 get_input_data_sz(disp_path_handle disp_handle)
@@ -6593,6 +6645,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 	if (disp_rsz_frame_has_rsz_layer(cfg))
 		assign_full_lcm_roi(&total_dirty_roi);
+
+	rsz_in_out_roi(cfg, data_config);
 
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		struct disp_input_config *input_cfg = &cfg->input_cfg[i];
@@ -9234,7 +9288,7 @@ int primary_display_resolution_test(void)
 
 		dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 
-		dpmgr_path_config(pgc->dpmgr_handle, &data_config2, CMDQ_DISABLE);
+		dpmgr_path_config(pgc->dpmgr_handle, &data_config2, NULL);
 		data_config2.dst_dirty = 0;
 		data_config2.ovl_dirty = 0;
 
@@ -9275,7 +9329,7 @@ int primary_display_resolution_test(void)
 	data_config2.dst_dirty = 1;
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 	dpmgr_path_connect(pgc->dpmgr_handle, CMDQ_DISABLE);
-	dpmgr_path_config(pgc->dpmgr_handle, &data_config2, CMDQ_DISABLE);
+	dpmgr_path_config(pgc->dpmgr_handle, &data_config2, NULL);
 	data_config2.dst_dirty = 0;
 	DSI_ForceConfig(0);
 	return ret;

@@ -72,6 +72,7 @@
 #define FBTCPU_SEC_DIVIDER 1000000000
 #define RESET_TOLERENCE 3
 #define NSEC_PER_HUSEC 100000
+#define BIG_CAP 95
 
 #define SEQ_printf(m, x...)\
 do {\
@@ -538,6 +539,26 @@ static unsigned int fbt_get_new_base_blc(struct ppm_limit_data *pld, int jerkid)
 	return blc_wt;
 }
 
+static int fbt_is_queue_time_long(unsigned long long enq_len,
+		unsigned long long deq_len, int type, int method, int pid)
+{
+	if (type == VSYNC_ALIGNED_TYPE && (method == HWUI || method == SWUI)) {
+		if (deq_len > deqtime_bound) {
+			fpsgo_systrace_c_fbt(pid, 1, "wait_queue");
+			fpsgo_systrace_c_fbt(pid, 0, "wait_queue");
+			return 1;
+		}
+	} else {
+		if (enq_len > deqtime_bound || deq_len > deqtime_bound) {
+			fpsgo_systrace_c_fbt(pid, 1, "wait_queue");
+			fpsgo_systrace_c_fbt(pid, 0, "wait_queue");
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 static void fbt_do_jerk(struct work_struct *work)
 {
 	struct fbt_jerk *jerk;
@@ -591,7 +612,10 @@ static void fbt_do_jerk(struct work_struct *work)
 			if (pld) {
 				blc_wt = fbt_get_new_base_blc(pld, jerk->id);
 
-				if (blc_wt) {
+				if (blc_wt
+					&& !fbt_is_queue_time_long(thr->enqueue_length,
+						thr->dequeue_length, thr->frame_type,
+						thr->render_method, thr->pid)) {
 					fbt_set_boost_value(blc_wt);
 					fpsgo_systrace_c_fbt(thr->pid, blc_wt, "perf idx");
 
@@ -736,6 +760,36 @@ static long long fbt_middle_vsync_check(long long t_cpu_target,
 		t_cpu_target = t_cpu_target - TIME_1MS;
 
 	return t_cpu_target;
+}
+
+static void fbt_check_CM_limit(struct render_info *thread_info,
+		long long runtime)
+{
+	int last_blc = 0;
+
+	if (!thread_info || !runtime)
+		return;
+
+	if (thread_info->pid == max_blc_pid)
+		last_blc = max_blc;
+	else {
+		if (thread_info->frame_type == NON_VSYNC_ALIGNED_TYPE) {
+			mutex_lock(&blc_mlock);
+			if (thread_info->p_blc)
+				last_blc = thread_info->p_blc->blc;
+			mutex_unlock(&blc_mlock);
+		} else if (thread_info->frame_type == VSYNC_ALIGNED_TYPE)
+			last_blc = thread_info->boost_info.last_blc;
+	}
+
+	if (!last_blc)
+		return;
+
+	if (last_blc > BIG_CAP &&
+		runtime > thread_info->boost_info.target_time + TIME_1MS)
+		fbt_notify_CM_limit(1);
+	else
+		fbt_notify_CM_limit(0);
 }
 
 static int cmpint(const void *a, const void *b)
@@ -936,7 +990,21 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 	kfree(clus_floor_freq);
 }
 
-static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid, struct render_info *thread_info)
+static int fbt_boost_correct(struct render_info *th_info,
+			unsigned int blc_wt, int pid)
+{
+	if (th_info->is_black == NOT_ASKED)
+		th_info->is_black =
+		(fpsgo_fbt2fstb_query_fteh_list(pid))?ASKED_IN:ASKED_OUT;
+
+	if (th_info->is_black == ASKED_IN)
+		return 0;
+
+	return fpsgo_fbt2fteh_judge_ceiling(th_info, blc_wt);
+}
+
+static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid, struct render_info *thread_info,
+		long long runtime)
 {
 	int orig_blc = blc_wt;
 	int ceiling_judge = 1;
@@ -952,7 +1020,7 @@ static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid,
 		if (fbt_fteh_enable && thread_info &&
 			(thread_info->frame_type == NON_VSYNC_ALIGNED_TYPE ||
 			(thread_info->frame_type == VSYNC_ALIGNED_TYPE && thread_info->render_method == GLSURFACE))) {
-			ceiling_judge = fpsgo_fbt2fteh_judge_ceiling(thread_info, blc_wt);
+			ceiling_judge = fbt_boost_correct(thread_info, blc_wt, pid);
 
 			mutex_lock(&blc_mlock);
 			if (thread_info->p_blc) {
@@ -969,8 +1037,10 @@ static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid,
 			pid = 0;
 			fbt_free_bhr();
 			fbt_clear_boost_value();
-		} else
+		} else {
+			fbt_check_CM_limit(thread_info, runtime);
 			fbt_do_boost(blc_wt, pid);
+		}
 
 		max_blc = blc_wt;
 		max_blc_pid = pid;
@@ -1126,7 +1196,7 @@ static int fbt_boost_policy(
 	t1 = nsec_to_100usec(t1);
 	t2 = target_time;
 	t2 = nsec_to_100usec(t2);
-	t_sleep = t_cpu_slptime + thread_info->dequeue_length;
+	t_sleep = t_cpu_slptime;
 	t_sleep = nsec_to_100usec(t_sleep);
 	if (aa < 0) {
 		mutex_lock(&blc_mlock);
@@ -1159,7 +1229,10 @@ static int fbt_boost_policy(
 
 	blc_wt = clamp(blc_wt, 1U, 100U);
 
-	blc_wt = fbt_set_limit(blc_wt, boost_info->floor, pid, thread_info);
+	blc_wt = fbt_set_limit(blc_wt, boost_info->floor, pid, thread_info,
+			t_cpu_cur);
+
+	boost_info->target_time = target_time;
 
 	mutex_unlock(&fbt_mlock);
 
@@ -1241,7 +1314,7 @@ static void fbt_check_max_blc_locked(void)
 		fbt_free_bhr();
 		memset(base_opp, 0, cluster_num * sizeof(unsigned int));
 	} else
-		fbt_set_limit(max_blc, 0, max_blc_pid, NULL);
+		fbt_set_limit(max_blc, 0, max_blc_pid, NULL, 0);
 }
 
 static void fbt_frame_start(struct render_info *thr, unsigned long long ts,
@@ -1297,8 +1370,17 @@ static void fbt_frame_start(struct render_info *thr, unsigned long long ts,
 	spin_lock_irqsave(&loading_slock, flags);
 	if (thr->pLoading) {
 		atomic_set(&thr->pLoading->last_cb_ts, new_ts);
-		atomic_set(&thr->pLoading->skip_loading, 0);
 		fpsgo_systrace_c_fbt_gm(thr->pid, atomic_read(&thr->pLoading->last_cb_ts), "last_cb_ts");
+
+		/*
+		 * When NON-ALIGNED, skip_loading will be reset@enqueue-end.
+		 * Since frame-start will come before enqueue-end, and the
+		 * loading@enqueue should not be included.
+		 * When ALIGNED, frame-start will come after enqueue-end.
+		 * TODO: modify to fit for any order.
+		 */
+		if (thr->frame_type == VSYNC_ALIGNED_TYPE)
+			atomic_set(&thr->pLoading->skip_loading, 0);
 
 		loading = atomic_read(&thr->pLoading->loading);
 
@@ -1502,8 +1584,10 @@ void fpsgo_comp2fbt_frame_complete(struct render_info *thr, unsigned long long t
 	}
 
 	mutex_lock(&blc_mlock);
-	if (thr->p_blc)
+	if (thr->p_blc) {
+		thr->boost_info.last_blc = thr->p_blc->blc;
 		thr->p_blc->blc = 0;
+	}
 	mutex_unlock(&blc_mlock);
 
 	if (!fbt_find_boosting()) {

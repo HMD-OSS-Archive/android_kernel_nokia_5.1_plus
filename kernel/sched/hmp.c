@@ -141,9 +141,10 @@ static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluste
 	 * reasonable value.
 	 */
 	clbs->load_avg /= clbs->ncpu;
-	clbs->acap = clbs->cpu_capacity - cpu_rq(target)->cfs.avg.loadwop_avg;
+	clbs->acap = clbs->cpu_capacity -
+		cpu_rq(target)->cfs.avg.loadwop_avg;
 	clbs->scaled_acap = hmp_scale_down(clbs->acap);
-	clbs->scaled_atask = cpu_rq(target)->cfs.h_nr_running * cpu_rq(target)->cfs.avg.loadwop_avg;
+	clbs->scaled_atask = cpu_rq(target)->cfs.avg.loadwop_avg;
 	clbs->scaled_atask = clbs->cpu_capacity - clbs->scaled_atask;
 	clbs->scaled_atask = hmp_scale_down(clbs->scaled_atask);
 
@@ -225,6 +226,8 @@ static void sched_update_clbstats(struct clb_env *clbenv)
  */
 
 DEFINE_PER_CPU(struct hmp_domain *, hmp_cpu_domain);
+
+static LIST_HEAD(hmp_domains);
 
 /* Setup hmp_domains */
 static int __init hmp_cpu_mask_setup(void)
@@ -312,12 +315,17 @@ static inline unsigned int hmp_cpu_is_fastest(int cpu)
 }
 
 /* Check if cpu is in slowest hmp_domain */
-inline unsigned int hmp_cpu_is_slowest(int cpu)
+static inline unsigned int __hmp_cpu_is_slowest(int cpu)
 {
 	struct list_head *pos;
 
 	pos = &hmp_cpu_domain(cpu)->hmp_domains;
 	return list_is_last(pos, &hmp_domains);
+}
+
+unsigned int hmp_cpu_is_slowest(int cpu)
+{
+	return __hmp_cpu_is_slowest(cpu);
 }
 
 /* Next (slower) hmp_domain relative to cpu */
@@ -557,7 +565,7 @@ static int hmp_select_task_migration(int sd_flag, struct task_struct *p, int pre
 	if (hmp_down_migration(B_target, &L_target, se, &clbenv))
 		goto select_slow;
 	step = 4;
-	if (hmp_cpu_is_slowest(prev_cpu))
+	if (__hmp_cpu_is_slowest(prev_cpu))
 		goto select_slow;
 	goto select_fast;
 
@@ -590,12 +598,6 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	struct sched_entity *se = &p->se;
 	struct cpumask fast_cpu_mask, slow_cpu_mask;
 
-#ifdef CONFIG_HMP_TRACER
-	int cpu = 0;
-
-	for_each_online_cpu(cpu)
-		trace_sched_cfs_runnable_load(cpu, cfs_load(cpu), cfs_length(cpu));
-#endif
 
 	if (sched_boost() && idle_cpu(new_cpu) && hmp_cpu_is_fastest(new_cpu))
 		return new_cpu;
@@ -1117,7 +1119,7 @@ static void hmp_force_down_migration(int this_cpu)
 	cpumask_clear(&slow_cpu_mask);
 
 	/* Migrate light task from big to LITTLE */
-	if (!hmp_cpu_is_slowest(this_cpu)) {
+	if (!__hmp_cpu_is_slowest(this_cpu)) {
 		hmp_domain = hmp_cpu_domain(this_cpu);
 		cpumask_copy(&fast_cpu_mask, &hmp_domain->possible_cpus);
 		while (!list_is_last(&hmp_domain->hmp_domains, &hmp_domains)) {
@@ -1243,11 +1245,6 @@ static void hmp_force_up_migration(int this_cpu)
 
 	if (!spin_trylock(&hmp_force_migration))
 		return;
-
-#ifdef CONFIG_HMP_TRACER
-	for_each_online_cpu(curr_cpu)
-		trace_sched_cfs_runnable_load(curr_cpu, cfs_load(curr_cpu), cfs_length(curr_cpu));
-#endif
 
 	/* Migrate heavy task from LITTLE to big */
 	for_each_online_cpu(curr_cpu) {
@@ -1717,7 +1714,7 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	/*
 	 * aggressive idle balance for min_cap/idle_prefer
 	 */
-	if (hmp_cpu_is_slowest(this_cpu))
+	if (__hmp_cpu_is_slowest(this_cpu))
 		hmp_slowest_idle_prefer_pull(this_cpu, &p, &target);
 	else
 		hmp_fastest_idle_prefer_pull(this_cpu, &p, &target);
@@ -1738,7 +1735,7 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	if (energy_aware() && !system_overutilized(this_cpu))
 		goto done;
 
-	if (!hmp_cpu_is_slowest(this_cpu))
+	if (!__hmp_cpu_is_slowest(this_cpu))
 		hmp_domain = hmp_slower_domain(this_cpu);
 	if (!hmp_domain)
 		goto done;
@@ -1888,7 +1885,7 @@ static struct sched_entity *hmp_get_lightest_task(
 	if (migrate_down) {
 		struct hmp_domain *hmp;
 
-		if (hmp_cpu_is_slowest(cpu_of(se->cfs_rq->rq)))
+		if (__hmp_cpu_is_slowest(cpu_of(se->cfs_rq->rq)))
 			return min_se;
 		hmp = hmp_slower_domain(cpu_of(se->cfs_rq->rq));
 		hmp_target_mask = &hmp->cpus;

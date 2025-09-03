@@ -48,19 +48,19 @@
 #define GESTURE_CODE_V_RIGHT					0x6E
 #define GESTURE_CODE_TWO_LINE_2_BOTTOM			0x6F
 
-#define KEY_GESTURE_D					KEY_D
-#define KEY_GESTURE_UP					KEY_UP
-#define KEY_GESTURE_DOWN				KEY_DOWN
-#define KEY_GESTURE_LEFT				KEY_LEFT
-#define KEY_GESTURE_RIGHT				KEY_RIGHT
-#define KEY_GESTURE_O					KEY_O
-#define KEY_GESTURE_E					KEY_E
-#define KEY_GESTURE_M					KEY_M
-#define KEY_GESTURE_W					KEY_W
-#define KEY_GESTURE_S					KEY_S
-#define KEY_GESTURE_V					KEY_V
-#define KEY_GESTURE_C					KEY_C
-#define KEY_GESTURE_Z					KEY_Z
+#define KEY_GESTURE_D					KEY_WAKEUP
+//#define KEY_GESTURE_UP					KEY_UP
+//#define KEY_GESTURE_DOWN				KEY_DOWN
+//#define KEY_GESTURE_LEFT				KEY_LEFT
+//#define KEY_GESTURE_RIGHT				KEY_RIGHT
+//#define KEY_GESTURE_O					KEY_O
+//#define KEY_GESTURE_E					KEY_E
+//#define KEY_GESTURE_M					KEY_M
+//#define KEY_GESTURE_W					KEY_W
+//#define KEY_GESTURE_S					KEY_S
+//#define KEY_GESTURE_V					KEY_V
+//#define KEY_GESTURE_C					KEY_C
+//#define KEY_GESTURE_Z					KEY_Z
 
 struct core_gesture_data {
     uint32_t start_addr;

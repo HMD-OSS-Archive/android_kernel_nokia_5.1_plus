@@ -279,10 +279,9 @@ static cpumask_t mc_exec_core_switch(union mc_fc_generic *mc_fc_generic)
 	mc_fc_generic->as_in.param[0] = cpu_id[mc_fc_generic->as_in.param[0]];
 
 	if (_smc(mc_fc_generic) != 0 || mc_fc_generic->as_out.ret != 0) {
-		mc_dev_devel("CoreSwap failed %d -> %d (cpu %d still active)",
-			     raw_smp_processor_id(),
-			     mc_fc_generic->as_in.param[0],
-			     raw_smp_processor_id());
+		mc_dev_notice("CoreSwap failed %d -> %d (cpu %d still active)",
+			      raw_smp_processor_id(), new_cpu,
+			      raw_smp_processor_id());
 	} else {
 		active_cpu = new_cpu;
 		mc_dev_devel("CoreSwap ok %d -> %d",
@@ -432,11 +431,11 @@ int mc_fastcall_init(void)
 #ifdef TEE_FASTCALL_RT
 	struct sched_param param = {.sched_priority = 1};
 
-	ret = sched_setscheduler(fastcall_thread, SCHED_FIFO, &param);
+	ret = sched_setscheduler(fastcall_thread, SCHED_RR, &param);
 	if (ret)
 		mc_dev_info("cannot set tee_fastcall priority: %d\n", ret);
 #else
-	set_user_nice(fastcall_thread, -20);
+	set_user_nice(fastcall_thread, MIN_NICE);
 #endif
 	/* this thread MUST run on CPU 0 at startup */
 	nq_set_cpus_allowed(fastcall_thread, CPU_MASK_CPU0);
@@ -450,7 +449,7 @@ int mc_fastcall_init(void)
 					"tee/trustonic:online",
 					NULL, nq_cpu_down_prep);
 #endif
-	if (ret) {
+	if (ret < 0) {
 		mc_dev_notice("cpu online callback setup failed: %d", ret);
 		return ret;
 	}

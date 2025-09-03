@@ -107,7 +107,6 @@
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
 
 static struct disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUNT];
-static MFC_HANDLE show_mfc_handle[DISP_INTERNAL_BUFFER_COUNT];
 static struct disp_internal_buffer_info *freeze_buffer_info;
 static struct RDMA_CONFIG_STRUCT decouple_rdma_config;
 static struct WDMA_CONFIG_STRUCT decouple_wdma_config;
@@ -237,7 +236,7 @@ void _primary_path_unlock(const char *caller)
 	mutex_time_period = mutex_time_end - mutex_time_start;
 	if (mutex_time_period > 100000000) {
 		DISPCHECK("mutex_release_timeout1 <%lld ns>\n", mutex_time_period);
-		/*dump_stack();*/
+		dump_stack();
 	}
 
 	disp_sw_mutex_unlock(&(pgc->lock));
@@ -248,7 +247,7 @@ void _primary_path_unlock(const char *caller)
 	   (mutex_time_period < 100000000 && mutex_time_period1 < 0)) {
 		DISPCHECK("mutex_release_timeout2 <%lld ns>,<%lld ns>\n",
 			mutex_time_period1, mutex_time_period);
-		/*dump_stack();*/
+		dump_stack();
 	}
 
 	dprec_logger_done(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
@@ -2759,9 +2758,6 @@ static int init_decouple_buffers(void)
 		if (decouple_buffer_info[i] != NULL)
 			pgc->dc_buf[i] = decouple_buffer_info[i]->mva;
 
-		DAL_CHECK_MFC_RET(MFC_Open(&show_mfc_handle[i], decouple_buffer_info[i]->va,
-			   DISP_GetScreenWidth(), DISP_GetScreenHeight(), 3, color_wdma[0], DAL_COLOR_OPAQUE));
-		DAL_CHECK_MFC_RET(MFC_SetScale(show_mfc_handle[i], 4));
 	}
 
 	/* initialize rdma config */
@@ -3313,10 +3309,11 @@ static int _decouple_update_rdma_config_nolock(void)
 		}
 
 		if (dump_output) {
-			show_layers_draw_wdma(show_mfc_handle[pgc->dc_buf_id], draw_info,
-									decouple_buffer_info[pgc->dc_buf_id]->va);
+			int i = pgc->dc_buf_id;
+
+			show_layers_draw_wdma(draw_info);
 			if (dump_output_comp) {
-				memcpy(composed_buf, decouple_buffer_info[pgc->dc_buf_id]->va,
+				memcpy(composed_buf, decouple_buffer_info[i]->va,
 				disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT) *
 				disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH) * 3);
 				complete(&dump_buf_comp);
@@ -6328,6 +6325,11 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		mem_config.fmt = wdma_config.outputFormat;
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_wdma_config, MMPROFILE_FLAG_PULSE,
 			       pgc->dc_buf_id, wdma_mva);
+		show_layers_va = decouple_buffer_info[pgc->dc_buf_id]->va;
+		DAL_CHECK_MFC_RET(MFC_Open(&show_mfc_handle, decouple_buffer_info[pgc->dc_buf_id]->va,
+			   DISP_GetScreenWidth(), DISP_GetScreenHeight(), 3, color_wdma[0], DAL_COLOR_OPAQUE));
+		DAL_CHECK_MFC_RET(MFC_SetScale(show_mfc_handle, 4));
+
 	}
 done:
 	return ret;
@@ -6384,9 +6386,6 @@ int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 	} else {
 		input_event = output_event = trigger_event = NULL;
 	}
-
-	if (disp_validate_ioctl_params(cfg))
-		return -EINVAL;
 
 	_primary_path_lock(__func__);
 
@@ -8410,7 +8409,7 @@ int primary_display_resolution_test(void)
 
 		dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 
-		dpmgr_path_config(pgc->dpmgr_handle, &data_config2, CMDQ_DISABLE);
+		dpmgr_path_config(pgc->dpmgr_handle, &data_config2, NULL);
 		data_config2.dst_dirty = 0;
 		data_config2.ovl_dirty = 0;
 
@@ -8451,7 +8450,7 @@ int primary_display_resolution_test(void)
 	data_config2.dst_dirty = 1;
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 	dpmgr_path_connect(pgc->dpmgr_handle, CMDQ_DISABLE);
-	dpmgr_path_config(pgc->dpmgr_handle, &data_config2, CMDQ_DISABLE);
+	dpmgr_path_config(pgc->dpmgr_handle, &data_config2, NULL);
 	data_config2.dst_dirty = 0;
 	DSI_ForceConfig(0);
 	return ret;

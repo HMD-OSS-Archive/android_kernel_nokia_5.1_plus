@@ -63,8 +63,7 @@ void do_register_otg_work(struct work_struct *data)
 	}
 
 	otg_nb.notifier_call = otg_tcp_notifier_call;
-	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb,
-		TCP_NOTIFY_TYPE_VBUS);
+	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb);
 	if (ret < 0) {
 		DBG(0, "register OTG <%p> fail\n", otg_tcpc_dev);
 		queue_delayed_work(mtk_musb->st_wq, &register_otg_work,
@@ -1008,7 +1007,7 @@ static struct kernel_param_ops option_param_ops = {
 	.set = set_option,
 	.get = param_get_int,
 };
-module_param_cb(option, &option_param_ops, &option, 0660);
+module_param_cb(option, &option_param_ops, &option, 0400);
 #else
 #include "musb_core.h"
 /* for not define CONFIG_USB_MTK_OTG */

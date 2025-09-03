@@ -12,17 +12,13 @@
 #endif
 
 
-&memory {
-		device_type = "memory";
-		reg = <0 0x40000000 0 0x3e1a0000>;
-};
 
 &reserved_memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
 
-		zone-movable-cma-memory {
+		zmc-default {
 			compatible = "mediatek,zone_movable_cma";
 			size = <0 0xffc00000>;
 			alignment = <0 0x10000000>;
@@ -33,8 +29,6 @@
 
 /* chosen */
 &chosen {
-		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram initrd=0x45000000,\
-0x1000000 loglevel=8 androidboot.selinux=permissive androidboot.hardware=mt6763 initcall_debug=1 maxcpus=1";
 		/* fpga may has no lk, we need to specify display info here */
 		/* fb buffer is reserved using this dts by memory node above */
 		atag,videolfb-fb_base_h = <0x0>;

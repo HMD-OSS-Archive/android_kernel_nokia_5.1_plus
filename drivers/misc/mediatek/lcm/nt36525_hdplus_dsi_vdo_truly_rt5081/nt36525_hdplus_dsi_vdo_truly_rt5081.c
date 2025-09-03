@@ -41,6 +41,7 @@
 #endif
 
 #define LCM_ID_NT35695 (0xf5)
+#define TRULY_SLEEP_OUT_DELAY_MS (120)
 
 static const unsigned int BL_MIN_LEVEL = 20;
 static LCM_UTIL_FUNCS lcm_util;
@@ -116,6 +117,8 @@ extern int gdouble_tap_enable_nvt;
 //OEM add
 
 extern unsigned short fih_hwid;
+
+extern unsigned int g_fih_panelid;
 
 struct LCM_setting_table {
 	unsigned int cmd;
@@ -361,18 +364,19 @@ static struct LCM_setting_table init_setting_vdo_preEVT[] = {
 	{0x29, 1, {0x00} },
 	/* Sleep Out */
 	{0x11, 1, {0x00} },
-//	{REGFLAG_DELAY, 100, {} },
+//	{REGFLAG_DELAY, TRULY_SLEEP_OUT_DELAY_MS, {} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
 static struct LCM_setting_table init_setting_vdo_EVT[] = {
 	{0xFF, 1, {0x20} },
 	{0xFB, 1, {0x01} },
+	{0x03, 1, {0x54} },
 	{0x05, 1, {0xC9} },
 	{0x07, 1, {0x87} },
 	{0x08, 1, {0xB7} },
 	{0x0E, 1, {0xA5} },
-	{0x0F, 1, {0x50} },
+	{0x0F, 1, {0x57} },
 	{0x1F, 1, {0x00} },
 	{0x69, 1, {0xA9} },
 	{0x95, 1, {0xF5} },
@@ -502,40 +506,40 @@ static struct LCM_setting_table init_setting_vdo_EVT[] = {
 	{0x23, 1, {0x0C} },
 	{0x24, 1, {0x04} },
 	{0x25, 1, {0x07} },
-	{0x2F, 1, {0x02} },
+	{0x2F, 1, {0x03} },
 	{0x30, 1, {0x30} },
 	{0x31, 1, {0x41} },
-	{0x32, 1, {0x04} },
+	{0x32, 1, {0x05} },
 	{0x33, 1, {0x30} },
-	{0x34, 1, {0x02} },
-	{0x35, 1, {0x04} },
+	{0x34, 1, {0x03} },
+	{0x35, 1, {0x05} },
 	{0x36, 1, {0x41} },
-	{0x37, 1, {0x22} },
-	{0x38, 1, {0x22} },
-	{0x3A, 1, {0x08} },
-	{0x3B, 1, {0xB0} },
+	{0x37, 1, {0x33} },
+	{0x38, 1, {0x33} },
+	{0x3A, 1, {0x76} },
+	{0x3B, 1, {0xB8} },
 	{0x3D, 1, {0x54} },
 	{0x4D, 1, {0x12} },
 	{0x4E, 1, {0x34} },
 	{0x51, 1, {0x43} },
 	{0x52, 1, {0x21} },
-	{0x55, 1, {0x41} },
-	{0x56, 1, {0x24} },
-	{0x5A, 1, {0x08} },
-	{0x5B, 1, {0xB0} },
-	{0x5C, 1, {0x00} },
+	{0x55, 1, {0x42} },
+	{0x56, 1, {0x34} },
+	{0x5A, 1, {0x76} },
+	{0x5B, 1, {0xB8} },
+	{0x5C, 1, {0x9F} },
 	{0x5D, 1, {0x00} },
 	{0x5E, 1, {0x00} },
 	{0x60, 1, {0x80} },
 	{0x61, 1, {0x7C} },
 	{0x64, 1, {0x11} },
-	{0x92, 1, {0xBD} },
+	{0x92, 1, {0xBE} },
 	{0x93, 1, {0x08} },
 	{0x94, 1, {0x0C} },
 	{0xAB, 1, {0x00} },
 	{0xAD, 1, {0x00} },
 	{0xB0, 1, {0x05} },
-	{0xB1, 1, {0xB9} },
+	{0xB1, 1, {0xBA} },
 	{0xFF, 1, {0x25} },
 	{0xFB, 1, {0x01} },
 	{0x0A, 1, {0x82} },
@@ -569,12 +573,22 @@ static struct LCM_setting_table init_setting_vdo_EVT[] = {
   //CABC
 	{0x51, 1, {0xFF} },
 	{0x53, 1, {0x2C} },
+	{0xBA, 1, {0x02} },
 	/* Display ON */
 	{0x29, 1, {0x00} },
 	/* Sleep Out */
 	{0x11, 1, {0x00} },
-//	{REGFLAG_DELAY, 100, {} },
+//	{REGFLAG_DELAY, TRULY_SLEEP_OUT_DELAY_MS, {} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
+static struct LCM_setting_table init_setting_vdo_OTP[] = {
+	{0xFF, 1, {0x10} },
+	{0xFB, 1, {0x01} },
+	{0x55, 1, {0x80} },//Color IE1 setting
+	{0x29, 1, {0x00} },
+	{0x11, 1, {0x00} },
+//	{REGFLAG_DELAY, TRULY_SLEEP_OUT_DELAY_MS, {} },
 };
 
 #if 0//20180803@ray: remove old init_setting
@@ -795,7 +809,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0x29, 1, {0x00} },
 	/* Sleep Out */
 	{0x11, 1, {0x00} },
-//	{REGFLAG_DELAY, 100, {} },
+//	{REGFLAG_DELAY, TRULY_SLEEP_OUT_DELAY_MS, {} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 #endif //20180803@ray: remove old init_setting
@@ -901,8 +915,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	/* DSI */
 	/* Command mode setting */
-	//params->dsi.LANE_NUM = LCM_THREE_LANE;
-	params->dsi.LANE_NUM = LCM_FOUR_LANE;
+	params->dsi.LANE_NUM = LCM_THREE_LANE;
+	//params->dsi.LANE_NUM = LCM_FOUR_LANE;
 	/* The following defined the fomat for data coming from LCD engine. */
 	params->dsi.data_format.color_order = LCM_COLOR_ORDER_RGB;
 	params->dsi.data_format.trans_seq = LCM_DSI_TRANS_SEQ_MSB_FIRST;
@@ -922,15 +936,15 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 10;
-	params->dsi.horizontal_backporch = 108;
-	params->dsi.horizontal_frontporch = 100;
+	params->dsi.horizontal_backporch = 30;
+	params->dsi.horizontal_frontporch = 30;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	/* params->dsi.ssc_disable                                                   = 1; */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 420;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 320;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 360;	/* this value must be in MTK suggested table */
 #endif
 	params->dsi.PLL_CK_CMD = 420;
 	params->dsi.PLL_CK_VDO = 252;
@@ -1016,10 +1030,16 @@ static void lcm_init(void)
 		LCM_LOGI("nt36525----truly----lcm mode = cmd mode :%d----\n", lcm_dsi_mode);
 	} else {
 		/* Detect PDA HW phase to decide the proper init command */
-		if ( (((fih_hwid>>8)==0x04) || ((fih_hwid>>8)==0x05)) && (int)((fih_hwid >> 4) & 0xF) >=3 ){
-			LCM_LOGI("[LCM-truly] PDA evt or newer\n");
-			//push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
-			push_table(NULL, init_setting_vdo_EVT, sizeof(init_setting_vdo_EVT) / sizeof(struct LCM_setting_table), 1);
+		if ( (((fih_hwid>>8)==0x04) || ((fih_hwid>>8)==0x05)) && (int)((fih_hwid >> 4) & 0xF) >=3 ) {
+			int build = (g_fih_panelid & FIH_LCM_PANEL_ID_SWID_BUILD_MASK) >> FIH_LCM_PANEL_ID_SWID_BUILD_SHIFT;
+			int version = (g_fih_panelid & FIH_LCM_PANEL_ID_SWID_VERSION_MASK) >> FIH_LCM_PANEL_ID_SWID_VERSION_SHIFT;
+			LCM_LOGI("[LCM-truly] PDA evt or newer, panel build=0x%02X version=0x%02X\n", build, version);
+
+			if ( (build == FIH_LCM_SWID3_NVT_TRULY_OLD) && (version != FIH_LCM_SWID2_NVT_TRULY2) ) {
+				push_table(NULL, init_setting_vdo_EVT, sizeof(init_setting_vdo_EVT) / sizeof(struct LCM_setting_table), 1);
+			} else {
+				push_table(NULL, init_setting_vdo_OTP, sizeof(init_setting_vdo_OTP) / sizeof(struct LCM_setting_table), 1);
+			}
 		} else {
 			LCM_LOGI("[LCM-truly] PDA pre-evt\n");
 			push_table(NULL, init_setting_vdo_preEVT, sizeof(init_setting_vdo_preEVT) / sizeof(struct LCM_setting_table), 1);
@@ -1064,8 +1084,8 @@ static void lcm_resume(void)
 			pr_err("[LCM-truly] Time error!!!\n");
 		}
 		pr_debug("[LCM-truly KPI] Delay start!\n");
-		if ( display_deley <= 100 )
-			MDELAY(100-display_deley);
+		if ( display_deley <= TRULY_SLEEP_OUT_DELAY_MS )
+			MDELAY(TRULY_SLEEP_OUT_DELAY_MS-display_deley);
 		pr_debug("[LCM-truly KPI] Delay end!\n");
 	}
 }

@@ -273,6 +273,7 @@ phys_addr_t gpu_fdvfs_virt_addr; /* for GED, legacy ?! */
 GED_LOG_BUF_HANDLE _mtk_gpu_log_hnd;
 static int g_clock_on;
 
+extern char fih_skuid[8];
 /**
  * ===============================================
  * SECTION : API definition
@@ -740,10 +741,14 @@ EXPORT_SYMBOL(mt_gpufreq_get_cur_freq);
 
 /*
  * API : get current voltage
+ * This is exported API, which reports local backup for latest
+ * updated VGPU directly
+ * Since some non-preemptive thread could not use regulator_get,
+ * This is not a redundant API
  */
 unsigned int mt_gpufreq_get_cur_volt(void)
 {
-	return __mt_gpufreq_get_cur_volt();
+	return (g_volt_enable_state) ? g_cur_opp_volt : 0;
 }
 EXPORT_SYMBOL(mt_gpufreq_get_cur_volt);
 
@@ -2577,7 +2582,20 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		g_segment_id = MT6771_SEGMENT_1;
 	} else if (g_efuse_speed_bound_id == 0x05000000) {
 		/* 800MHz Version */
+#ifdef FIH_FAKE_P60V
+		if( !strcmp(fih_skuid,"600CN") || !strcmp(fih_skuid,"60SCN") || fih_skuid[0]!='6' )
+		{
+			g_segment_id = MT6771_SEGMENT_2;
+			pr_info("@%s: Default MT6771_SEGMENT_2\n",__func__);
+		}
+		else
+		{
+			g_segment_id = MT6771_SEGMENT_3;
+			pr_info("@%s: P60v MT6771_SEGMENT_3\n",__func__);
+		}
+#else
 		g_segment_id = MT6771_SEGMENT_2;
+#endif
 	} else if (g_efuse_speed_bound_id == 0x07000000) {
 		/* 700MHz Version */
 		g_segment_id = MT6771_SEGMENT_3;
@@ -2586,7 +2604,20 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		g_segment_id = MT6771_SEGMENT_4;
 	} else {
 		/* Other Version, set default segment */
+#ifdef FIH_FAKE_P60V
+		if( !strcmp(fih_skuid,"600CN") || !strcmp(fih_skuid,"60SCN") || fih_skuid[0]!='6' )
+		{
+			g_segment_id = MT6771_SEGMENT_2;
+			pr_info("@%s: Default MT6771_SEGMENT_2\n",__func__);
+		}
+		else
+		{
+			g_segment_id = MT6771_SEGMENT_3;
+			pr_info("@%s: P60v MT6771_SEGMENT_3\n",__func__);
+		}
+#else
 		g_segment_id = MT6771_SEGMENT_2;
+#endif
 	}
 	gpufreq_pr_info("@%s: g_efuse_speed_bound_id = 0x%08X, g_efuse_turbo_id = 0x%08X, g_segment_id = %d\n",
 			__func__, g_efuse_speed_bound_id, g_efuse_turbo_id, g_segment_id);

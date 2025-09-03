@@ -18,6 +18,11 @@
 #define FPGA_PLATFORM
 #endif
 
+struct mt_usb_work {
+	struct delayed_work dwork;
+	int ops;
+};
+
 struct mt_usb_glue {
 	struct device *dev;
 	struct platform_device *musb;
@@ -32,7 +37,7 @@ extern bool upmu_is_chr_det(void);
 extern kal_bool upmu_is_chr_det(void);
 #endif
 
-extern CHARGER_TYPE mt_charger_type_detection(void);
+extern enum charger_type mt_charger_type_detection(void);
 extern void BATTERY_SetUSBState(int usb_state);
 extern void upmu_interrupt_chrdet_int_en(unsigned int val);
 
@@ -42,6 +47,18 @@ enum CABLE_MODE {
 	CABLE_MODE_NORMAL,
 	CABLE_MODE_HOST_ONLY,
 	CABLE_MODE_MAX
+};
+
+/* specific USB operation */
+enum CONNECTION_OPS {
+	CONNECTION_OPS_DISC = 0,
+	CONNECTION_OPS_CHECK,
+	CONNECTION_OPS_CONN
+};
+
+enum VBUS_OPS {
+	VBUS_OPS_OFF = 0,
+	VBUS_OPS_ON
 };
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
@@ -75,7 +92,7 @@ extern void __iomem *ap_gpio_base;
 extern bool in_uart_mode;
 #endif
 extern int usb20_phy_init_debugfs(void);
-extern CHARGER_TYPE mt_get_charger_type(void);
+extern enum charger_type mt_get_charger_type(void);
 #include <upmu_common.h>
 
 #define PHY_IDLE_MODE       0

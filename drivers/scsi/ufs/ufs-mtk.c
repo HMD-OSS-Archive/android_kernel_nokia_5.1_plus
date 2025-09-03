@@ -203,7 +203,8 @@ static void ufs_mtk_advertise_hci_quirks(struct ufs_hba *hba)
 void ufs_mtk_hwfde_cfg_cmd(struct ufs_hba *hba,
 	struct scsi_cmnd *cmd)
 {
-	u32 dunl, dunu, lba;
+	u64 lba;
+	u32 dunl, dunu;
 	unsigned long flags;
 	int hwfde_key_idx_old;
 	struct ufshcd_lrb *lrbp;
@@ -378,6 +379,28 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_hba = hba;
 	hba->crypto_hwfde_key_idx = -1;
 
+#ifdef CONFIG_MTK_UFS_SUPPORT
+	/*
+	 * Rename device to unify device path for booting storage device.
+	 *
+	 * Device rename shall be prior to any pinctrl operation to avoid
+	 * known kernel panic issue which can be triggered by dumping pin
+	 * information, for example,
+	 *
+	 * "cat /sys/kernel/debug/pinctrl/10005000.pinctrl/pinmux-pins".
+	 *
+	 * The panic is because create_pinctrl() will keep the original
+	 * device name string instance in kobject. However, old name string
+	 * instance will be freed during device_rename() but NOT awared by
+	 * pinctrl.
+	 *
+	 * Please also remove default pin state in device tree and related
+	 * code because create_pinctrl() will be activated before device
+	 * probing if default pin state is declared.
+	 */
+	device_rename(hba->dev, "bootdevice");
+#endif
+
 	ufs_mtk_pltfrm_init();
 
 	ufs_mtk_pltfrm_parse_dt(hba);
@@ -404,11 +427,6 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 
 	/* Get auto-hibern8 timeout from device tree */
 	ufs_mtk_parse_auto_hibern8_timer(hba);
-
-#ifdef CONFIG_MTK_UFS_BOOTING
-	/* Rename device to unify device path for booting storage device */
-	device_rename(hba->dev, "bootdevice");
-#endif
 
 	return 0;
 
@@ -1755,15 +1773,14 @@ void ufs_mtk_dump_asc_ascq(struct ufs_hba *hba, u8 asc, u8 ascq)
 }
 #endif
 
-void ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu)
+void ufs_mtk_crypto_cal_dun(u32 alg_id, u64 iv, u32 *dunl, u32 *dunu)
 {
-	if (alg_id != UFS_CRYPTO_ALGO_BITLOCKER_AES_CBC) {
-		*dunl = lba;
-		*dunu = 0;
-	} else {                             /* bitlocker dun use byte address */
-		*dunl = (lba & 0x7FFFF) << 12;   /* byte address for lower 32 bit */
-		*dunu = (lba >> (32 - 12)) << 12;  /* byte address for higher 32 bit */
-	}
+	/* bitlocker dun use byte address */
+	if (alg_id == UFS_CRYPTO_ALGO_BITLOCKER_AES_CBC)
+		iv = iv << 12;
+
+	*dunl = iv & 0xffffffff;
+	*dunu = (iv >> 32) & 0xffffffff;
 }
 
 bool ufs_mtk_is_data_write_cmd(char cmd_op)
@@ -1907,7 +1924,8 @@ static int ufs_mtk_hie_cfg_request(unsigned int mode, const char *key, int len, 
 	u32 hie_para, i;
 	u32 *key_ptr;
 	unsigned long flags;
-	u32 lba, dunl, dunu;
+	u64 iv, lba;
+	u32 dunl, dunu;
 	struct scsi_cmnd *cmd;
 	int need_update = 1;
 	int key_idx;
@@ -1949,7 +1967,14 @@ static int ufs_mtk_hie_cfg_request(unsigned int mode, const char *key, int len, 
 	lba = ((cmd->cmnd[2]) << 24) | ((cmd->cmnd[3]) << 16) |
 			((cmd->cmnd[4]) << 8) | (cmd->cmnd[5]);
 
-	ufs_mtk_crypto_cal_dun(UFS_CRYPTO_ALGO_AES_XTS, lba, &dunl, &dunu);
+	/* Get iv from hie */
+	iv = hie_get_iv(req);
+
+	/* If hie not assign iv, then use lba as iv */
+	if (!iv)
+		iv = lba;
+
+	ufs_mtk_crypto_cal_dun(UFS_CRYPTO_ALGO_AES_XTS, iv, &dunl, &dunu);
 
 	/* setup LRB for UTPRD's crypto fields */
 	lrbp = &info->hba->lrb[req->tag];

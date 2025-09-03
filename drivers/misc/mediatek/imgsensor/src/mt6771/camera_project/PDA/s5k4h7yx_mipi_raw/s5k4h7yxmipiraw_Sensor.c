@@ -222,6 +222,7 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
  { 3264, 2448,    352,    504, 2560, 1440, 1280,   720, 0000, 0000, 1280,  720,     0,  0, 1280,  720}, // slim video
 };// slim video
 
+static int long_shutter_flag = 0;
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
@@ -320,6 +321,68 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 	set_dummy();
 }	/*	set_max_framerate  */
 
+static void stream_off(void) 
+{
+     write_cmos_sensor_8(0x0100,0x00);
+}
+
+static void stream_on(void) 
+{
+    write_cmos_sensor_8(0x0100,0x01);
+}
+
+static void short_mode(void)
+{
+    write_cmos_sensor_8(0x0340, 0x09);
+    write_cmos_sensor_8(0x0341, 0xE2);
+    write_cmos_sensor_8(0x0342, 0x0E);
+    write_cmos_sensor_8(0x0343, 0x68);
+    write_cmos_sensor_8(0x0200, 0x0D);
+    write_cmos_sensor_8(0x0201, 0xD8);
+    write_cmos_sensor_8(0x0202, 0x02);
+    write_cmos_sensor_8(0x0203, 0x08);
+}
+
+static bool check_stream_on(int times) 
+{
+    int i=0;
+    int framecnt=0;
+    for (i = 0; i < times; i++) {
+        framecnt = read_cmos_sensor(0x0005); // waiting for sensor to  stop output  then  set the  setting
+        if (framecnt != 0xFF)
+        {
+            LOG_INF("Check Streaming on ok at i=%d\n",i);
+            return true;
+        }
+        else
+        {
+            msleep(5);
+        }
+    }
+	LOG_INF("Check Streaming on Fail...\n");
+    return false;
+}
+static bool check_stream_off(void) 
+{
+    int i=0;
+    int framecnt=0;
+    for (i = 0; i < 100; i++) {
+        framecnt = read_cmos_sensor(0x0005); // waiting for sensor to  stop output  then  set the  setting
+        if (framecnt == 0xFF)
+        {
+            LOG_INF("Check Streaming off ok at i=%d\n",i);
+            return true;
+        }
+        else
+        {
+            msleep(5);
+        }
+    }
+	LOG_INF("Check Streaming off Fail...\n");
+    return false;
+
+}
+
 
 static void write_shutter(kal_uint32 shutter)
 {
@@ -373,50 +436,28 @@ static void write_shutter(kal_uint32 shutter)
 	printk("reg_0x0340 %x\n",value_coarse_1frame);
 	if (exp_time >= 999)
 	{
-		kal_uint32 retry = 0;
-		
-		//Steam off ----------------->
-		write_cmos_sensor_8(0x0100,0x00);
-		while(retry<100)
-		{
-			if(read_cmos_sensor(0x0005)!=0xff)
-			{
-				msleep(5);
-				retry++;
-			}
-		  else
-			{
-				printk("Stream off at %d = ok...\n",retry);
-				retry=0;
-				break;
-			}
-		}
-		//<----------------- Steam off 
-		
+            long_shutter_flag = 1;
+            stream_off();
+            check_stream_off();
+                short_mode();
+            stream_on();
+            check_stream_on(100);
+            stream_off();
+            check_stream_off();
+	
 		write_cmos_sensor(0x0340,value_coarse_1frame);
 		write_cmos_sensor(0x0342,0xFFFC);
 		write_cmos_sensor(0x0202,value_coarse_2frame);
 		write_cmos_sensor(0x0200,0x00FA);
-		
-		//Steam on ----------------->
-		write_cmos_sensor_8(0x0100,0x01);
-		retry=0;
-		while(retry<100)
-		{
-			if(read_cmos_sensor(0x0005)==0xff)
-			{
-				msleep(5);
-				retry++;
-			}
-		  else
-			{
-				printk("Stream on at %d = ok...\n",retry);
-				retry=0;
-				break;
-			}
-		}
-		//<----------------- Steam on 
-	
+	    stream_on();
+            check_stream_on(500);
+	    msleep(10);
+	    stream_off();
+	    check_stream_off();
+            short_mode();
+            stream_on();
+            long_shutter_flag = 0;
+           
 	}else
 #endif
 	{		
@@ -453,6 +494,9 @@ static void write_shutter(kal_uint32 shutter)
 static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
+	if(long_shutter_flag == 1){
+        return;
+	}
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);

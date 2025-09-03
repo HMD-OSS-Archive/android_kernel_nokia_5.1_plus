@@ -81,7 +81,6 @@ void __iomem *clk_mfg_base;
 #define MM_CG_CLR0 (clk_mmsys_config_base + 0x108)
 #define IMG_CG_CLR	(clk_imgsys_base + 0x0008)
 #define CAM_CG_CLR	(clk_camsys_base + 0x0008)
-#define IMG_CG_CON	(clk_imgsys_base + 0x0000)
 #define CAM_CG_CON	(clk_camsys_base + 0x0000)
 
 
@@ -1115,7 +1114,6 @@ void enable_img_clk(void)
 int spm_mtcmos_ctrl_isp(int state)
 {
 	int err = 0;
-	int retry = 0;
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off ISP" */
@@ -1124,74 +1122,20 @@ int spm_mtcmos_ctrl_isp(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1) & ISP_PROT_STEP1_0_ACK_MASK) !=
 			ISP_PROT_STEP1_0_ACK_MASK) {
-			retry++;
-			if (retry == 5000) {
-				pr_notice("INFRA_TOPAXI_PROTECTEN_MM = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_MM));
-				pr_notice("INFRA_TOPAXI_PROTECTEN_MM_STA1 = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1));
-				pr_notice("PWR_STATUS = %08x, %08x\n",
-					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
-				pr_notice("IMG_CG_CON = %08x, MM_CG_CON0 = %08x\n",
-					spm_read(IMG_CG_CON), spm_read(MM_CG_CON0));
-				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN));
-				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
-				/*BUG_ON(1);*/
-				break;
-			}
 		}
 #endif
 		/* TINFO="Set bus protect - step2 : 0" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_MM_SET, ISP_PROT_STEP2_0_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
-		retry = 0;
 		while ((spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1) & ISP_PROT_STEP2_0_ACK_MASK) !=
 			ISP_PROT_STEP2_0_ACK_MASK) {
-			retry++;
-			if (retry == 5000) {
-				pr_notice("INFRA_TOPAXI_PROTECTEN_MM = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_MM));
-				pr_notice("INFRA_TOPAXI_PROTECTEN_MM_STA1 = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1));
-				pr_notice("PWR_STATUS = %08x, %08x\n",
-					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
-				pr_notice("IMG_CG_CON = %08x, MM_CG_CON0 = %08x\n",
-					spm_read(IMG_CG_CON), spm_read(MM_CG_CON0));
-				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN));
-				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
-				/*BUG_ON(1);*/
-				break;
-			}
 		}
 #endif
 		/* TINFO="Set bus protect - step2 : 1" */
 		spm_write(SMI_COMMON_SMI_CLAMP_SET, ISP_PROT_STEP2_1_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
-		retry = 0;
 		while ((spm_read(SMI_COMMON_SMI_CLAMP) & ISP_PROT_STEP2_1_ACK_MASK) !=
 			ISP_PROT_STEP2_1_ACK_MASK) {
-			retry++;
-			if (retry == 5000) {
-				pr_notice("INFRA_TOPAXI_PROTECTEN_MM = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_MM));
-				pr_notice("INFRA_TOPAXI_PROTECTEN_MM_STA1 = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1));
-				pr_notice("PWR_STATUS = %08x, %08x\n",
-					spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
-				pr_notice("IMG_CG_CON = %08x, MM_CG_CON0 = %08x\n",
-					spm_read(IMG_CG_CON), spm_read(MM_CG_CON0));
-				pr_notice("INFRA_TOPAXI_PROTECTEN = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN));
-				pr_notice("INFRA_TOPAXI_PROTECTEN_STA1 = %08x\n",
-					spm_read(INFRA_TOPAXI_PROTECTEN_STA1));
-				pr_notice("SMI_COMMON_SMI_CLAMP = %08x\n",
-					spm_read(SMI_COMMON_SMI_CLAMP));
-				break;
-			}
 		}
 #endif
 		/* TINFO="Set SRAM_PDN = 1" */

@@ -39,7 +39,7 @@ struct step_chub_ipi_data {
 static struct step_chub_ipi_data obj_ipi_data;
 static ssize_t show_step_cds_value(struct device_driver *ddri, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%s\n", buf);
+	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
 
 static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, size_t count)
@@ -351,7 +351,7 @@ static int step_chub_local_init(void)
 	ctl.floor_c_flush = floor_c_flush;
 	ctl.smd_batch = smd_batch;
 	ctl.smd_flush = smd_flush;
-	ctl.is_report_input_direct = false;
+	ctl.is_report_input_direct = true;
 	ctl.is_counter_support_batch = false;
 	ctl.is_detector_support_batch = true;
 	ctl.is_smd_support_batch = false;

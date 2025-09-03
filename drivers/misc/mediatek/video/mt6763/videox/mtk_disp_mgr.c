@@ -931,9 +931,6 @@ static int do_frame_config(struct frame_queue_t *frame_node)
 {
 	struct disp_frame_cfg_t *frame_cfg = &frame_node->frame_cfg;
 
-	if (disp_validate_ioctl_params(frame_cfg))
-		return -EINVAL;
-
 	if (DISP_SESSION_TYPE(frame_cfg->session_id) == DISP_SESSION_PRIMARY)
 		primary_display_frame_cfg(frame_cfg);
 #if ((defined CONFIG_MTK_HDMI_SUPPORT) || (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2))

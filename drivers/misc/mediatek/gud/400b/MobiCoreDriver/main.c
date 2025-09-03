@@ -19,6 +19,7 @@
 #include <linux/delay.h>
 #include <linux/reboot.h>
 #include <linux/suspend.h>
+#include <linux/cpufreq.h>
 
 #include "public/mc_user.h"
 #include "public/mc_admin.h"	/* MC_ADMIN_DEVNODE */
@@ -83,6 +84,12 @@ static struct {
 
 static int mobicore_start(void);
 static void mobicore_stop(void);
+
+static bool mobicore_ready;
+bool is_mobicore_ready(void)
+{
+	return mobicore_ready;
+}
 
 int kasnprintf(struct kasnprintf_buf *buf, const char *fmt, ...)
 {
@@ -463,7 +470,28 @@ static int mobicore_start(void)
 	if (ret)
 		goto err_create_dev_user;
 
+#ifdef TBASE_CORE_SWITCHER
+	int core;
+	unsigned int freq = 0, max_freq = 0;
+
+	for (core = 0; core < COUNT_OF_CPUS; ++core) {
+		freq = cpufreq_quick_get(core);
+		if (freq > max_freq)
+			max_freq = freq;
+		else if (freq < max_freq)
+			break;
+	}
+
+	for (--core; core >= 0 && mc_active_core() != core; --core) {
+		ret = mc_switch_core(core);
+		mc_dev_info("Switch to core %d (%u Hz): %d\n", core, freq, ret);
+		if (!ret)
+			break;
+	}
+#endif
+
 	main_ctx.start_ret = 0;
+	mobicore_ready = true;
 	goto got_ret;
 
 err_create_dev_user:
@@ -510,6 +538,9 @@ static void mobicore_stop(void)
 int mc_wait_tee_start(void)
 {
 	int ret;
+
+	while (!is_mobicore_ready())
+		ssleep(1);
 
 	mutex_lock(&main_ctx.start_mutex);
 	while (main_ctx.start_ret == TEE_START_NOT_TRIGGERED) {
@@ -717,16 +748,6 @@ static int mobicore_probe(struct platform_device *pdev)
 	if (err)
 		goto err_start;
 
-#ifdef TBASE_CORE_SWITCHER
-	int core = COUNT_OF_CPUS - 1;
-
-	if (mc_active_core() != core) {
-		err = mc_switch_core(core);
-		if (err)
-			mc_dev_info("Switch to core %d failed(%d)!\n", core, err);
-	}
-#endif
-
 	return 0;
 
 err_start:
@@ -798,7 +819,7 @@ static void __exit mobicore_exit(void)
 	debugfs_remove_recursive(g_ctx.debug_dir);
 }
 
-module_init(mobicore_init);
+late_initcall(mobicore_init);
 module_exit(mobicore_exit);
 
 MODULE_AUTHOR("Trustonic Limited");

@@ -29,7 +29,10 @@
 
 	/* chosen */
 	chosen: chosen {
-		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram";
+		bootargs = "console=tty0 console=ttyS0,921600n1 \
+vmalloc=496M slub_max_order=0 slub_debug=OFZPU \
+androidboot.hardware=mt6771 \
+firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	cpus {
@@ -305,7 +308,11 @@
 			compatible = "mediatek,reserve-memory-sspm_share";
 			no-map;
 			status = "okay";
+#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) || defined(CONFIG_MTK_MET_MEM_ALLOC)
 			size = <0 0x110000>; /* 1M + 64K */
+#else
+			size = <0 0x510000>; /* 5M + 64K */
+#endif
 			alignment = <0 0x10000>;
 			alloc-ranges = <0 0x40000000 0 0x60000000>;
 		};
@@ -323,12 +330,14 @@
 			alignment = <0 0x200000>;
 			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
+
 		soter-shared-mem {
 			compatible = "microtrust,shared_mem";
 			no-map;
-			size = <0 0x500000>;
+			size = <0 0x200000>;
 			alloc-ranges = <0 0x40000000 0 0x50000000>;
 		};
+
 	};
 
 	gic: interrupt-controller@0c000000 {
@@ -906,11 +915,11 @@
 
 	scp: scp@10500000 {
 		compatible = "mediatek,scp";
-		status = "disable";
-		do_addr_A = <0 0>;
+		status = "okay";
 		reg = <0 0x10500000 0 0x80000>,		/* sram */
-		<0 0x105C0000 0 0x1000>,		/* cfgreg */
-		<0 0x105C4000 0 0x1000>;		/* clkctrl */
+		<0 0x105c0000 0 0x1000>,		/* cfgreg */
+		<0 0x105c4000 0 0x1000>,		/* clkctrl */
+		<0 0x105d4000 0 0x6000>;
 		interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_HIGH>;
 	};
 	scp_cfgreg@105c0000 {
@@ -1531,8 +1540,8 @@
 		uart = <&apuart0>;
 		smi_larb0 = <&smi_larb0>;
 		sram_share_cnt = <1>;
-		sram_share_engine = <20>;
-		sram_share_event = <480>;
+		sram_share_engine = <24>;
+		sram_share_event = <710>;
 		clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>, <&infracfg_ao INFRACFG_AO_GCE_26M_CG>;
 		clock-names = "GCE", "GCE_TIMER";
 	};
@@ -1556,49 +1565,56 @@
 		clock-names = "auxadc-main";
 	};
 
-	apuart0: apuart0@11002000 {
-		cell-index = <0>;
-		compatible = "mediatek,mtk-uart";
-		reg = <0 0x11002000 0 0x1000>, /* UART base */
-			<0 0x11000780 0 0x80>, /* DMA Tx base */
-			<0 0x11000800 0 0x80>; /* DMA Rx base */
-		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
-				<GIC_SPI 108 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx */
-				<GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx */
-		clock-frequency = <26000000>;
-		clock-div = <1>;
-		clocks = <&infracfg_ao INFRACFG_AO_UART0_CG>, <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
-		clock-names = "uart0-main", "uart-apdma";
+	apdma: dma-controller@11000780 {
+		compatible = "mediatek,mt6577-uart-dma";
+		reg = <0 0x11000780 0 0x80>,
+		      <0 0x11000800 0 0x80>,
+		      <0 0x11000880 0 0x80>,
+		      <0 0x11000900 0 0x80>,
+		      <0 0x11000980 0 0x80>,
+		      <0 0x11000A00 0 0x80>;
+		interrupts = <GIC_SPI 108 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
+		clock-names = "apdma";
+		#dma-cells = <1>;
 	};
 
-	apuart1: apuart1@11003000 {
-		cell-index = <1>;
-		compatible = "mediatek,mtk-uart";
-		reg = <0 0x11003000 0 0x1000>, /* UART base */
-			<0 0x11000880 0 0x80>, /* DMA Tx base */
-			<0 0x11000900 0 0x80>; /* DMA Rx base */
-		interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
-				<GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx */
-				<GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx */
-		clock-frequency = <26000000>;
-		clock-div = <1>;
-		clocks = <&infracfg_ao INFRACFG_AO_UART1_CG>;
-		clock-names = "uart1-main";
+	apuart0: serial@11002000 {
+		compatible = "mediatek,mt6577-uart";
+		reg = <0 0x11002000 0 0x1000>; /* UART base */
+		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>; /* UART IRQ */
+		clocks = <&clk26m>, <&infracfg_ao INFRACFG_AO_UART0_CG>;
+		clock-names = "baud", "bus";
+		dmas = <&apdma 0
+				&apdma 1>;
+		dma-names = "tx", "rx";
 	};
 
-	apuart2: apuart2@11004000 {
-		cell-index = <2>;
-		compatible = "mediatek,mtk-uart";
-		reg = <0 0x11004000 0 0x1000>, /* UART base */
-			<0 0x11000980 0 0x80>, /* DMA Tx base */
-			<0 0x11000A00 0 0x80>; /* DMA Rx base */
-		interrupts = <GIC_SPI 93 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
-				<GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx */
-				<GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx */
-		clock-frequency = <26000000>;
-		clock-div = <1>;
-		clocks = <&infracfg_ao INFRACFG_AO_UART2_CG>;
-		clock-names = "uart2-main";
+	apuart1: serial@11003000 {
+		compatible = "mediatek,mt6577-uart";
+		reg = <0 0x11003000 0 0x1000>;/* UART base */
+		interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_LOW>; /* UART IRQ */
+		clocks =  <&clk26m>, <&infracfg_ao INFRACFG_AO_UART1_CG>;
+		clock-names = "baud", "bus";
+		dmas = <&apdma 2
+				&apdma 3>;
+		dma-names = "tx", "rx";
+	};
+
+	apuart2: serial@11004000 {
+		compatible = "mediatek,mt6577-uart";
+		reg = <0 0x11004000 0 0x1000>; /* UART base */
+		interrupts = <GIC_SPI 93 IRQ_TYPE_LEVEL_LOW>;/* UART IRQ */
+		clocks = <&clk26m>, <&infracfg_ao INFRACFG_AO_UART2_CG>;
+		clock-names = "baud", "bus";
+		dmas = <&apdma 4
+				&apdma 5>;
+		dma-names = "tx", "rx";
 	};
 
 	i2c6@11005000 {
@@ -2975,6 +2991,26 @@
 		compatible = "mediatek,flashlight_core";
 	};
 
+	flashlights_lm3642: flashlights_lm3642 {
+		compatible = "mediatek,flashlights_lm3642";
+		decouple = <1>;
+		channel@1 {
+			type = <1>;
+			ct = <0>;
+			part = <0>;
+		};
+	};
+
+	flashlights_ha7109: flashlights_ha7109 {
+		compatible = "mediatek,flashlights_ha7109";
+		decouple = <1>;
+		channel@1 {
+			type = <1>;
+			ct = <1>;
+			part = <0>;
+		};
+	};
+
 	flashlights_mt6370: flashlights_mt6370 {
 		compatible = "mediatek,flashlights_mt6370";
 		decouple = <1>;
@@ -3900,12 +3936,16 @@
 		compatible = "mediatek,mt_soc_pcm_voice_usb_echoref";
 	};
 
+	mt_soc_vow_barge_in_pcm {
+		compatible = "mediatek,mt_soc_pcm_vow_barge_in";
+	};
+
 	firmware {
 		android {
 			compatible = "android,firmware";
 			fstab {
 				compatible = "android,fstab";
-#ifndef CONFIG_MTK_AB_OTA_UPDATER
+#if !defined(CONFIG_SYSTEM_AS_ROOT) && !defined(CONFIG_MTK_AB_OTA_UPDATER)
 				system {
 					compatible = "android,system";
 					dev = "/dev/block/platform/bootdevice/by-name/system";
@@ -3964,6 +4004,14 @@
 		/* reserved for overlay by odm */
 	};
 
+	radio_md_cfg: radio_md_cfg {
+		compatible = "mediatek,radio_md_cfg";
+	};
+
+	dynamic_options: dynamic_options {
+		compatible = "mediatek,dynamic_options";
+	};
+
 	mt_charger: mt_charger {
 		compatible = "mediatek,mt-charger";
 	};
@@ -3980,7 +4028,7 @@
 		ac_charger_current = <2050000>;
 		ac_charger_input_current = <3200000>;
 		non_std_ac_charger_current = <500000>;
-		charging_host_charger_current = <500000>;
+		charging_host_charger_current = <1500000>;
 		ta_ac_charger_current = <3000000>;
 		pd_charger_current = <500000>;
 
@@ -4010,7 +4058,7 @@
 		ac_charger_current = <2000000>;
 		ac_charger_input_current = <2000000>;
 		non_std_ac_charger_current = <500000>;
-		charging_host_charger_current = <500000>;
+		charging_host_charger_current = <1500000>;
 		apple_1_0a_charger_current = <650000>;
 		apple_2_1a_charger_current = <800000>;
 		ta_ac_charger_current = <3000000>;
@@ -4066,7 +4114,7 @@
 
 		/*  pd current */
 		en_fih_pd_current;
-
+		
 		/* PE 2.0 */
 		pe20_ichg_level_threshold = <1000>;
 		ta_start_battery_soc = <0>;
@@ -4197,9 +4245,43 @@
 		interrupts = <179 IRQ_TYPE_LEVEL_LOW 187 0>;
 		status = "okay";
 	};
+
+	fih_panel_id: fih_panel_id {
+		compatible = "fih,panelid";
+		lcd_id_0 = <&pio 91 0>;
+		lcd_id_1 = <&pio 2 0>;
+		pinctrl-names = "panelid_default";
+		pinctrl-0 = <&ili_tm_panelid_0_default &ili_tm_panelid_1_default>;
+		status = "ok";
+	};
+
 };
+
+&pio {
+	ili_tm_panelid_0_default:ili_tm_panelid_0_default@gpio91 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO91__FUNC_GPIO91>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+			input-schmitt-enable = <0>;
+		};
+	};
+
+	ili_tm_panelid_1_default:ili_tm_panelid_1_default@gpio2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO2__FUNC_GPIO2>;
+			slew-rate = <0>;
+			bias-disable;
+			input-schmitt-enable = <0>;
+		};
+	};
+};
+
 #include "novatek-nt36xxx-i2c.dtsi"
 #include "mt6358.dtsi"
 #include "cust_mt6771_msdc.dtsi"
 #include "pda_mt6370.dtsi"
 #include "pda_mt6370_pd.dtsi"
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
+#include "trusty.dtsi"
+#endif

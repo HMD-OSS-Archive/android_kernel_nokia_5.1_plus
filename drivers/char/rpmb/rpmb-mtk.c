@@ -512,9 +512,9 @@ int emmc_rpmb_req_set_key(struct mmc_card *card, u8 *key)
 	struct emmc_rpmb_req rpmb_req;
 	struct s_rpmb *rpmb_frame;
 	int ret;
-	u8 user_key;
+	u8 user_key[RPMB_SZ_MAC];
 
-	if (get_user(user_key, key))
+	if (copy_from_user(user_key, key, RPMB_SZ_MAC))
 		return -EFAULT;
 
 	MSG(INFO, "%s start!!!\n", __func__);
@@ -523,7 +523,7 @@ int emmc_rpmb_req_set_key(struct mmc_card *card, u8 *key)
 	if (rpmb_frame == NULL)
 		return RPMB_ALLOC_ERROR;
 
-	memcpy(rpmb_frame->mac, key, RPMB_SZ_MAC);
+	memcpy(rpmb_frame->mac, user_key, RPMB_SZ_MAC);
 
 	rpmb_req.type = RPMB_PROGRAM_KEY;
 	rpmb_req.blk_cnt = 1;
@@ -550,7 +550,7 @@ free:
 	return ret;
 }
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 
 static struct rpmb_frame *rpmb_alloc_frames(unsigned int cnt)
 {
@@ -1860,7 +1860,7 @@ EXPORT_SYMBOL(ut_rpmb_req_write_data);
 
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 #ifndef CONFIG_MTK_TEE_GP_SUPPORT
 static int rpmb_execute(u32 cmdId)
 {
@@ -2360,7 +2360,7 @@ static int rpmb_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int err = 0;

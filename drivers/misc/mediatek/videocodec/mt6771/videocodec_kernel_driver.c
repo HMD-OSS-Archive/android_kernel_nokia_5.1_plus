@@ -2109,7 +2109,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			pr_debug("[ERROR] VCODEC_GET_CORE_LOADING, copy_from_user failed: %lu\n", ret);
 			return -EFAULT;
 		}
-		if (rTempCoreLoading.CPUid >= num_possible_cpus()) {
+		if (rTempCoreLoading.CPUid > num_possible_cpus()) {
 			pr_debug("[ERROR] rTempCoreLoading.CPUid(%d) > num_possible_cpus(%d)\n",
 			rTempCoreLoading.CPUid, num_possible_cpus());
 			return -EFAULT;
@@ -3019,10 +3019,10 @@ static int vcodec_suspend_notifier(struct notifier_block *nb, unsigned long acti
 		is_entering_suspend = 1;
 		while (grVcodecDecHWLock.pvHandle != 0 || grVcodecEncHWLock.pvHandle != 0) {
 			wait_cnt++;
-			if (wait_cnt > 100000) {
+			if (wait_cnt > 90) {
 				MODULE_MFV_LOGD("vcodec_pm_suspend waiting for vcodec inactive %p %p",
 						grVcodecDecHWLock.pvHandle, grVcodecEncHWLock.pvHandle);
-				wait_cnt = 0;
+				return NOTIFY_DONE;
 			}
 			msleep(1);
 		}

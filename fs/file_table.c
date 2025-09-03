@@ -30,7 +30,6 @@
 #include <linux/atomic.h>
 
 #include "internal.h"
-#include <mt-plat/aee.h>
 
 /* sysctl tunables... */
 struct files_stat_struct files_stat = {
@@ -143,7 +142,7 @@ struct file *get_empty_filp(void)
 over:
 	/* Ran out of filps - report that */
 	if (get_nr_files() > old_max) {
-#ifdef FD_OVER_CHECK
+#ifdef CONFIG_MTK_FD_LEAK_DETECT
 		static int fd_dump_all_files;
 
 		if (!fd_dump_all_files) {
@@ -170,7 +169,6 @@ over:
 			}
 		}
 #endif
-		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT, "fdtable leak", "sys use fd too much");
 		pr_info("VFS: file-max limit %lu reached\n", get_max_files());
 		old_max = get_nr_files();
 	}

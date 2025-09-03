@@ -22,6 +22,25 @@
 #define ARY_SIZE(x) (sizeof((x)) / sizeof((x[0])))
 #endif
 
+#define FIH_LCM_HWID_NVT_TM		(0x00)
+#define FIH_LCM_HWID_NVT_TRULY		(0x10)
+#define FIH_LCM_HWID_ILI_TM		(0x01)
+#define FIH_LCM_HWID_ILI_TRULY		(0x11)
+
+#define FIH_LCM_SWID2_NVT_TRULY_OLD	(0xCC)
+#define FIH_LCM_SWID2_NVT_TRULY2	(0xEE)
+#define FIH_LCM_SWID3_NVT_TRULY_OLD	(0x00)
+
+#define FIH_LCM_PANEL_ID_HWID_MASK		(0xFF000000)
+#define FIH_LCM_PANEL_ID_SWID_MONTH_MASK	(0x00FF0000)
+#define FIH_LCM_PANEL_ID_SWID_VERSION_MASK	(0x0000FF00)
+#define FIH_LCM_PANEL_ID_SWID_BUILD_MASK	(0x000000FF)
+
+#define FIH_LCM_PANEL_ID_HWID_SHIFT		(24)
+#define FIH_LCM_PANEL_ID_SWID_MONTH_SHIFT	(16)
+#define FIH_LCM_PANEL_ID_SWID_VERSION_SHIFT	(8)
+#define FIH_LCM_PANEL_ID_SWID_BUILD_SHIFT	(0)
+
 /* --------------------------------------------------------------------------- */
 
 /* common enumerations */

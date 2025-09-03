@@ -177,6 +177,7 @@ int core_gesture_match_key(uint8_t gdata)
 	int gcode;
 
 	switch (gdata) {
+#if 0
 	case GESTURE_LEFT:
 		gcode = KEY_GESTURE_LEFT;
 		break;
@@ -189,9 +190,11 @@ int core_gesture_match_key(uint8_t gdata)
 	case GESTURE_DOWN:
 		gcode = KEY_GESTURE_DOWN;
 		break;
+#endif
 	case GESTURE_DOUBLECLICK:
 		gcode = KEY_GESTURE_D;
 		break;
+#if 0
 	case GESTURE_O:
 		gcode = KEY_GESTURE_O;
 		break;
@@ -216,12 +219,13 @@ int core_gesture_match_key(uint8_t gdata)
 	case GESTURE_C:
 		gcode = KEY_GESTURE_C;
 		break;
+#endif
 	default:
 		gcode = -1;
 		break;
 	}
 
-	ipio_debug(DEBUG_GESTURE, "gcode = %d\n", gcode);
+	ipio_debug(DEBUG_GESTURE, "gcode = %x\n", gcode);
 	return gcode;
 }
 EXPORT_SYMBOL(core_gesture_match_key);
@@ -230,7 +234,8 @@ void core_gesture_set_key(struct core_fr_data *fr_data)
 {
 	struct input_dev *input_dev = fr_data->input_device;
 	if (input_dev != NULL) {
-		input_set_capability(input_dev, EV_KEY, KEY_POWER);
+		input_set_capability(input_dev, EV_KEY, KEY_WAKEUP);
+        #if 0
 		input_set_capability(input_dev, EV_KEY, KEY_GESTURE_UP);
 		input_set_capability(input_dev, EV_KEY, KEY_GESTURE_DOWN);
 		input_set_capability(input_dev, EV_KEY, KEY_GESTURE_LEFT);
@@ -243,8 +248,9 @@ void core_gesture_set_key(struct core_fr_data *fr_data)
 		input_set_capability(input_dev, EV_KEY, KEY_GESTURE_V);
 		input_set_capability(input_dev, EV_KEY, KEY_GESTURE_Z);
 		input_set_capability(input_dev, EV_KEY, KEY_GESTURE_C);
-
-		__set_bit(KEY_POWER, input_dev->keybit);
+#endif
+		__set_bit(KEY_WAKEUP, input_dev->keybit);
+        #if 0
 		__set_bit(KEY_GESTURE_UP, input_dev->keybit);
 		__set_bit(KEY_GESTURE_DOWN, input_dev->keybit);
 		__set_bit(KEY_GESTURE_LEFT, input_dev->keybit);
@@ -257,6 +263,7 @@ void core_gesture_set_key(struct core_fr_data *fr_data)
 		__set_bit(KEY_GESTURE_V, input_dev->keybit);
 		__set_bit(KEY_GESTURE_Z, input_dev->keybit);
 		__set_bit(KEY_GESTURE_C, input_dev->keybit);
+        #endif
 		return;
 	}
 

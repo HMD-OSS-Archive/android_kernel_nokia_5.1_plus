@@ -2,7 +2,7 @@
  * Copyright (C) 2010 - 2017 Novatek, Inc.
  *
  * $Revision: 22432 $
- * $Date: 2018-01-30 20:14:05 +0800 (週二, 30 一月 2018) $
+ * $Date: 2018-01-30 20:14:05 +0800 (?��?, 30 一??2018) $
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -117,6 +117,8 @@ struct nvt_ts_data {
 	const struct nvt_ts_mem_map *mmap;
 	uint8_t carrier_system;
 	uint16_t nvt_pid;
+	bool irq_enabled;		//[20181105]Add
+	spinlock_t irq_lock;	//[20181105]Add
 };
 
 #if NVT_TOUCH_PROC

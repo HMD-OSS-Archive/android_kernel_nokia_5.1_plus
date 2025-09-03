@@ -27,7 +27,6 @@
 #include "sd_ops.h"
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 #include <linux/kthread.h>
-#include <mt-plat/mtk_boot_common.h>
 #endif
 
 static const unsigned int tran_exp[] = {
@@ -641,15 +640,7 @@ static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (card->ext_csd.rev > 7) {
 		card->ext_csd.cmdq_support = ext_csd[EXT_CSD_CMDQ_SUPPORT];
-		/*
-		 * Workaround: disable cmdq in sensitive situations (like OTA)
-		 * in case cmdq making data wrong because of devices having
-		 * bug(like Samsung:KMRD60014M-B512).
-		 * Use no quirks because we don't want suffer more on weak
-		 * chips in future.
-		 */
-		if (card->ext_csd.cmdq_support
-				&& get_boot_mode() != RECOVERY_BOOT) {
+		if (card->ext_csd.cmdq_support) {
 			pr_err("[CQ] card support CMDQ\n");
 			card->ext_csd.cmdq_depth = ext_csd[EXT_CSD_CMDQ_DEPTH] + 1;
 			pr_err("[CQ] cmdq depth %d\n", card->ext_csd.cmdq_depth);

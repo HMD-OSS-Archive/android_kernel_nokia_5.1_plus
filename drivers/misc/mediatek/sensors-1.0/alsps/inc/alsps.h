@@ -32,6 +32,8 @@
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/poll.h>
+#include <linux/pm_wakeup.h>
+
 #include <sensors_io.h>
 #include <hwmsensor.h>
 #include "alsps_factory.h"
@@ -91,6 +93,7 @@ struct ps_control_path {
 	int (*access_data_fifo)(void);/* version2.used for flush operate */
 	int (*ps_calibration)(int type, int value);
 	int (*set_cali)(uint8_t *data, uint8_t count);
+	int (*ps_threshold_setting)(int type, int value[2]);
 	bool is_report_input_direct;
 	bool is_support_batch;/* version2.used for batch mode support flag */
 	bool is_polling_mode;
@@ -177,6 +180,7 @@ struct alsps_context {
 	int ps_enable;
 	int64_t ps_delay_ns;
 	int64_t ps_latency_ns;
+	struct wakeup_source ps_wake_lock;
 };
 
 /* AAL Functions */

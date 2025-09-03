@@ -22,6 +22,7 @@
 #include <linux/slab.h>
 #include <linux/mutex.h>
 #include <mmprofile.h>
+#include <mmprofile_function.h>
 #include <linux/debugfs.h>
 #include <linux/kthread.h>
 #include "mtk/mtk_ion.h"
@@ -29,7 +30,7 @@
 #include "ion_drv_priv.h"
 #include "ion_priv.h"
 #include "mtk/ion_drv.h"
-#include "ion_sec_heap.h"
+#include "ion_heap_debug.h"
 
 #if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && \
 	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
@@ -48,27 +49,10 @@
 #include "secmem_api.h"
 #endif
 
-#ifdef CONFIG_MTK_PROT_MEM_SUPPORT
-#include "pmem_api.h"
-#endif
-
 #ifdef CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM
+#define SECMEM_KERNEL_API
 #include "trusted_mem_api.h"
 #endif
-
-#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
-#ifndef SECMEM_KERNEL_API
-#define SECMEM_KERNEL_API
-#endif
-#endif
-
-#define ION_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
-do {\
-	if (seq_file)\
-		seq_printf(seq_file, fmt, ##args);\
-	else\
-		pr_err(fmt, ##args);\
-} while (0)
 
 struct ion_sec_heap {
 	struct ion_heap heap;
@@ -103,7 +87,7 @@ struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,
 	struct sg_table *table;
 	int ret;
 #if ION_RUNTIME_DEBUGGER
-	struct ion_sec_buffer_info *pbufferinfo = (struct ion_sec_buffer_info *)buffer->priv_virt;
+	struct ion_mm_buffer_info *pbufferinfo = (struct ion_mm_buffer_info *)buffer->priv_virt;
 #endif
 	IONDBG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
 
@@ -139,7 +123,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 				 struct ion_buffer *buffer, unsigned long size, unsigned long align,
 		unsigned long flags) {
 	u32 sec_handle = 0;
-	struct ion_sec_buffer_info *pbufferinfo = NULL;
+	struct ion_mm_buffer_info *pbufferinfo = NULL;
 	u32 refcount = 0;
 
 	IONDBG("%s enter id %d size 0x%lx align %ld flags 0x%lx\n", __func__, heap->id, size, align, flags);
@@ -232,23 +216,23 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 {
 	struct sg_table *table = buffer->sg_table;
 	struct ion_heap *heap = buffer->heap;
-	struct ion_sec_buffer_info *pbufferinfo =
-	    (struct ion_sec_buffer_info *)buffer->priv_virt;
+	struct ion_mm_buffer_info *pbufferinfo =
+	    (struct ion_mm_buffer_info *)buffer->priv_virt;
 	u32 sec_handle = 0;
 
 	IONDBG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
 	sec_heap_total_memory -= buffer->size;
-	sec_handle = ((struct ion_sec_buffer_info *)buffer->priv_virt)->priv_phys;
+	sec_handle = ((struct ion_mm_buffer_info *)buffer->priv_virt)->priv_phys;
 
 #ifdef CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM
 	if (buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_PROT)
 		trusted_mem_api_unref(TRUSTED_MEM_REQ_PROT, sec_handle, (uint8_t *)buffer->heap->name,
 				      buffer->heap->id);
 	else if (buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_2D_FR)
-		trusted_mem_api_unref(TRUSTED_MEM_REQ_PROT, sec_handle, (uint8_t *)buffer->heap->name,
+		trusted_mem_api_unref(TRUSTED_MEM_REQ_2D_FR, sec_handle, (uint8_t *)buffer->heap->name,
 				      buffer->heap->id);
 	else if (buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_WFD)
-		trusted_mem_api_unref(TRUSTED_MEM_REQ_PROT, sec_handle, (uint8_t *)buffer->heap->name,
+		trusted_mem_api_unref(TRUSTED_MEM_REQ_WFD, sec_handle, (uint8_t *)buffer->heap->name,
 				      buffer->heap->id);
 	else if (buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_SEC)
 		trusted_mem_api_unref(TRUSTED_MEM_REQ_SVP, sec_handle, (uint8_t *)buffer->heap->name,
@@ -272,7 +256,7 @@ static int ion_sec_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask, int nr_to_
 static int ion_sec_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 			     ion_phys_addr_t *addr, size_t *len)
 {
-	struct ion_sec_buffer_info *pbufferinfo = (struct ion_sec_buffer_info *)buffer->priv_virt;
+	struct ion_mm_buffer_info *pbufferinfo = (struct ion_mm_buffer_info *)buffer->priv_virt;
 
 	IONDBG("%s priv_virt %p\n", __func__, buffer->priv_virt);
 	*addr = pbufferinfo->priv_phys;
@@ -438,81 +422,6 @@ skip_client_entry:
 	}
 }
 
-static int ion_sec_heap_debug_show(struct ion_heap *heap, struct seq_file *s, void *unused)
-{
-	struct ion_device *dev = heap->dev;
-	struct rb_node *n;
-	int *secur_handle;
-
-	if (heap->flags & ION_HEAP_FLAG_DEFER_FREE)
-		ION_PRINT_LOG_OR_SEQ(s, "mm_heap_freelist total_size=%zu\n", ion_heap_freelist_size(heap));
-	else
-		ION_PRINT_LOG_OR_SEQ(s, "mm_heap defer free disabled\n");
-
-	ION_PRINT_LOG_OR_SEQ(s, "----------------------------------------------------\n");
-	ION_PRINT_LOG_OR_SEQ(s,
-			     "%8.s %8.s %4.s %3.s %3.s %10.s %4.s %3.s %s\n",
-			     "buffer", "size", "kmap", "ref", "hdl", "sec handle",
-			     "flag", "pid", "comm(client)");
-
-	for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
-		struct ion_buffer
-		*buffer = rb_entry(n, struct ion_buffer, node);
-		if (buffer->heap->type != heap->type)
-			continue;
-		mutex_lock(&dev->buffer_lock);
-		secur_handle = (int *)buffer->priv_virt;
-
-		ION_PRINT_LOG_OR_SEQ(s,
-				     "0x%p %8zu %3d %3d %3d 0x%x %3lu %3d %s",
-				     buffer, buffer->size, buffer->kmap_cnt, atomic_read(&buffer->ref.refcount),
-				     buffer->handle_count, *secur_handle,
-				     buffer->flags, buffer->pid, buffer->task_comm);
-		ION_PRINT_LOG_OR_SEQ(s, ")\n");
-
-		mutex_unlock(&dev->buffer_lock);
-
-		ION_PRINT_LOG_OR_SEQ(s, "----------------------------------------------------\n");
-	}
-
-	down_read(&dev->lock);
-	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
-		struct ion_client
-		*client = rb_entry(n, struct ion_client, node);
-
-		if (client->task) {
-			char task_comm[TASK_COMM_LEN];
-
-			get_task_comm(task_comm, client->task);
-			ION_PRINT_LOG_OR_SEQ(s,
-					     "client(0x%p) %s (%s) pid(%u) ================>\n",
-					     client, task_comm, client->dbg_name, client->pid);
-		} else {
-			ION_PRINT_LOG_OR_SEQ(s,
-					     "client(0x%p) %s (from_kernel) pid(%u) ================>\n",
-					     client, client->name, client->pid);
-		}
-
-		{
-			struct rb_node *m;
-
-			mutex_lock(&client->lock);
-			for (m = rb_first(&client->handles); m; m = rb_next(m)) {
-				struct ion_handle
-				*handle = rb_entry(m, struct ion_handle, node);
-
-				ION_PRINT_LOG_OR_SEQ(s,
-						     "\thandle=0x%p, buffer=0x%p, heap=%d\n",
-						     handle, handle->buffer, handle->buffer->heap->id);
-			}
-			mutex_unlock(&client->lock);
-		}
-	}
-	up_read(&dev->lock);
-
-	return 0;
-}
-
 struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 {
 #if (defined(CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM) || defined(CONFIG_MTK_SECURE_MEM_SUPPORT)) || \
@@ -530,7 +439,7 @@ struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 	heap->heap.ops = &mm_sec_heap_ops;
 	heap->heap.type = ION_HEAP_TYPE_MULTIMEDIA_SEC;
 	heap->heap.flags &= ~ION_HEAP_FLAG_DEFER_FREE;
-	heap->heap.debug_show = ion_sec_heap_debug_show;
+	heap->heap.debug_show = ion_heap_debug_show;
 
 	return &heap->heap;
 
@@ -538,7 +447,7 @@ struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 	struct ion_sec_heap heap;
 
 	heap.heap.ops = &mm_sec_heap_ops;
-	heap.heap.debug_show = ion_sec_heap_debug_show;
+	heap.heap.debug_show = ion_heap_debug_show;
 	IONMSG("%s error: not support\n", __func__);
 	return NULL;
 #endif

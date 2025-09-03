@@ -60,7 +60,7 @@ static int kbase_tracking_page_setup(struct kbase_context *kctx, struct vm_area_
  *
  * Note: Caller must be holding the processes mmap_sem lock.
  */
-void kbase_mem_shrink_cpu_mapping(struct kbase_context *kctx,
+static void kbase_mem_shrink_cpu_mapping(struct kbase_context *kctx,
 		struct kbase_va_region *reg,
 		u64 new_pages, u64 old_pages);
 
@@ -558,7 +558,7 @@ void kbase_zone_cache_clear(struct kbase_mem_phy_alloc *alloc)
  * kbase_mem_evictable_mark_reclaim - Mark the pages as reclaimable.
  * @alloc: The physical allocation
  */
-void kbase_mem_evictable_mark_reclaim(struct kbase_mem_phy_alloc *alloc)
+static void kbase_mem_evictable_mark_reclaim(struct kbase_mem_phy_alloc *alloc)
 {
 	struct kbase_context *kctx = alloc->imported.kctx;
 	struct kbase_mem_zone_cache_entry *zone_cache;
@@ -1599,7 +1599,7 @@ int kbase_mem_grow_gpu_mapping(struct kbase_context *kctx,
 	return ret;
 }
 
-void kbase_mem_shrink_cpu_mapping(struct kbase_context *kctx,
+static void kbase_mem_shrink_cpu_mapping(struct kbase_context *kctx,
 		struct kbase_va_region *reg,
 		u64 new_pages, u64 old_pages)
 {

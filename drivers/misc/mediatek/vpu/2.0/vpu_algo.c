@@ -228,7 +228,7 @@ int vpu_create_algo(int core, char *name, struct vpu_algo **ralgo, bool needload
 	algo->bin_ptr = mva;
 	algo->bin_length = length;
 	LOG_DBG("[vpu] vpu_hw_load_algo done, (%d/0x%lx/0x%x)\n", id, (unsigned long)mva, length);
-	LOG_INF("[vpu_%d] vpu_hw_load_algo done, (%d/0x%lx/0x%x)\n", core,
+	LOG_DBG("[vpu] vpu_hw_load_algo done, (%d/0x%lx/0x%x)\n",
 		algo->id[core], (unsigned long)(algo->bin_ptr), algo->bin_length);
 
 	if (needload) {

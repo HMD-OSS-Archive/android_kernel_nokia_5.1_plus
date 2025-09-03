@@ -69,7 +69,7 @@ extern char mtkfb_lcm_name[256];
 //extern void touch_fwupgrade(int);
 //extern void touch_fwupgrade_read(char *);
 extern void fih_ili_vendor_read(char *);
-
+extern int gdouble_tap_enable_nvt;
 struct ilitek_platform_data *ipd = NULL;
 
 void ilitek_platform_disable_irq(void)
@@ -616,7 +616,7 @@ static int ilitek_platform_isr_register(void)
 	int res = 0;
 #if (TP_PLATFORM == PT_MTK)
 	u32 ints[2] = { 0, 0 };
-	struct device_node *node;
+	struct device_node *node = NULL;
 #endif /* PT_MTK */
 
 #ifdef USE_KTHREAD
@@ -750,6 +750,20 @@ void ilitek_platform_read_tp_info(void)
 	}
 }
 EXPORT_SYMBOL(ilitek_platform_read_tp_info);
+
+int ili_touch_double_tap_read_nvt(void)
+{
+	pr_err("%s, gdouble_tap_enable_nvt = %d", __func__, gdouble_tap_enable_nvt);
+
+	return gdouble_tap_enable_nvt;
+}
+int ili_touch_double_tap_write_nvt(int enable)
+{
+	gdouble_tap_enable_nvt = enable;
+	pr_debug("%s: gdouble_tap_enable_nvt = enable = %d\n", __func__, gdouble_tap_enable_nvt);
+
+	return 0;
+}
 
 /**
  * The function is to initialise all necessary structurs in those core APIs,
@@ -1040,8 +1054,8 @@ static int ilitek_platform_probe(struct spi_device *spi)
 // touch_cb.touch_fwupgrade = touch_fwupgrade;
 // touch_cb.touch_fwupgrade_read = touch_fwupgrade_read;
     touch_cb.touch_vendor_read = fih_ili_vendor_read;
-    //touch_cb.touch_double_tap_read = touch_double_tap_read_nvt;
-    //touch_cb.touch_double_tap_write = touch_double_tap_write_nvt;
+    touch_cb.touch_double_tap_read = ili_touch_double_tap_read_nvt;
+    touch_cb.touch_double_tap_write = ili_touch_double_tap_write_nvt;
 // touch_cb.touch_alt_rst = fts_fih_tp_rst;
 // touch_cb.touch_alt_st_count = read_register_result;
 // touch_cb.touch_alt_st_enable = fts_fih_tp_enable;

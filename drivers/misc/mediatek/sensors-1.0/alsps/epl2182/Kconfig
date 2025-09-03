@@ -1,6 +1,5 @@
 config MTK_EPL2182
 	bool "for support EPL2182 alsps sensor"
-	default n
 	help
 	  This configuration is for enable or disable EPL2182 alsps sensor support.
 	  Say Y here if you want to support this sensor.

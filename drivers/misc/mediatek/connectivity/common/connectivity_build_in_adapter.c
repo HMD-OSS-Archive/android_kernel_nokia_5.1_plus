@@ -147,6 +147,12 @@ void connectivity_export_clk_buf_ctrl(/*enum clk_buf_id*/ int id, bool onoff)
 	clk_buf_ctrl(id, onoff);
 }
 EXPORT_SYMBOL(connectivity_export_clk_buf_ctrl);
+
+bool connectivity_export_is_clk_buf_from_pmic(void)
+{
+	return is_clk_buf_from_pmic();
+}
+EXPORT_SYMBOL(connectivity_export_is_clk_buf_from_pmic);
 #endif
 
 /*******************************************************************************
@@ -229,7 +235,7 @@ EXPORT_SYMBOL(connectivity_export_mmc_io_rw_direct);
 void connectivity_export_dump_thread_state(const char *name)
 {
 	static const char stat_nam[] = TASK_STATE_TO_CHAR_STR;
-	struct task_struct *g, *p;
+	struct task_struct *p;
 	int cpu;
 	struct rq *rq;
 	struct task_struct *curr;
@@ -243,11 +249,12 @@ void connectivity_export_dump_thread_state(const char *name)
 	pr_info("start to show debug info of %s\n", name);
 
 	rcu_read_lock();
-	for_each_process_thread(g, p) {
-		unsigned long state = p->state;
+	for_each_process(p) {
+		unsigned long state;
 
 		if (strncmp(p->comm, name, strlen(name)) != 0)
 			continue;
+		state = p->state;
 		cpu = task_cpu(p);
 		rq = cpu_rq(cpu);
 		curr = rq->curr;
@@ -269,3 +276,14 @@ void connectivity_export_dump_thread_state(const char *name)
 	rcu_read_unlock();
 }
 EXPORT_SYMBOL(connectivity_export_dump_thread_state);
+
+/******************************************************************************
+ * GPIO dump information
+ ******************************************************************************/
+#ifndef CONFIG_MTK_GPIO
+void connectivity_export_dump_gpio_info(int start, int end)
+{
+	gpio_dump_regs_range(start, end);
+}
+EXPORT_SYMBOL(connectivity_export_dump_gpio_info);
+#endif

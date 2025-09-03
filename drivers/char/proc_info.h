@@ -51,6 +51,7 @@
 #define LCM0_AWER_STATUS		"awer_status"
 /* PDA: for lcm runin } */
 #define LCM0_FS_CURR			"fs_curr"
+#define LCM0_PANELID			"panelid"
 #define WIFI_MAC		"wifi_mac"
 #define BT_MAC					"bt_mac"
 

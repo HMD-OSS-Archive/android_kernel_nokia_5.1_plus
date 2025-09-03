@@ -40,7 +40,7 @@ void m4u_mvaGraph_init(void *priv_reserve)
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 	memset(mvaGraph, 0, sizeof(short) * (MVA_MAX_BLOCK_NR + 1));
 	memset(mvaInfoGraph, 0, sizeof(void *) * (MVA_MAX_BLOCK_NR + 1));
-	mvaGraph[0] = 1 | MVA_BUSY_MASK;
+	mvaGraph[0] = 1 | (short)MVA_BUSY_MASK;
 	mvaInfoGraph[0] = priv_reserve;
 	/*need to reserve two mva block region for vpu.
 	 *[1,0x200],[0x360,0x500): shared with all ports.
@@ -664,7 +664,7 @@ stage3:
 		return 0;
 	}
 
-	if (s > MVA_MAX_BLOCK_NR) {
+	if ((s > MVA_MAX_BLOCK_NR) || (s + nr) > MVA_MAX_BLOCK_NR) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2f8], 0xf2);
 		M4UMSG("mva_alloc error: no available MVA region for %d blocks!\n", nr);
@@ -675,9 +675,9 @@ stage3:
 	}
 	/* ----------------------------------------------- */
 	/* alloc a mva region */
-	end = s + mvaGraph[s] - 1;
+	end = s + MVA_GET_NR(s) - 1;
 
-	if (unlikely(nr == mvaGraph[s])) {
+	if (unlikely(nr == MVA_GET_NR(s))) {
 		MVA_SET_BUSY(s);
 		MVA_SET_BUSY(end);
 		mvaInfoGraph[s] = priv;
@@ -905,10 +905,11 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 	unsigned long irq_flags;
 	int   vpu_region_status = 0, is_in_vpu_region = 0;
 	int ccu_region_status, is_in_ccu_region = 0;
+#if 0
 #if defined(CONFIG_MACH_MT6771)
 	struct m4u_buf_info_t *pMvaInfo = (struct m4u_buf_info_t *)priv;
 #endif
-
+#endif
 	if (size == 0 || priv == NULL) {
 		M4UMSG("%s: invalid size & port info\n", __func__);
 		return 0;
@@ -1050,7 +1051,7 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 		}
 	}
 
-	if (s > MVA_MAX_BLOCK_NR) {
+	if (s > MVA_MAX_BLOCK_NR || (s + nr) > MVA_MAX_BLOCK_NR) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2f8], 0xf4);
 		M4UMSG("mva_alloc error: no available MVA region for %d blocks!\n", nr);
@@ -1188,13 +1189,14 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 	spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_TOGGLE_MVA_DBG], MMPROFILE_FLAG_END, mvaGraph[0x2f8], 3);
 #if defined(CONFIG_MACH_MT6771)
+#if 0
 	if (((pMvaInfo->port == M4U_PORT_CCU0) || (pMvaInfo->port == M4U_PORT_CCU1) ||
 	     (pMvaInfo->port == M4U_PORT_CAM_CCUI) || (pMvaInfo->port == M4U_PORT_CAM_CCUG) ||
 	     (pMvaInfo->port == M4U_PORT_CAM_CCUO)) && !is_in_ccu_region) {
-		M4ULOG_HIGH("alloc ccu mva not match,s=0x%x\n", s);
-		if (s > MVAGRAPH_INDEX(CCU_FIX_MVA_END))
-			m4u_mvaGraph_dump();
+		M4UMSG("alloc ccu mva not match,s=0x%x\n", s);
+		m4u_mvaGraph_dump();
 	}
+#endif
 #endif
 	mvaRegionStart = (unsigned int)s;
 

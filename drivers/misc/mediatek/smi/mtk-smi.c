@@ -496,7 +496,7 @@ static int smi_bus_disable_unprepare(const unsigned int reg_indx,
 	if (reg_indx != SMI_LARB0_REG_INDX && reg_indx != SMI_COMMON_REG_INDX
 		&& (larb_ref_cnt - 1 == 0) && larb_val != 0x0) {
 		smi_debug_bus_hanging_detect_ext2(0x1ff, 1, 0, 1);
-		SMIERR("%s(%d, %s, %d): %s want turn off larb%d CG%s(%d) but larb%d is busy %#lx\n",
+		SMIMSG("%s(%d, %s, %d): %s want turn off larb%d CG%s(%d) but larb%d is busy %#lx\n",
 			__func__, reg_indx, user_name, enable_mtcmos ? 1 : 0,
 			user_name, reg_indx, enable_mtcmos ? "/MTCMOS" : "", larb_ref_cnt, reg_indx, larb_val);
 	}
@@ -927,8 +927,6 @@ static char *smi_get_scenario_name(enum MTK_SMI_BWC_SCEN scen)
 		return "SMI_BWC_SCEN_HDMI4K";
 	case SMI_BWC_SCEN_VPMJC:
 		return "SMI_BWC_SCEN_VPMJC";
-	case SMI_BWC_SCEN_N3D:
-		return "SMI_BWC_SCEN_N3D";
 	case SMI_BWC_SCEN_CAM_PV:
 		return "SMI_BWC_SCEN_CAM_PV";
 	case SMI_BWC_SCEN_CAM_CP:

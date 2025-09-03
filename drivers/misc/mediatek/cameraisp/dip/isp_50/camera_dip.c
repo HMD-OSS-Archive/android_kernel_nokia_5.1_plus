@@ -311,8 +311,10 @@ static unsigned int m_CurrentPPB;
 
 #ifdef CONFIG_PM_WAKELOCKS
 struct wakeup_source dip_wake_lock;
+struct wakeup_source isp_mdp_wake_lock;
 #else
 struct wake_lock dip_wake_lock;
+struct wakeup_source isp_mdp_wake_lock;
 #endif
 static int g_bWaitLock;
 
@@ -1075,6 +1077,35 @@ static signed int DIP_DumpDIPReg(void)
 	CMDQ_ERR("tnr and color: 0x15027380(0x%x)-0x15027398(0x%x)-0x15027110(0x%x)\n",
 		DIP_RD32(DIP_A_BASE + 0x5380), DIP_RD32(DIP_A_BASE + 0x5398),
 		DIP_RD32(DIP_A_BASE + 0x5110));
+
+    /* IMGBI */
+	CMDQ_ERR("imgbi: 0x15022530(0x%x)-0x15022538(0x%x)-0x15022540(0x%x)-0x15022544(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0530), DIP_RD32(DIP_A_BASE + 0x0538),
+		DIP_RD32(DIP_A_BASE + 0x0540), DIP_RD32(DIP_A_BASE + 0x0544));
+	CMDQ_ERR("imgbi: 0x15022548(0x%x)-0x1502254C(0x%x)-0x15022550(0x%x)-0x15022554(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0548), DIP_RD32(DIP_A_BASE + 0x054C),
+		DIP_RD32(DIP_A_BASE + 0x0550), DIP_RD32(DIP_A_BASE + 0x0554));
+
+    /* IMGCI */
+	CMDQ_ERR("imgci: 0x15022560(0x%x)-0x15022568(0x%x)-0x15022570(0x%x)-0x15022574(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0560), DIP_RD32(DIP_A_BASE + 0x0568),
+		DIP_RD32(DIP_A_BASE + 0x0570), DIP_RD32(DIP_A_BASE + 0x0574));
+	CMDQ_ERR("imgci: 0x15022578(0x%x)-0x1502257C(0x%x)-0x15022580(0x%x)-0x15022584(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0578), DIP_RD32(DIP_A_BASE + 0x057C),
+		DIP_RD32(DIP_A_BASE + 0x0580), DIP_RD32(DIP_A_BASE + 0x0584));
+
+    /* LCE */
+	CMDQ_ERR("lce: 0x15024100(0x%x)-0x15024104(0x%x)-0x15024108(0x%x)-0x1502410C(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x2100), DIP_RD32(DIP_A_BASE + 0x2104),
+		DIP_RD32(DIP_A_BASE + 0x2108), DIP_RD32(DIP_A_BASE + 0x210C));
+	CMDQ_ERR("0x15024110(0x%x)-0x15024114(0x%x)-0x15024120(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x2110), DIP_RD32(DIP_A_BASE + 0x2114),
+		DIP_RD32(DIP_A_BASE + 0x2120));
+    /* NBC */
+	CMDQ_ERR("nbc: 0x15025700(0x%x)\n", DIP_RD32(DIP_A_BASE + 0x3700));
+    /* BNR */
+	CMDQ_ERR("bnr: 0x15023240(0x%x)-0x15023280(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x1240), DIP_RD32(DIP_A_BASE + 0x1280));
 
     /* IMGBI */
 	CMDQ_ERR("imgbi: 0x15022530(0x%x)-0x15022538(0x%x)-0x15022540(0x%x)-0x15022544(0x%x)\n",
@@ -2486,44 +2517,6 @@ static signed int DIP_P2_BufQue_CTRL_FUNC(struct DIP_P2_BUFQUE_STRUCT param)
 	return ret;
 }
 
-/*******************************************************************************
-*
-********************************************************************************/
-static signed int DIP_REGISTER_IRQ_USERKEY(char *userName)
-{
-	int key =  -1;
-	int i = 0;
-
-	spin_lock((spinlock_t *)(&SpinLock_UserKey));
-
-	/* 1. check the current users is full or not */
-	if (FirstUnusedIrqUserKey == IRQ_USER_NUM_MAX) {
-		key = -1;
-	} else {
-		/* 2. check the user had registered or not */
-		for (i = 1; i < FirstUnusedIrqUserKey; i++) {
-			/* index 0 is for all the users that do not register irq first */
-			if (strcmp((void *)IrqUserKey_UserInfo[i].userName, userName) == 0) {
-				key = IrqUserKey_UserInfo[i].userKey;
-				break;
-			}
-		}
-
-		/* 3.return new userkey for user if the user had not registered before */
-		if (key < 0) {
-			/* IrqUserKey_UserInfo[i].userName=userName; */
-			memset((void *)IrqUserKey_UserInfo[i].userName, 0, sizeof(IrqUserKey_UserInfo[i].userName));
-			strncpy((void *)IrqUserKey_UserInfo[i].userName, userName, USERKEY_STR_LEN-1);
-			IrqUserKey_UserInfo[i].userKey = FirstUnusedIrqUserKey;
-			key = FirstUnusedIrqUserKey;
-			FirstUnusedIrqUserKey++;
-		}
-	}
-
-	spin_unlock((spinlock_t *)(&SpinLock_UserKey));
-	LOG_INF("User(%s)key(%d)\n", userName, key);
-	return key;
-}
 
 /*******************************************************************************
 *
@@ -2589,8 +2582,6 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	unsigned int                 wakelock_ctrl;
 	unsigned int                 module;
 	unsigned long flags; /* old: unsigned int flags;*//* FIX to avoid build warning */
-	int userKey =  -1;
-	struct DIP_REGISTER_USERKEY_STRUCT RegUserKey;
 	int i;
 
 	/*  */
@@ -2717,23 +2708,6 @@ static long DIP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	}
-	/*  */
-	case DIP_REGISTER_IRQ_USER_KEY:
-		if (copy_from_user(&RegUserKey, (void *)Param, sizeof(struct DIP_REGISTER_USERKEY_STRUCT)) == 0) {
-			userKey = DIP_REGISTER_IRQ_USERKEY(RegUserKey.userName);
-			RegUserKey.userKey = userKey;
-			if (copy_to_user((void *)Param, &RegUserKey, sizeof(struct DIP_REGISTER_USERKEY_STRUCT)) != 0)
-				LOG_ERR("copy_to_user failed\n");
-
-			if (RegUserKey.userKey < 0) {
-				LOG_ERR("query irq user key fail\n");
-				Ret = -1;
-			}
-		} else {
-			LOG_ERR("copy from user fail\n");
-		}
-
-		break;
 	/*  */
 	case DIP_FLUSH_IRQ_REQUEST:
 		if (copy_from_user(&IrqInfo, (void *)Param, sizeof(struct DIP_WAIT_IRQ_STRUCT)) == 0) {
@@ -3000,7 +2974,6 @@ static long DIP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case DIP_GET_DUMP_INFO:
 	case DIP_WAIT_IRQ:
 	case DIP_CLEAR_IRQ: /* structure (no pointer) */
-	case DIP_REGISTER_IRQ_USER_KEY:
 	case DIP_FLUSH_IRQ_REQUEST:
 	case DIP_P2_BUFQUE_CTRL:/* structure (no pointer) */
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
@@ -3626,8 +3599,10 @@ static signed int DIP_probe(struct platform_device *pDev)
 
 #ifdef CONFIG_PM_WAKELOCKS
 		wakeup_source_init(&dip_wake_lock, "dip_lock_wakelock");
+		wakeup_source_init(&isp_mdp_wake_lock, "isp_mdp_wakelock");
 #else
 		wake_lock_init(&dip_wake_lock, WAKE_LOCK_SUSPEND, "dip_lock_wakelock");
+		wake_lock_init(&isp_mdp_wake_lock, WAKE_LOCK_SUSPEND, "isp_mdp_wakelock");
 #endif
 
 		/* enqueue/dequeue control in ihalpipe wrapper */
@@ -4235,6 +4210,11 @@ int32_t DIP_MDPClockOnCallback(uint64_t engineFlag)
 {
 	/* LOG_DBG("DIP_MDPClockOnCallback"); */
 	/*LOG_DBG("+MDPEn:%d", G_u4DipEnClkCnt);*/
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_stay_awake(&isp_mdp_wake_lock);
+#else
+	wake_lock(&isp_mdp_wake_lock);
+#endif
 	DIP_EnableClock(MTRUE);
 
 	return 0;
@@ -4261,6 +4241,11 @@ int32_t DIP_MDPClockOffCallback(uint64_t engineFlag)
 {
 	/* LOG_DBG("DIP_MDPClockOffCallback"); */
 	DIP_EnableClock(MFALSE);
+#ifdef CONFIG_PM_WAKELOCKS
+	__pm_relax(&isp_mdp_wake_lock);
+#else
+	wake_unlock(&isp_mdp_wake_lock);
+#endif
 	/*LOG_DBG("-MDPEn:%d", G_u4DipEnClkCnt);*/
 	return 0;
 }

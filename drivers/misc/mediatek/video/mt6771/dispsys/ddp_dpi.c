@@ -244,7 +244,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 
 	DISPINFO("DISP/DPI,TVDPLL clock setting clk %d, clksrc: %d\n", clk_req, clksrc);
 
-	/* ddp_clk_prepare_enable(MUX_DPI0); */
+	ddp_clk_prepare_enable(MUX_DPI0);
 	ddp_clk_set_parent(MUX_DPI0, clksrc);
 
 	/* apmixed */
@@ -505,10 +505,6 @@ int ddp_dpi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 		ret += ddp_clk_disable_unprepare(DISP1_DPI_INTERFACE_CLOCK);
 		if (ret > 0)
 			DISPERR("DPI power manager API return FALSE\n");
-
-		ret += ddp_clk_disable_unprepare(MUX_DPI0);
-		if (ret > 0)
-			DISPERR("DPI power mux API return FALSE\n");
 
 		/* apmixed */
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");

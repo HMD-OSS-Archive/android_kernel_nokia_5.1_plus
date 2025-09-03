@@ -592,10 +592,6 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35521_HD_DSI_VDO_TRULY_NT50358)
 	&nt35521_hd_dsi_vdo_truly_nt50358_lcm_drv,
 #endif
-#if defined(NT35521_HD_DSI_VDO_TRULY_NT50358_HVGA)
-	&nt35521_hd_dsi_vdo_truly_nt50358_hvga_lcm_drv,
-#endif
-
 
 #if defined(NT35521_HD_DSI_VDO_TRULY_NT50358_FWVGA)
 	&nt35521_hd_dsi_vdo_truly_nt50358_fwvga_lcm_drv,
@@ -1001,6 +997,9 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&st7789h2_dbi_lcm_drv,
 #endif
 
+#if defined(NT71397_WUXGA_DSI_VDO_NT65902)
+	&nt71397_wuxga_dsi_vdo_nt65902_lcm_drv,
+#endif
 #if defined(CM_N070ICE_DSI_VDO_MT8173)
 	&cm_n070ice_dsi_vdo_mt8173_lcm_drv,
 #endif
@@ -1153,10 +1152,6 @@ LCM_DRIVER *lcm_driver_list[] = {
 
 #if defined(SSD2858_KD097D05_QXGA_DSI_VDO)
 	&ssd2858_kd097d05_qxga_dsi_vdo_lcm_drv,
-#endif
-
-#if defined(JD9365_PBT101WXB40I072_WXGA_BOE)
-	&jd9365_pbt101wxb40i072_wxga_boe_lcm_drv,
 #endif
 
 #if defined(ES6311_ANX6585_ZIGZAG_WXGA)

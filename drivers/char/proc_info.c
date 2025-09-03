@@ -103,6 +103,8 @@ static char fih_proc_test_result[FIH_PROC_SIZE] = {0};//HCLai add for memory tes
 #define FIH_MEM_MEM_ADDR 0x6400000
 #define FIH_MEM_MEM_SIZE 0x1400000
 
+extern unsigned int g_fih_panelid;
+
 struct st_fih_mem {
 	unsigned int head;
 	unsigned int mfr_id;
@@ -1310,37 +1312,37 @@ static int fqc_xml_path_show(struct seq_file *s, void *unused)
         {
 		if(0x4 == rf_id)
 		{
-			seq_printf(s, "%s\n", "system/etc/fqc_ds_PDC.xml");
-			printk("!!!!system/etc/fqc_ds_PDC.xml\n");
+			seq_printf(s, "%s\n", "vendor/etc/fqc_ds_PDC.xml");
+			printk("!!!!vendor/etc/fqc_ds_PDC.xml\n");
 		}
 		else if(0x3 == rf_id)
 	        {
-			seq_printf(s, "%s\n", "system/etc/fqc_ds_PDI.xml");
-			printk("!!!!system/etc/fqc_ds_PDI.xml\n");
+			seq_printf(s, "%s\n", "vendor/etc/fqc_ds_PDI.xml");
+			printk("!!!!vendor/etc/fqc_ds_PDI.xml\n");
 		}
 		else if((0x4 == project_id) && ((0x1 == rf_id) || (0x2 == rf_id)))
 		{
 			printk("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!fih_get_simslot=%d\n",fih_get_simslot());
 			if(1 == fih_get_simslot())
 			{
-				seq_printf(s, "%s\n", "system/etc/fqc_ss_PDA.xml");
-				printk("!!!!system/etc/fqc_ss_PDA.xml\n");
+				seq_printf(s, "%s\n", "vendor/etc/fqc_ss_PDA.xml");
+				printk("!!!!vendor/etc/fqc_ss_PDA.xml\n");
 			}
 			else if(2 == fih_get_simslot())
 			{
-				seq_printf(s, "%s\n", "system/etc/fqc_ds_PDA.xml");
-				printk("!!!!system/etc/fqc_ds_PDA.xml\n");
+				seq_printf(s, "%s\n", "vendor/etc/fqc_ds_PDA.xml");
+				printk("!!!!vendor/etc/fqc_ds_PDA.xml\n");
 			}
 		}
 		else if((0x5 == project_id) && ((0x1 == rf_id) || (0x2 == rf_id)))
 		{
-			seq_printf(s, "%s\n", "system/etc/fqc_ss_PDA.xml");
-			printk("!!!!system/etc/fqc_ss_PDA.xml\n");
+			seq_printf(s, "%s\n", "vendor/etc/fqc_ss_PDA.xml");
+			printk("!!!!vendor/etc/fqc_ss_PDA.xml\n");
 		}
 		else
 		{
 			printk("%s: SIM Number Check ERROR\n", __func__);
-			seq_printf(s, "%s\n", "system/etc/fqc_ds_PDA.xml");
+			seq_printf(s, "%s\n", "vendor/etc/fqc_ds_PDA.xml");
 		}
 	}
 	return 0;
@@ -1378,6 +1380,13 @@ static int fih_fs_curr_read_proc(struct seq_file *m, void *v)
 		seq_printf(m, "%d\n", 0);
 	else
 		seq_printf(m, "%d\n", 1);
+	return 0;
+}
+
+static int fih_panelid_read_proc(struct seq_file *m, void *v)
+{
+	seq_printf(m, "0x%08X\n", g_fih_panelid);
+
 	return 0;
 }
 
@@ -1750,6 +1759,11 @@ static ssize_t fih_fs_curr_proc_write(struct file *file, const char __user *buff
 	return count;
 }
 
+static int fih_panelid_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, fih_panelid_read_proc, NULL);
+}
+
 static int wifi_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, wifi_show, &inode->i_private);
@@ -2042,6 +2056,13 @@ static struct file_operations fs_curr_operations = {
 	.release = single_release
 };
 
+static struct file_operations panelid_operations = {
+	.open    = fih_panelid_proc_open,
+	.read    = seq_read,
+	.llseek  = seq_lseek,
+	.release = single_release
+};
+
 static const struct file_operations wifi_fops = {
         .open        = wifi_open,
         .write	     = wifi_write,
@@ -2080,7 +2101,7 @@ static int fs_get_hwid_num(void)
 	char hwid_num = 0;
 	char hwid_tag[FIH_HWID_TAG_SIZE] = {0};
 
-	printk("fs_get_hwid_num() fih_hwid=0X%x!!!!!!!!!!!!!!!!!!!!!!!!!00XGO...\n",fih_hwid);
+	printk("fs_get_hwid_num() fih_hwid=0X%x.\n",fih_hwid);
 
 	oldfs = get_fs();
 	set_fs(KERNEL_DS);
@@ -2092,30 +2113,30 @@ static int fs_get_hwid_num(void)
 		if(!IS_ERR(fdata_filp))
 		{
 
-//		fdata_filp->f_op->llseek(fdata_filp, 0, SEEK_SET);
+			//fdata_filp->f_op->llseek(fdata_filp, 0, SEEK_SET);
 
-//		fdata_filp->f_op->read(fdata_filp, hwid_tag, 13, &fdata_filp->f_pos);
+			//fdata_filp->f_op->read(fdata_filp, hwid_tag, 13, &fdata_filp->f_pos);
 			vfs_read(fdata_filp, (char __user *)hwid_tag, FIH_HWID_TAG_SIZE, &pos);
-			printk("fs_get_hwid_num() read hwid_tag OK!!!!!!!!!!!\n");
+			//printk("fs_get_hwid_num() read hwid_tag OK!\n");
 
 			if(0 == strncmp(hwid_tag, "FIH_HWID_INFO", strlen("FIH_HWID_INFO")))
 			{
 
-//			fdata_filp->f_op->llseek(fdata_filp, FIH_HWID_TAG_SIZE, SEEK_SET);
+				//fdata_filp->f_op->llseek(fdata_filp, FIH_HWID_TAG_SIZE, SEEK_SET);
 				pos=0+FIH_HWID_TAG_SIZE;
 				vfs_read(fdata_filp, (char __user *)&hwid_num, 1, &pos);
-//			fdata_filp->f_op->read(fdata_filp, &hwid_num, 1, &fdata_filp->f_pos);
+				//fdata_filp->f_op->read(fdata_filp, &hwid_num, 1, &fdata_filp->f_pos);
 
 				hwid_num = dec2hex_under100(hwid_num);
-				printk("fs_get_hwid_num() read hwid_num OK!!!!!!!!!!!\n");
+				//printk("fs_get_hwid_num() read hwid_num OK.\n");
 			}
 			else
 			{
 				hwid_num = 0;
-				printk("!!fs_get_hwid_num() check hwid_info failed! %x\n", IS_ERR(fdata_filp));
+				printk("fs_get_hwid_num() check hwid_info failed! (err=%x)\n", IS_ERR(fdata_filp));
 			}
 			filp_close(fdata_filp, NULL);
-			printk("fs_get_hwid_num() Read hwid_info Success!\n");
+			//printk("fs_get_hwid_num() Read hwid_info Success!\n");
 			break;
 		}
 		else
@@ -2148,7 +2169,7 @@ static void fs_read_hwid_info(char *temp, int offset, int size)
 		//fdata_filp->f_op->llseek(fdata_filp, offset, SEEK_SET);
 		//fdata_filp->f_op->read(fdata_filp, temp, size, &fdata_filp->f_pos);
 		vfs_read(fdata_filp, (char __user *)temp, size, &pos);
-		printk("fs_read_hwid_info read OK!!!!!!!\n");
+		//printk("fs_read_hwid_info read OK!!!!!!!\n");
 		filp_close(fdata_filp, NULL);
 		printk("fs_read_hwid_info() Read hwid_info Success!\n");
 	}
@@ -2175,7 +2196,7 @@ int fih_read_hwid_info(void *x)
 
 
 	fih_hwid_num = fs_get_hwid_num();
-	printk("!!!!fih_read_hwid_info() fih_hwid_num = %d\n", fih_hwid_num);
+	printk("fih_read_hwid_info() fih_hwid_num = %d\n", fih_hwid_num);
 
 	if(fih_hwid_num > 0)
 	{
@@ -2197,12 +2218,12 @@ int fih_read_hwid_info(void *x)
 
 		for(i = 0; i < fih_hwid_num; i++, hwid_info_tabel++)
 		{
-printk("1111fih_read_hwid_info() prj=%x phase=%x rf=%x\n",hwid_info_tabel->project_id,hwid_info_tabel->phase_id,hwid_info_tabel->module_id);
+			//printk("fih_read_hwid_info() prj=%x phase=%x rf=%x\n",hwid_info_tabel->project_id,hwid_info_tabel->phase_id,hwid_info_tabel->module_id);
 
 			if((hwid_info_tabel->project_id == hw_project) &&
 				(hwid_info_tabel->phase_id == hw_phase) && (hwid_info_tabel->module_id == hw_module))
 			{
-printk("fih_read_hwid_info() prj=%x phase=%x rf=%x\n",hwid_info_tabel->project_id,hwid_info_tabel->phase_id,hwid_info_tabel->module_id);
+				printk("fih_read_hwid_info() prj=%x phase=%x rf=%x\n",hwid_info_tabel->project_id,hwid_info_tabel->phase_id,hwid_info_tabel->module_id);
 
 				strcpy(model[hw_project].model_name, hwid_info_tabel->project_name);
 				strcpy(model[hw_project].cpu_name, hwid_info_tabel->cpu_name);
@@ -2423,6 +2444,13 @@ static int __init proc_info_module_init(void)
 		pr_err("\n\nUnable to create /proc/%s", LCM0_FS_CURR);
 	}
 	pr_debug("\n\n*** [LCM] %s, succeed to create proc/%s ***\n\n", __func__, LCM0_FS_CURR);
+
+	entry = proc_create(LCM0_PANELID, 0, lcm0_dir, &panelid_operations);
+	if (entry == NULL)
+	{
+		pr_err("\n\nUnable to create /proc/%s", LCM0_PANELID);
+	}
+	pr_debug("\n\n*** [LCM] %s, succeed to create proc/%s ***\n\n", __func__, LCM0_PANELID);
 
 	entry = proc_create(WIFI_MAC, 0777, NULL, &wifi_fops);
 	if(entry == NULL)

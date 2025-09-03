@@ -91,7 +91,6 @@ struct wakeup_source ccu_wake_lock;
 #else
 struct wake_lock ccu_wake_lock;
 #endif
-static volatile int g_bWaitLock;
 
 static irqreturn_t ccu_isr_callback_xxx(int rrq, void *device_id);
 
@@ -823,7 +822,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 			return ccu_read_info_reg(regToRead);
 		}
 	default:
-		LOG_WRN("ioctl:No such command!\n");
+		LOG_WRN("ioctl:No such command: %d!\n", cmd);
 		ret = -EINVAL;
 		break;
 	}

@@ -26,7 +26,10 @@
 
 	/* chosen */
 	chosen: chosen {
-		bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram";
+		bootargs = "console=tty0 console=ttyMT3,921600n1 \
+vmalloc=496M slub_max_order=0 slub_debug=OFZPU \
+androidboot.hardware=mt6763 maxcpus=8 \
+firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	chipid@08000000 {
@@ -98,6 +101,9 @@
 		compatible = "microtrust,utos";
 		interrupts = <GIC_SPI 272 IRQ_TYPE_EDGE_RISING>,
 			<GIC_SPI 273 IRQ_TYPE_EDGE_RISING>;
+	};
+	utos_tester {
+		compatible = "microtrust,tester-v1";
 	};
 
 	cpus {
@@ -371,9 +377,13 @@
 			alignment = <0 0x200000>;
 			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
-
-#ifdef CONFIG_WATCHDATA_TEE_SUPPORT
-#include "watchtrust.dtsi"
+#ifdef CONFIG_MICROTRUST_TEE_SUPPORT
+		soter-shared-mem {
+			compatible = "microtrust,shared_mem";
+			no-map;
+			size = <0 0x200000>;
+			alloc-ranges = <0 0x40000000 0 0x50000000>;
+		};
 #endif
 
 	};
@@ -1252,7 +1262,7 @@
 		uart = <&apuart0>;
 		sram_share_cnt = <1>;
 		sram_share_engine = <11>;
-		sram_share_event = <480>;
+		sram_share_event = <710>;
 		clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>, <&infracfg_ao INFRACFG_AO_GCE_26M_CG>;
 		clock-names = "GCE", "GCE_TIMER";
 	};
@@ -3747,7 +3757,7 @@
 		ac_charger_current = <2050000>;
 		ac_charger_input_current = <3200000>;
 		non_std_ac_charger_current = <500000>;
-		charging_host_charger_current = <500000>;
+		charging_host_charger_current = <1500000>;
 		apple_1_0a_charger_current = <650000>;
 		apple_2_1a_charger_current = <800000>;
 		ta_ac_charger_current = <3000000>;
@@ -3847,7 +3857,7 @@
 			compatible = "android,firmware";
 			fstab {
 				compatible = "android,fstab";
-#ifndef CONFIG_MTK_AB_OTA_UPDATER
+#if !defined(CONFIG_SYSTEM_AS_ROOT) && !defined(CONFIG_MTK_AB_OTA_UPDATER)
 				system {
 					compatible = "android,system";
 					dev = "/dev/block/platform/bootdevice/by-name/system";
@@ -3910,22 +3920,15 @@
 
 &ufshci {
 	pinctrl-names =
-			"default",
 			"state_va09_on",
 			"state_va09_off";
 
-	pinctrl-0 = <&ufshci_pins_default>;
-	pinctrl-1 = <&ufshci_pins_state_va09_on>;
-	pinctrl-2 = <&ufshci_pins_state_va09_off>;
+	pinctrl-0 = <&ufshci_pins_state_va09_on>;
+	pinctrl-1 = <&ufshci_pins_state_va09_off>;
 	status = "okay";
 };
 
 &pio {
-	ufshci_pins_default: ufshci_default {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO131__FUNC_GPIO131>;
-		};
-	};
 	ufshci_pins_state_va09_on: ufshci_va09on {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO131__FUNC_GPIO131>;

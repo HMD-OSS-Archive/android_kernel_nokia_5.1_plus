@@ -55,10 +55,6 @@ __weak void aee_oops_set_process_path(struct aee_oops *oops, const char *process
 {
 }
 
-__weak void aee_oops_free(struct aee_oops *oops)
-{
-}
-
 __weak void aee_kernel_exception_api(const char *file, const int line, const int db_opt,
 				     const char *module, const char *msg, ...)
 {
@@ -105,6 +101,12 @@ __weak void aed_combo_exception_api(const int *log, int log_size, const int *phy
 {
 }
 EXPORT_SYMBOL(aed_combo_exception_api);
+
+__weak void aed_common_exception_api(const char *assert_type, const int *log, int log_size,
+				const int *phy, int phy_size, const char *detail, const int db_opt)
+{
+}
+EXPORT_SYMBOL(aed_common_exception_api);
 
 __weak void mt_fiq_printf(const char *fmt, ...)
 {
@@ -204,15 +206,6 @@ __weak void dram_console_done(struct proc_dir_entry *aed_proc_dir)
 
 #ifndef CONFIG_MTK_AEE_IPANIC
 __weak void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cpu)
-{
-}
-
-__weak struct aee_oops *ipanic_oops_copy(void)
-{
-	return NULL;
-}
-
-__weak void ipanic_oops_free(struct aee_oops *oops, int erase)
 {
 }
 

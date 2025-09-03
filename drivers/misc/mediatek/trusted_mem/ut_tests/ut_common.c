@@ -246,7 +246,7 @@ static int get_max_pool_size(enum TRUSTED_MEM_TYPE mem_type)
 	case TRUSTED_MEM_SVP:
 		return SIZE_256M;
 	case TRUSTED_MEM_PROT:
-		return SIZE_320M;
+		return SIZE_128M;
 	case TRUSTED_MEM_WFD:
 		return SIZE_64M;
 	case TRUSTED_MEM_SVP_VIRT_2D_FR:
@@ -283,6 +283,14 @@ enum UT_RET_STATE mem_handle_list_deinit(void)
 	return UT_STATE_PASS;
 }
 
+static u32 get_saturation_test_min_chunk_size(enum TRUSTED_MEM_TYPE mem_type)
+{
+	if (mem_type == TRUSTED_MEM_PROT)
+		return get_saturation_stress_pmem_min_chunk_size();
+
+	return tmem_core_get_min_chunk_size(mem_type);
+}
+
 static enum UT_RET_STATE
 mem_alloc_saturation_variant(enum TRUSTED_MEM_TYPE mem_type, u8 *mem_owner,
 			     bool align, bool clean)
@@ -293,7 +301,7 @@ mem_alloc_saturation_variant(enum TRUSTED_MEM_TYPE mem_type, u8 *mem_owner,
 	u32 one_more_handle;
 	int max_pool_size = get_max_pool_size(mem_type);
 	int max_items;
-	u32 min_chunk_sz = tmem_core_get_min_chunk_size(mem_type);
+	u32 min_chunk_sz = get_saturation_test_min_chunk_size(mem_type);
 
 	for (chunk_size = min_chunk_sz; chunk_size <= SIZE_16M;
 	     chunk_size *= 2) {
@@ -509,8 +517,9 @@ enum UT_RET_STATE mem_region_on_off_stress_test(enum TRUSTED_MEM_TYPE mem_type,
 }
 
 #define MEM_SPAWN_THREAD_COUNT (8)
+#define MEM_THREAD_NAME_LEN (32)
 struct mem_thread_param {
-	char name[32];
+	char name[MEM_THREAD_NAME_LEN];
 	int alloc_chunk_size;
 	int alloc_total_size;
 	u32 *handle_list;
@@ -521,8 +530,7 @@ struct mem_thread_param {
 };
 static struct mem_thread_param thread_param[TRUSTED_MEM_MAX]
 					   [MEM_SPAWN_THREAD_COUNT];
-static struct task_struct
-	*mem_kthread[TRUSTED_MEM_MAX][MEM_SPAWN_THREAD_COUNT] = {NULL};
+static struct task_struct *mem_kthread[TRUSTED_MEM_MAX][MEM_SPAWN_THREAD_COUNT];
 
 static int mem_thread_alloc_test(void *data)
 {
@@ -567,8 +575,8 @@ static enum UT_RET_STATE mem_create_run_thread(enum TRUSTED_MEM_TYPE mem_type)
 	for (idx = 0; idx < MEM_SPAWN_THREAD_COUNT; idx++) {
 		memset(&thread_param[mem_type][idx], 0x0,
 		       sizeof(struct mem_thread_param));
-		sprintf(thread_param[mem_type][idx].name, "mem%d_thread_%d",
-			mem_type, idx);
+		snprintf(thread_param[mem_type][idx].name, MEM_THREAD_NAME_LEN,
+			 "mem%d_thread_%d", mem_type, idx);
 		thread_param[mem_type][idx].mem_type = mem_type;
 		thread_param[mem_type][idx].alloc_chunk_size = min_alloc_sz;
 		thread_param[mem_type][idx].alloc_total_size = SIZE_8M;

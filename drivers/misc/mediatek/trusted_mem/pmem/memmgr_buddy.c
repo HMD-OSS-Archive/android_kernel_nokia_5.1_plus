@@ -187,10 +187,16 @@ static int get_blk_number(u64 region_start, u64 current_pa, u32 blk_size)
 
 static u32 get_ordered_size(u32 size)
 {
+	int order;
+
 	if (size < MIN_BUDDY_BLOCK_SIZE)
 		return MIN_BUDDY_BLOCK_SIZE;
 
-	return ORDER_SIZE(get_blk_order(size));
+	order = get_blk_order(size);
+	if (order < 0)
+		return ORDER_SIZE(0);
+
+	return ORDER_SIZE(order);
 }
 
 /* lock must be hold before entering */
@@ -269,8 +275,8 @@ static struct Block *get_buddy_removed_by_area(int area_num)
 		return NULL;
 	}
 
-	list_for_each_entry_safe(buddy, tmp,
-				 &memmgr_ctrl_info.areas[area_num].list, list) {
+	list_for_each_entry_safe(
+		buddy, tmp, &memmgr_ctrl_info.areas[area_num].list, list) {
 		break; /* find the first entry */
 	}
 
@@ -401,8 +407,12 @@ static int try_buddy_merge(struct Block *free_buddy)
 	}
 
 	src_order = get_blk_order(free_buddy->size);
-	src_buddy = free_buddy;
+	if (src_order < 0) {
+		pr_err("%s:%d invalid block order\n", __func__, __LINE__);
+		return TMEM_GENERAL_ERROR;
+	}
 
+	src_buddy = free_buddy;
 	pr_debug("search order from %d to %d, start sz:0x%x\n", src_order,
 		 MAX_ORDER_NUM - 1, free_buddy->size);
 
@@ -488,8 +498,12 @@ static int try_buddy_merge(struct Block *free_buddy)
 
 	/* insert source buddy to area */
 	target_merge_in_area = get_blk_order(src_buddy->size);
-	add_buddy_to_area(src_buddy, target_merge_in_area);
+	if (target_merge_in_area < 0) {
+		pr_err("%s:%d invalid block order\n", __func__, __LINE__);
+		return TMEM_GENERAL_ERROR;
+	}
 
+	add_buddy_to_area(src_buddy, target_merge_in_area);
 	return TMEM_OK;
 }
 
@@ -855,7 +869,7 @@ static struct UT_Handle *get_ut_handle_removed(void)
 	}
 
 	list_for_each_entry_safe(ut_handle, tmp, &g_stress_handle_list.list,
-				 list) {
+				  list) {
 		list_del(&ut_handle->list);
 		/* get the first entry */
 		break;
@@ -886,7 +900,7 @@ static enum UT_RET_STATE memmgr_ut_deinit(struct ut_params *params)
 	UNUSED(params);
 
 	list_for_each_entry_safe(handle, tmp, &g_stress_handle_list.list,
-							 list) {
+				  list) {
 		list_del(&handle->list);
 		mld_kfree(handle);
 	}

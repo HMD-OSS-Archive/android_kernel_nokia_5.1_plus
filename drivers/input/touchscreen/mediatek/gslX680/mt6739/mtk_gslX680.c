@@ -191,10 +191,6 @@ static int tpd_calmat_local[8]     = TPD_CALIBRATION_MATRIX;
 static int tpd_def_calmat_local[8] = TPD_CALIBRATION_MATRIX;
 #endif
 
-static int tpd_really_suspend(struct device *h);
-static int tpd_really_resume(struct device *h);
-static SIMPLE_DEV_PM_OPS(gslX680_pm_ops, tpd_really_suspend, tpd_really_resume);
-
 #ifdef CONFIG_MTK_I2C_EXTENSION
 #ifdef GSLTP_ENABLE_I2C_DMA
 static int msg_dma_alloc(void)
@@ -1590,7 +1586,6 @@ struct i2c_driver tpd_i2c_driver = {
 	#ifndef ADD_I2C_DEVICE_ANDROID_4_0
 		.owner = THIS_MODULE,
 	#endif
-		.pm = &gslX680_pm_ops,
 	},
 	.probe = tpd_i2c_probe,
 	.remove = tpd_i2c_remove,
@@ -1652,36 +1647,45 @@ int tpd_local_init(void)
 	return 0;
 }
 
+/* Function to manage low power suspend */
 static void tpd_suspend(struct device *h)
 {
-	/* do noting when screen off */
-}
-
-static void tpd_resume(struct device *h)
-{
-	/* do noting when screen on */
-}
-
-static int tpd_really_suspend(struct device *h)
-{
+	if (tpd_halt == 1) {
+		pr_info("gslX680 already in suspended status\n");
+		return;
+	}
 	GSL_LOGF();
 
-	tpd_halt = 1;
-	disable_irq(touch_irq);
 #ifdef GSL_MONITOR
 	GSL_LOGD("gsl_ts_suspend () : cancel gsl_monitor_work\n");
 	cancel_delayed_work_sync(&gsl_monitor_work);
 #endif
 	tpd_gpio_output(GTP_RST_PORT, 0);
 	msleep(20);
+/*
+* #ifdef GREEN_MODE
+*	tpd_gpio_output(GTP_RST_PORT, 0);
+*	msleep(20);
+*	tpd_gpio_output(GTP_RST_PORT, 1);
+*	msleep(8);
+*	green_mode(i2c_client, MODE_OFF);
+*	check_mem_data(i2c_client);
+* #endif
+*	tpd_gpio_output(GTP_RST_PORT, 0);
+ */
+	disable_irq(touch_irq);
+	tpd_halt = 1;
 
 	GSL_LOGD("tpd_suspend is ok.");
-
-	return 0;
 }
 
-static int tpd_really_resume(struct device *h)
+/* Function to manage power-on resume */
+static void tpd_resume(struct device *h)
 {
+	if (tpd_halt == 0) {
+		pr_info("gslX680 already in resumed status\n");
+		return;
+	}
 	GSL_LOGF();
 
 	tpd_gpio_output(GTP_RST_PORT, 1);
@@ -1689,7 +1693,13 @@ static int tpd_really_resume(struct device *h)
 
 	reset_chip(i2c_client);
 	startup_chip(i2c_client);
-
+	check_mem_data(i2c_client);
+/*
+* check_mem_data(i2c_client);
+* #ifdef GREEN_MODE
+* green_mode(i2c_client, MODE_ON);
+* #endif
+ */
 #if defined(GSL_MONITOR)
 	GSL_LOGD("gsl_ts_resume () : queue gsl_monitor_work\n");
 	queue_delayed_work(gsl_monitor_workqueue, &gsl_monitor_work, MONITOR_CYCLE_IDLE);
@@ -1697,8 +1707,6 @@ static int tpd_really_resume(struct device *h)
 	enable_irq(touch_irq);
 	tpd_halt = 0;
 	GSL_LOGD("tpd_resume is ok.");
-
-	return 0;
 }
 
 static struct tpd_driver_t tpd_device_driver = {

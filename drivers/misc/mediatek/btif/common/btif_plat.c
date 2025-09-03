@@ -1157,7 +1157,9 @@ int hal_btif_dump_reg(P_MTK_BTIF_INFO_STR p_btif, ENUM_BTIF_REG_ID flag)
 		return i_ret;
 	}
 #endif
+#ifdef CONFIG_MTK_GIC_V3_EXT
 	mt_irq_dump_status(p_btif->p_irq->irq_id);
+#endif
 
 	lsr = BTIF_READ32(BTIF_LSR(base));
 	dma_en = BTIF_READ32(BTIF_DMA_EN(base));
@@ -1174,16 +1176,10 @@ int hal_btif_dump_reg(P_MTK_BTIF_INFO_STR p_btif, ENUM_BTIF_REG_ID flag)
 		btif_dump_array("BTIF register", reg_map, sizeof(reg_map));
 		break;
 	case REG_IRQ:
-		btif_reg_sync_writeb(BTIF_FAKELCR_DEBUG_MODE, BTIF_FAKELCR(base));
-		BTIF_INFO_FUNC("THR:0x%x,IER:0x%x,IIR:0x%x,LSR:0x%x,RTOCNT:0x%x,TRI_LVL:0x%x,WAT_TIME:0x%x\n",
-			       BTIF_READ32(BTIF_THR(base)),
+		BTIF_INFO_FUNC("IER:0x%x, IIR:0x%x, LSR:0x%x\n",
 			       BTIF_READ32(BTIF_IER(base)),
 			       BTIF_READ32(BTIF_IIR(base)),
-			       lsr,
-			       BTIF_READ32(BTIF_RTOCNT(base)),
-			       BTIF_READ32(BTIF_TRI_LVL(base)),
-			       BTIF_READ32(BTIF_WAT_TIME(base)));
-		btif_reg_sync_writeb(BTIF_FAKELCR_NORMAL_MODE, BTIF_FAKELCR(base));
+			       lsr);
 		break;
 	default:
 		break;

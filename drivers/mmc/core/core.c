@@ -425,6 +425,9 @@ static int mmc_check_write(struct mmc_host *host, struct mmc_request *mrq)
 	return ret;
 }
 
+/* Sleep when polling cmd13' for over 1ms */
+#define CMD13_TMO_NS (1000 * 1000)
+
 int mmc_run_queue_thread(void *data)
 {
 	struct mmc_host *host = data;
@@ -434,16 +437,21 @@ int mmc_run_queue_thread(void *data)
 	unsigned int task_id, areq_cnt_chk, tmo;
 	bool is_err = false;
 	bool is_done = false;
-	bool io_boost_done = false;
 
 	int err;
+	u64 chk_time = 0;
+	struct sched_param scheduler_params = {0};
+
+	/* Set as RT priority */
+	scheduler_params.sched_priority = 1;
+	sched_setscheduler(current, SCHED_FIFO, &scheduler_params);
 
 	pr_err("[CQ] start cmdq thread\n");
 	mt_bio_queue_alloc(current, NULL);
-	while (1) {
 
-		mtk_io_boost_test_and_add_tid(current->pid,
-			&io_boost_done);
+	mtk_iobst_register_tid(current->pid);
+
+	while (1) {
 
 		set_current_state(TASK_RUNNING);
 		mt_biolog_cmdq_check();
@@ -457,24 +465,22 @@ int mmc_run_queue_thread(void *data)
 		}
 		if (done_mrq) {
 			if (done_mrq->data->error || done_mrq->cmd->error) {
-				/* reset eMMC for data timeout case */
-				if (done_mrq->data->error == (unsigned int)-ETIMEDOUT) {
-					mmc_reset_cq(host);
-				} else {
+				mmc_wait_tran(host);
+				if (!is_err) {
+					is_err = true;
+					mmc_discard_cmdq(host);
 					mmc_wait_tran(host);
-					if (!is_err) {
-						is_err = true;
-						mmc_discard_cmdq(host);
-						mmc_wait_tran(host);
-						mmc_clr_dat_list(host);
-						atomic_set(&host->cq_rdy_cnt, 0);
-					}
+					mmc_clr_dat_list(host);
+					atomic_set(&host->cq_rdy_cnt, 0);
+				}
 
-					if (host->ops->execute_tuning) {
-						err = host->ops->execute_tuning(host, MMC_SEND_TUNING_BLOCK_HS200);
-						pr_notice("%s: tuning err: %d\n",
-							mmc_hostname(host), err);
-					}
+				if (host->ops->execute_tuning) {
+					err = host->ops->execute_tuning(host, MMC_SEND_TUNING_BLOCK_HS200);
+					pr_notice("%s: tuning err: %d\n",
+						mmc_hostname(host), err);
+					/* reset device if tune fail */
+					if (err && mmc_reset_for_cmdq(host))
+						pr_notice("[CQ] reinit fail\n");
 				}
 
 				host->cur_rw_task = 99;
@@ -595,12 +601,27 @@ int mmc_run_queue_thread(void *data)
 					atomic_read(&host->cq_wait_rdy),
 					atomic_read(&host->cq_rdy_cnt));
 			}
+			/* DMA time should not count in polling time */
+			chk_time = 0;
 		}
 
 		/* Send Command 13' */
 		if (atomic_read(&host->cq_wait_rdy) > 0
-			&& atomic_read(&host->cq_rdy_cnt) == 0)
+			&& atomic_read(&host->cq_rdy_cnt) == 0) {
+			if (!chk_time)
+				/* set check time */
+				chk_time = sched_clock();
+
+			/* send cmd13' */
 			mmc_do_check(host);
+
+			if (atomic_read(&host->cq_rdy_cnt))
+				/* clear when got ready task */
+				chk_time = 0;
+			else if (sched_clock() - chk_time > CMD13_TMO_NS)
+				/* sleep when TMO */
+				usleep_range(2000, 5000);
+		}
 
 		/* Sleep when nothing to do */
 		mt_biolog_cmdq_check();
@@ -888,9 +909,10 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
 				completion = ktime_get();
 				delta_us = ktime_us_delta(completion,
 							  mrq->io_start);
-				blk_update_latency_hist(&host->io_lat_s,
-					(mrq->data->flags & MMC_DATA_READ),
-					delta_us);
+				blk_update_latency_hist(
+					(mrq->data->flags & MMC_DATA_READ) ?
+					&host->io_lat_read :
+					&host->io_lat_write, delta_us);
 			}
 #endif
 			trace_mmc_blk_rw_end(cmd->opcode, cmd->arg, mrq->data);
@@ -3638,6 +3660,14 @@ int mmc_pm_notify(struct notifier_block *notify_block,
 		if (!err)
 			break;
 
+		if (!mmc_card_is_removable(host)) {
+			dev_warn(mmc_dev(host),
+				 "pre_suspend failed for non-removable host: "
+				 "%d\n", err);
+			/* Avoid removing non-removable hosts */
+			break;
+		}
+
 		/* Calling bus_ops->remove() with a claimed host can deadlock */
 		host->bus_ops->remove(host);
 		mmc_claim_host(host);
@@ -3732,8 +3762,14 @@ static ssize_t
 latency_hist_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct mmc_host *host = cls_dev_to_mmc_host(dev);
+	size_t written_bytes;
 
-	return blk_latency_hist_show(&host->io_lat_s, buf);
+	written_bytes = blk_latency_hist_show("Read", &host->io_lat_read,
+			buf, PAGE_SIZE);
+	written_bytes += blk_latency_hist_show("Write", &host->io_lat_write,
+			buf + written_bytes, PAGE_SIZE - written_bytes);
+
+	return written_bytes;
 }
 
 /*
@@ -3751,9 +3787,10 @@ latency_hist_store(struct device *dev, struct device_attribute *attr,
 
 	if (kstrtol(buf, 0, &value))
 		return -EINVAL;
-	if (value == BLK_IO_LAT_HIST_ZERO)
-		blk_zero_latency_hist(&host->io_lat_s);
-	else if (value == BLK_IO_LAT_HIST_ENABLE ||
+	if (value == BLK_IO_LAT_HIST_ZERO) {
+		memset(&host->io_lat_read, 0, sizeof(host->io_lat_read));
+		memset(&host->io_lat_write, 0, sizeof(host->io_lat_write));
+	} else if (value == BLK_IO_LAT_HIST_ENABLE ||
 		 value == BLK_IO_LAT_HIST_DISABLE)
 		host->latency_hist_enabled = value;
 	return count;

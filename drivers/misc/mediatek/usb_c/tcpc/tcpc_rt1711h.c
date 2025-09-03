@@ -942,7 +942,7 @@ static int rt1711_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
 static int rt1711_enable_vsafe0v_detect(
 	struct tcpc_device *tcpc, bool enable)
 {
-	int ret = rt1711_i2c_read8(tcpc, RT1711H_REG_RT_MASK);
+	int ret = rt1711_i2c_read8(tcpc, MT6370_REG_MT_MASK);
 
 	if (ret < 0)
 		return ret;
@@ -952,7 +952,7 @@ static int rt1711_enable_vsafe0v_detect(
 	else
 		ret &= ~RT1711H_REG_M_VBUS_80;
 
-	rt1711_i2c_write8(tcpc, RT1711H_REG_RT_MASK, (uint8_t) ret);
+	mt6370_i2c_write8(tcpc, RT1711H_REG_RT_MASK, (uint8_t) ret);
 	return ret;
 }
 
@@ -1669,13 +1669,11 @@ static const struct dev_pm_ops rt1711_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(
 			rt1711_i2c_suspend,
 			rt1711_i2c_resume)
-#ifdef CONFIG_PM_RUNTIME
 	SET_RUNTIME_PM_OPS(
 		rt1711_pm_suspend_runtime,
 		rt1711_pm_resume_runtime,
 		NULL
 	)
-#endif /* CONFIG_PM_RUNTIME */
 };
 #define RT1711_PM_OPS	(&rt1711_pm_ops)
 #else

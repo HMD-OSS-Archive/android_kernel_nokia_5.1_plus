@@ -128,6 +128,42 @@ struct i2c_client * i2c_connect_client_nvt = NULL;
 // tpd_usb_status=1 --> charger plug in
 int tpd_usb_status = 0;
 
+/*******************************************************
+Description:
+	Novatek touchscreen irq enable/disable function.
+
+return:
+	n.a.
+*******************************************************/
+static void nvt_irq_enable(const char* caller_Fun, bool enable)///jx
+{
+	unsigned long flags;
+	struct irq_desc *desc;
+
+
+	spin_lock_irqsave(&ts->irq_lock, flags);
+	if (enable) {
+		if (!ts->irq_enabled) {
+			enable_irq(ts->client->irq);
+			ts->irq_enabled = true;
+			//NVT_LOG("[%s][%d]OK\n", caller_Fun, enable);
+		}else{
+			desc = irq_to_desc(ts->client->irq);//[20181115,jx]
+			NVT_ERR("[%s]set[%d],desc->depth = [%d] Double setting, Error!!!\n",caller_Fun ,enable ,desc->depth);	///jxAdd
+		}
+	} else {
+		if (ts->irq_enabled) {
+			disable_irq(ts->client->irq);
+			ts->irq_enabled = false;
+			//NVT_LOG("[%s][%d]OK\n", caller_Fun, enable);
+		}else{
+			desc = irq_to_desc(ts->client->irq);//[20181115,jx]
+			NVT_ERR("[%s]set[%d],desc->depth = [%d] Double setting, Error!!!\n",caller_Fun ,enable ,desc->depth);	///jxAdd
+		}
+	}
+	spin_unlock_irqrestore(&ts->irq_lock, flags);
+}
+
 #ifdef CONFIG_MTK_I2C_EXTENSION
 #if I2C_DMA_SUPPORT
 int32_t i2c_dma_read(struct i2c_client *client, uint16_t addr, uint8_t offset, uint8_t *rxbuf, uint16_t len)
@@ -1152,7 +1188,7 @@ static int touch_event_handler(void *unused)
 			input_id = (uint8_t)(point_data[1] >> 3);
 			nvt_ts_wakeup_gesture_report(input_id, point_data);
 //#endif
-			enable_irq(ts->client->irq);
+			nvt_irq_enable(__func__, true);//enable_irq(ts->client->irq);
 			mutex_unlock(&ts->lock);
 			NVT_LOG("return for interrupt after suspend...\n");
 			continue;
@@ -1249,7 +1285,7 @@ static int touch_event_handler(void *unused)
 		input_sync(ts->input_dev);
 
 XFER_ERROR:
-		enable_irq(ts->client->irq);
+		nvt_irq_enable(__func__, true);//enable_irq(ts->client->irq);
 
 		mutex_unlock(&ts->lock);
 
@@ -1267,8 +1303,25 @@ return:
 *******************************************************/
 static irqreturn_t nvt_ts_irq_handler(int32_t irq, void *dev_id)
 {
+#if 0
 	tpd_flag = 1;
 	disable_irq_nosync(ts->client->irq);
+#else//[20181105,jx]
+	unsigned long flags;
+
+	spin_lock_irqsave(&ts->irq_lock, flags);
+	if (!ts->irq_enabled) {
+		spin_unlock_irqrestore(&ts->irq_lock, flags);
+		return IRQ_HANDLED;
+	}
+
+	tpd_flag = 1;
+	disable_irq_nosync(ts->client->irq);
+	ts->irq_enabled = 0;
+	spin_unlock_irqrestore(&ts->irq_lock, flags);
+	
+		//NVT_LOG("%s[%d]\n", __func__, ts->irq_enabled);///jxAdd
+#endif
 	if (gdouble_tap_enable_nvt)
 	{
 //#if WAKEUP_GESTURE
@@ -1559,7 +1612,7 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	}
 
 	mutex_init(&ts->lock);
-
+	spin_lock_init(&ts->irq_lock);
 	mutex_lock(&ts->lock);
 	nvt_bootloader_reset();
 	nvt_check_fw_reset_state(RESET_STATE_INIT);
@@ -1623,12 +1676,13 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	ts->input_dev->phys = ts->phys;
 	ts->input_dev->id.bustype = BUS_I2C;
 
+	ts->irq_enabled = true;//add
 	ret = nvt_irq_registration();
 	if (ret != 0) {
 		NVT_ERR("request irq failed. ret=%d\n", ret);
 		goto err_int_request_failed;
 	} else {
-		disable_irq(client->irq);
+		nvt_irq_enable(__func__, false);//disable_irq(client->irq);
 		NVT_LOG("request irq %d succeed\n", client->irq);
 	}
 
@@ -1701,7 +1755,7 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	tpd_load_status = 1;
 	NVT_LOG("end\n");
 
-	enable_irq(client->irq);
+	nvt_irq_enable(__func__, true);//enable_irq(client->irq);
 
 	return 0;
 
@@ -1747,6 +1801,7 @@ static int32_t nvt_ts_remove(struct i2c_client *client)
 
 	NVT_LOG("Removing driver...\n");
 
+	nvt_irq_enable(__func__, false);//add
 	free_irq(client->irq, ts);
 	if (tpd->dev == NULL)
 		input_unregister_device(ts->input_dev);
@@ -1871,7 +1926,7 @@ static void nvt_ts_suspend(struct device *dev)
 	else
 	{
 //#else // WAKEUP_GESTURE
-	    disable_irq(ts->client->irq);
+	    nvt_irq_enable(__func__, false);//disable_irq(ts->client->irq);
 
 	    //---write i2c command to enter "deep sleep mode"---
 	    buf[0] = EVENT_MAP_HOST_CMD;
@@ -1940,7 +1995,7 @@ static void nvt_ts_resume(struct device *dev)
 	pr_debug("[HL]%s, %d: gdouble_tap_enable_nvt = %d\n", __func__, __LINE__, gdouble_tap_enable_nvt);
 	if (!gdouble_tap_enable_nvt)
 	{
-	enable_irq(ts->client->irq);
+	nvt_irq_enable(__func__, true);//enable_irq(ts->client->irq);
 	}
 //#endif
 

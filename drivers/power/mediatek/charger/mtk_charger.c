@@ -71,6 +71,7 @@
 #include <mt-plat/mtk_boot.h>
 #include <musb_core.h>
 #include <pmic.h>
+#include <mtk_gauge_time_service.h>
 
 static struct charger_manager *pinfo;
 static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
@@ -78,7 +79,19 @@ static DEFINE_MUTEX(consumer_mutex);
 
 #define USE_FG_TIMER 1
 
+bool is_power_path_supported(void)
+{
+	if (pinfo == NULL)
+		return false;
+
+	if (pinfo->data.power_path_support == true)
+		return true;
+
+	return false;
+}
+
 // for touch charging flag ----------------------------------------------------- st.
+
 #define	USB_PLUGOUT (0)
 #define	USB_PLUGIN	(1)
 
@@ -762,6 +775,7 @@ int charger_enable_vbus_ovp(struct charger_manager *pinfo, bool enable)
 bool is_typec_adapter(struct charger_manager *info)
 {
 	if (info->pd_type == PD_CONNECT_TYPEC_ONLY_SNK &&
+			tcpm_inquire_typec_remote_rp_curr(info->tcpc) != 500 &&
 			info->chr_type != STANDARD_HOST &&
 			info->chr_type != CHARGING_HOST &&
 			mtk_pe20_get_is_connect(info) == false &&
@@ -1105,7 +1119,7 @@ int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 	int tmp = 0;
 
 	if (strcmp(psy->desc->name, "battery") == 0) {
-		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_batt_temp, &val);
+		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_TEMP, &val);
 		if (!ret) {
 			tmp = val.intval / 10;
 			if (info->battery_temperature != tmp && mt_get_charger_type() != CHARGER_UNKNOWN) {
@@ -1122,8 +1136,6 @@ int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 
 void mtk_charger_int_handler(void)
 {
-	chr_err("mtk_charger_int_handler\n");
-
 	if (pinfo == NULL) {
 		chr_err("charger is not rdy ,skip1\n");
 		return;
@@ -1133,11 +1145,10 @@ void mtk_charger_int_handler(void)
 		chr_err("charger is not rdy ,skip2\n");
 		return;
 	}
-	chr_err("wake_up_charger\n");
 	_wake_up_charger(pinfo);
 }
 
-static int mtk_charger_plug_in(struct charger_manager *info, CHARGER_TYPE chr_type)
+static int mtk_charger_plug_in(struct charger_manager *info, enum charger_type chr_type)
 {
 	info->chr_type = chr_type;
 	info->charger_thread_polling = true;
@@ -1204,7 +1215,7 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 
 static bool mtk_is_charger_on(struct charger_manager *info)
 {
-	CHARGER_TYPE chr_type;
+	enum charger_type chr_type;
 
 	chr_type = mt_get_charger_type();
 	if (chr_type == CHARGER_UNKNOWN) {
@@ -1527,9 +1538,8 @@ void mtk_charger_stop_timer(struct charger_manager *info)
 static int charger_routine_thread(void *arg)
 {
 	struct charger_manager *info = arg;
-	static int i;
 	unsigned long flags;
-	bool curr_sign, is_charger_on;
+	bool is_charger_on;
 	int bat_current, chg_current;
 
 	while (1) {
@@ -1542,13 +1552,10 @@ static int charger_routine_thread(void *arg)
 		spin_unlock_irqrestore(&info->slock, flags);
 
 		info->charger_thread_timeout = false;
-		i++;
-		curr_sign = battery_get_bat_current_sign();
 		bat_current = battery_get_bat_current();
 		chg_current = pmic_get_charging_current();
 		chr_err("Vbat=%d,Ibat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d hv:%d pd:%d:%d\n",
-			battery_get_bat_voltage(),
-			curr_sign ? bat_current : -1 * bat_current, chg_current,
+			battery_get_bat_voltage(), bat_current, chg_current,
 			battery_get_vbus(), battery_get_bat_temperature(),
 			battery_get_bat_soc(), battery_get_bat_uisoc(),
 			mt_get_charger_type(), info->chr_type, info->enable_hv_charging,
@@ -2384,7 +2391,7 @@ static DEVICE_ATTR(Batt_ID_Volt, 0444, show_Batt_ID_Volt, NULL);
 static ssize_t show_Charger_Type(struct device *dev, struct device_attribute *attr,
 					char *buf)
 {
-	CHARGER_TYPE chr_type;
+	enum charger_type chr_type;
 	char *result;
 
 	chr_type = mt_get_charger_type();
@@ -2768,13 +2775,19 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb, unsigned long event,
 		break;
 
 		case PD_CONNECT_PE_READY_SNK:
-		case PD_CONNECT_PE_READY_SNK_PD30:
 			mutex_lock(&pinfo->charger_pd_lock);
 			chr_err("PD Notify fixe voltage ready\r\n");
-			//pinfo->pd_type = PD_CONNECT_PE_READY_SNK;
-			pinfo->pd_type = noti->pd_state.connected;
+			pinfo->pd_type = PD_CONNECT_PE_READY_SNK;
 			mutex_unlock(&pinfo->charger_pd_lock);
 		/* PD is ready */
+		break;
+
+		case PD_CONNECT_PE_READY_SNK_PD30:
+			mutex_lock(&pinfo->charger_pd_lock);
+			chr_err("PD Notify PD30 ready\r\n");
+			pinfo->pd_type = PD_CONNECT_PE_READY_SNK_PD30;
+			mutex_unlock(&pinfo->charger_pd_lock);
+		/* PD30 is ready */
 		break;
 
 		case PD_CONNECT_PE_READY_SNK_APDO:

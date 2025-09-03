@@ -24,7 +24,7 @@
 #include <linux/poll.h>
 #include <linux/spinlock.h>
 #include <linux/proc_fs.h>
-#include <linux/printk.h>
+#include <linux/delay.h>
 #include <asm/page.h>
 #include "gz-log.h"
 
@@ -254,6 +254,30 @@ static int gz_log_proc_init(void)
 	}
 
 	return 0;
+}
+
+int trusty_call_nop_std32(uint32_t type, uint64_t value)
+{
+	int ret;
+	uint32_t val_a = value;
+	uint32_t val_b = value >> 32;
+
+	dev_dbg(tls->trusty_dev, "%s\n", __func__);
+
+	ret = trusty_std_call32(tls->trusty_dev, SMC_SC_NOP, type, val_a, val_b);
+	while (ret == SM_ERR_NOP_INTERRUPTED || ret == SM_ERR_BUSY) {
+		if (ret == SM_ERR_BUSY) {
+			usleep_range(100, 500);
+			ret = trusty_std_call32(tls->trusty_dev, SMC_SC_NOP, type, val_a, val_b);
+		} else {
+			ret = trusty_std_call32(tls->trusty_dev, SMC_SC_NOP, 0, 0, 0);
+		}
+	}
+
+	if (ret != SM_ERR_NOP_DONE)
+		dev_info(tls->trusty_dev, "%s: SMC_SC_NOP failed %d", __func__, ret);
+
+	return ret;
 }
 
 /* get_gz_log_buffer was called in arch_initcall */

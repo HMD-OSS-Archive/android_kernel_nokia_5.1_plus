@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/hie.h>
 #ifdef CONFIG_MTK_HW_FDE
 #include "mtk_secure_api.h"
 #endif
@@ -47,15 +48,19 @@ static void msdc_disable_crypto(struct msdc_host *host)
 	MSDC_SET_BIT32(EMMC52_AES_SWST, EMMC52_AES_BYPASS);
 }
 
-static void msdc_crypto_switch_config(struct msdc_host *host, u32 block_address, u32 dir)
+static void msdc_crypto_switch_config(struct msdc_host *host,
+	struct request *req, u32 block_address, u32 dir)
 {
 	void __iomem *base = host->base;
 	u32 aes_mode_current = 0, aes_sw_reg = 0;
 	u32 ctr[4] = {0};
 	unsigned long polling_tmo = 0;
+	u64 hw_hie_iv_num = 0;
 
 	/* 1. set ctr */
 	aes_sw_reg = MSDC_READ32(EMMC52_AES_EN);
+
+	hw_hie_iv_num = hie_get_iv(req);
 
 	if (aes_sw_reg & EMMC52_AES_SWITCH_VALID0) {
 		MSDC_GET_FIELD(EMMC52_AES_CFG_GP0, EMMC52_AES_MODE_0, aes_mode_current);
@@ -71,14 +76,28 @@ static void msdc_crypto_switch_config(struct msdc_host *host, u32 block_address,
 	case MSDC_CRYPTO_XTS_AES:
 	case MSDC_CRYPTO_AES_CBC_ESSIV:
 	case MSDC_CRYPTO_BITLOCKER:
-		ctr[0] = block_address;
+	{
+		if (hw_hie_iv_num) {
+			ctr[0] = hw_hie_iv_num & 0xffffffff;
+			ctr[1] = (hw_hie_iv_num >> 32) & 0xffffffff;
+		} else {
+			ctr[0] = block_address;
+		}
 		break;
+	}
 	case MSDC_CRYPTO_AES_ECB:
 	case MSDC_CRYPTO_AES_CBC:
 		break;
 	case MSDC_CRYPTO_AES_CTR:
-		ctr[0] = block_address;
+	{
+		if (hw_hie_iv_num) {
+			ctr[0] = hw_hie_iv_num & 0xffffffff;
+			ctr[1] = (hw_hie_iv_num >> 32) & 0xffffffff;
+		} else {
+			ctr[0] = block_address;
+		}
 		break;
+	}
 	case MSDC_CRYPTO_AES_CBC_MAC:
 		break;
 	default:
@@ -202,13 +221,27 @@ check_hw_crypto:
 			}
 			if (dir == DMA_TO_DEVICE)
 				err = hie_encrypt(msdc_hie_get_dev(), mq_rq->req, host);
-		else
+			else
 				err = hie_decrypt(msdc_hie_get_dev(), mq_rq->req, host);
 			if (err) {
 				err = -EIO;
 				ERR_MSG("%s: fail in crypto hook, req: %p, err %d\n",
 					__func__, mq_rq->req, err);
 				WARN_ON(1);
+				return;
+			}
+			if (hie_is_nocrypt())
+				return;
+			if (hie_is_dummy()) {
+				struct mmc_data *data = cmd->data;
+
+				if (dir == DMA_TO_DEVICE &&
+				    msdc_use_async_dma(data->host_cookie)) {
+					dma_unmap_sg(mmc_dev(mmc), data->sg,
+						data->sg_len, dir);
+					dma_map_sg(mmc_dev(mmc), data->sg,
+						data->sg_len, dir);
+				}
 				return;
 			}
 		}
@@ -220,7 +253,7 @@ check_hw_crypto:
 		WARN_ON(host->dma.xfersz & 0xf);
 		/* Check data addressw with 16bytes alignment */
 		WARN_ON((host->dma.gpd_addr & 0xf) || (host->dma.bd_addr & 0xf));
-		msdc_crypto_switch_config(host, blk_addr, dir);
+		msdc_crypto_switch_config(host, mq_rq->req, blk_addr, dir);
 	}
 }
 

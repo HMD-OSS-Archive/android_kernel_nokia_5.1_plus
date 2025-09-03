@@ -17,7 +17,7 @@
 #include <asm/opcodes-virt.h>
 #include <asm/unwind.h>
 
-/*
+	/*
 	 * Wrap c macros in asm macros to delay expansion until after the
 	 * SMCCC asm macro is expanded.
 	 */

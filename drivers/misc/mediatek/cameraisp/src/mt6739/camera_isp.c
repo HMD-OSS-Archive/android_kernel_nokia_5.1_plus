@@ -94,7 +94,6 @@
 #define MyTag "[ISP]"
 #define IRQTag "KEEPER"
 
-#define LOG_VRB(format, args...)    pr_debug(MyTag format, ##args)
 
 #ifdef ISP_DEBUG
 #define LOG_DBG(format, args...)    pr_debug(MyTag format, ##args)
@@ -102,7 +101,7 @@
 #define LOG_DBG(format, args...)
 #endif
 
-#define LOG_INF(format, args...)         pr_debug(MyTag format,  ##args)
+#define LOG_INF(format, args...)         pr_info(MyTag format,  ##args)
 #define LOG_NOTICE(format, args...)      pr_notice(MyTag format,  ##args)
 #define LOG_PR_WARN(format, args...)     pr_warn(MyTag format,  ##args)
 #define LOG_PR_ERR(format, args...)      pr_err(MyTag format,  ##args)
@@ -747,17 +746,18 @@ static /*volatile*/ wait_queue_head_t WaitQueueHead_EDBuf_WaitFrame;
 static spinlock_t SpinLockEDBufQueList;
 #define _MAX_SUPPORT_P2_FRAME_NUM_ 512
 #define _MAX_SUPPORT_P2_BURSTQ_NUM_     4
-static signed int P2_Support_BurstQNum = 1;
+static signed int P2_Support_BurstQNum = 2;
 #define _MAX_SUPPORT_P2_PACKAGE_NUM_ \
 	(_MAX_SUPPORT_P2_FRAME_NUM_/_MAX_SUPPORT_P2_BURSTQ_NUM_)
 #define P2_EDBUF_MLIST_TAG 1
 #define P2_EDBUF_RLIST_TAG 2
 struct ISP_EDBUF_STRUCT {
 	unsigned int processID;     /* caller process ID */
-	unsigned int callerID;      /* caller thread     ID */
+	unsigned long callerID;      /* caller thread     ID */
 	/* p2 duplicate CQ index(for recognize belong to which package) */
 	signed int p2dupCQIdx;
 	enum ISP_ED_BUF_STATE_ENUM bufSts;  /* buffer status */
+	signed int p2Scenario;
 };
 static signed int P2_EDBUF_RList_FirstBufIdx;
 static signed int P2_EDBUF_RList_CurBufIdx;
@@ -766,13 +766,50 @@ static struct ISP_EDBUF_STRUCT P2_EDBUF_RingList[_MAX_SUPPORT_P2_FRAME_NUM_];
 
 struct ISP_EDBUF_MGR_STRUCT {
 	unsigned int processID;     /* caller process ID */
-	unsigned int callerID;      /* caller thread  ID */
+	unsigned long callerID;      /* caller thread  ID */
 	/* p2 duplicate CQ index(for recognize belong to     which package) */
 	signed int p2dupCQIdx;
 	signed int frameNum;
 	 /* number of dequed buffer no matter deque success or fail */
 	signed int dequedNum;
+	signed int p2Scenario;
 };
+
+static signed int compareRingBufNode(struct ISP_EDBUF_STRUCT ringBufNode,
+	struct ISP_ED_BUFQUE_STRUCT param)
+{
+	if ((ringBufNode.processID == param.processID) &&
+		 (ringBufNode.callerID == param.callerID) &&
+		 (ringBufNode.p2Scenario == param.p2Scenario)) {
+		return 1;
+	}
+	return 0;
+}
+
+static signed int compareMgrNode(struct ISP_EDBUF_MGR_STRUCT mgrNode,
+	struct ISP_ED_BUFQUE_STRUCT param)
+{
+	if ((mgrNode.processID == param.processID) &&
+		 (mgrNode.callerID == param.callerID) &&
+		 (mgrNode.p2dupCQIdx == param.p2dupCQIdx) &&
+		 (mgrNode.p2Scenario == param.p2Scenario) &&
+		 (mgrNode.dequedNum < mgrNode.frameNum)) {
+		return 1;
+	}
+	return 0;
+}
+
+static signed int compareMgrNodeLossely(struct ISP_EDBUF_MGR_STRUCT mgrNode,
+	struct ISP_ED_BUFQUE_STRUCT param)
+{
+	if ((mgrNode.processID == param.processID) &&
+		(mgrNode.callerID == param.callerID) &&
+		(mgrNode.p2Scenario == param.p2Scenario)) {
+		return 1;
+	}
+	return 0;
+}
+
 static signed int P2_EDBUF_MList_FirstBufIdx;
 /* static volatile signed int P2_EDBUF_MList_CurBufIdx=0;*/
 static signed int P2_EDBUF_MList_LastBufIdx;
@@ -792,7 +829,8 @@ static spinlock_t SpinLockMagNum;
 static unsigned int g_magQue[_camsv_max][ISP_RT_BUF_SIZE];
 /* g_magQIdx[][0]: write index, g_magQIdx[][1]: read index*/
 static unsigned int g_magQIdx[_camsv_max][2];
-
+/*MFALSE:HAL1 enque, configFrame, MTRUE:HAL3 immed enque, DmaCfg */
+static bool enqueImd[_camsv_max] = {MFALSE, MFALSE};
 /* maximum number for supporting user to do     interrupt operation  */
 /* index 0 is for all the user that     do not do register irq first */
 #define IRQ_USER_NUM_MAX 32
@@ -2687,11 +2725,47 @@ AF_EXIT:
 static signed int ISP_DumpReg(void)
 {
 	signed int Ret = 0;
+	union CQ_RTBC_FBC p1_fbc[4];
 	/*      */
 	LOG_PR_ERR("- E.");
 	/*      */
 	/* spin_lock_irqsave(&(IspInfo.SpinLock), flags); */
+	p1_fbc[0].Reg_val = ISP_RD32(ISP_REG_ADDR_IMGO_FBC);
+	p1_fbc[1].Reg_val = ISP_RD32(ISP_REG_ADDR_RRZO_FBC);
+	p1_fbc[2].Reg_val = ISP_RD32(ISP_REG_ADDR_IMGO_D_FBC);
+	p1_fbc[3].Reg_val = ISP_RD32(ISP_REG_ADDR_RRZO_D_FBC);
 
+	if (((pstRTBuf->ring_buf[_imgo_].active) && ((p1_fbc[0].Bits.FB_NUM - p1_fbc[0].Bits.FBC_CNT) == 0)) ||
+	((pstRTBuf->ring_buf[_rrzo_].active) && ((p1_fbc[1].Bits.FB_NUM - p1_fbc[1].Bits.FBC_CNT) == 0)) ||
+	((pstRTBuf->ring_buf[_imgo_d_].active) && ((p1_fbc[2].Bits.FB_NUM - p1_fbc[2].Bits.FBC_CNT) == 0)) ||
+	((pstRTBuf->ring_buf[_rrzo_d_].active) && ((p1_fbc[3].Bits.FB_NUM - p1_fbc[3].Bits.FBC_CNT) == 0))) {
+
+	LOG_PR_ERR("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X][0x%08X %08X],[0x%08X %08X],[0x%08X %08X]\n",
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4), (unsigned int)ISP_RD32(ISP_ADDR + 0x4),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x8), (unsigned int)ISP_RD32(ISP_ADDR + 0x8),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x10), (unsigned int)ISP_RD32(ISP_ADDR + 0x10),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x14), (unsigned int)ISP_RD32(ISP_ADDR + 0x14),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x70), (unsigned int)ISP_RD32(ISP_ADDR + 0x70),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x74), (unsigned int)ISP_RD32(ISP_ADDR + 0x74),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x78), (unsigned int)ISP_RD32(ISP_ADDR + 0x78));
+	LOG_PR_ERR("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X][0x%08X %08X],[0x%08X %08X],[0x%08X %08X]\n",
+		(unsigned int)(ISP_TPIPE_ADDR + 0x418), (unsigned int)ISP_RD32(ISP_ADDR + 0x418),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x41C), (unsigned int)ISP_RD32(ISP_ADDR + 0x41C),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x448), (unsigned int)ISP_RD32(ISP_ADDR + 0x448),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x44C), (unsigned int)ISP_RD32(ISP_ADDR + 0x44C),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x2418), (unsigned int)ISP_RD32(ISP_ADDR + 0x2418),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x241C), (unsigned int)ISP_RD32(ISP_ADDR + 0x241c),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x2448), (unsigned int)ISP_RD32(ISP_ADDR + 0x2448));
+	LOG_PR_ERR("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X][0x%08X %08X],[0x%08X %08X],[0x%08X %08X]\n",
+		(unsigned int)(ISP_TPIPE_ADDR + 0x244C), (unsigned int)ISP_RD32(ISP_ADDR + 0x244C),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4128), (unsigned int)ISP_RD32(ISP_ADDR + 0x4128),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4134), (unsigned int)ISP_RD32(ISP_ADDR + 0x4134),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x43B4), (unsigned int)ISP_RD32(ISP_ADDR + 0x43B4),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4528), (unsigned int)ISP_RD32(ISP_ADDR + 0x4528),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4534), (unsigned int)ISP_RD32(ISP_ADDR + 0x4534),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x47B4), (unsigned int)ISP_RD32(ISP_ADDR + 0x47B4));
+		goto EXIT_DumpReg;
+	}
 	/* tile tool parse range */
 	/* Joseph Hung (xa)#define ISP_ADDR_START  0x15004000 */
 	/* #define ISP_ADDR_END    0x15006000 */
@@ -3186,7 +3260,7 @@ static signed int ISP_DumpReg(void)
 		}
 	}
 #endif
-
+EXIT_DumpReg:
 	/* spin_unlock_irqrestore(&(IspInfo.SpinLock), flags); */
 	/*      */
 	LOG_PR_ERR("- X.");
@@ -3627,10 +3701,12 @@ static void ISP_BufWrite_Free(void)
 	for (i = 0; i < ISP_BUF_WRITE_AMOUNT; i++) {
 		IspInfo.BufInfo.Write[i].Status = ISP_BUF_STATUS_EMPTY;
 		IspInfo.BufInfo.Write[i].Size = 0;
+		spin_lock(&(IspInfo.SpinLockIspRef));
 		if (IspInfo.BufInfo.Write[i].pData != NULL) {
 			kfree(IspInfo.BufInfo.Write[i].pData);
 			IspInfo.BufInfo.Write[i].pData = NULL;
 		}
+		spin_unlock(&(IspInfo.SpinLockIspRef));
 	}
 }
 
@@ -3646,12 +3722,16 @@ static bool ISP_BufWrite_Alloc(void)
 
 	/*      */
 	for (i = 0; i < ISP_BUF_WRITE_AMOUNT; i++) {
+		spin_lock(&(IspInfo.SpinLockIspRef));
 		IspInfo.BufInfo.Write[i].Status = ISP_BUF_STATUS_EMPTY;
 		IspInfo.BufInfo.Write[i].Size = 0;
 		IspInfo.BufInfo.Write[i].pData =
 			kmalloc(ISP_BUF_SIZE_WRITE * sizeof(unsigned char), GFP_ATOMIC);
-		if (IspInfo.BufInfo.Write[i].pData == NULL) {
-			LOG_DBG("ERROR:	i =	%d,	pData is NULL", i);
+		if (IspInfo.BufInfo.Write[i].pData != NULL)
+			spin_unlock(&(IspInfo.SpinLockIspRef));
+		else {
+			spin_unlock(&(IspInfo.SpinLockIspRef));
+			LOG_DBG("ERROR:	i = %d, pData is NULL", i);
 			ISP_BufWrite_Free();
 			return false;
 		}
@@ -5136,6 +5216,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 									/*   base_vAddr); */
 									/* spin_lock_irqsave(*/
 									/*&(IspInfo.SpinLockIrq[irqT]), flags); */
+#if (HAL3_IPBASE == 1)
+				/* update vAddr for deciding which buffer had been changed to dummy frame. */
+					pstRTBuf->ring_buf[rt_dma].data[i].base_vAddr = rt_buf_info.base_vAddr;
+#endif
 						pstRTBuf->ring_buf[rt_dma].data[i].bFilled =
 										ISP_RTBC_BUF_EMPTY;
 						pstRTBuf->ring_buf[rt_dma].
@@ -5290,6 +5374,10 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 	/**/
 	} else {        /*     camsv case */
 		if (pstRTBuf->ring_buf[rt_dma].active == MTRUE) {
+			if (rt_dma == _camsv_imgo_)
+				enqueImd[_camsv_1] = MFALSE;
+			else if (rt_dma == _camsv2_imgo_)
+				enqueImd[_camsv_2] = MFALSE;
 			if (rt_buf_ctrl.ex_data_ptr != 0) {
 				if (((p1_fbc[rt_dma].Bits.FB_NUM - p1_fbc[rt_dma].Bits.FBC_CNT) == 0)
 					|| ((p1_fbc[rt_dma].Bits.FB_NUM - 1) ==
@@ -5354,10 +5442,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 
 					}
 				if (_bypass == MFALSE) {
-					if ((p1_fbc[rt_dma].Bits.FB_NUM ==
-							    p1_fbc[rt_dma].Bits.FBC_CNT) ||
-								((p1_fbc[rt_dma].Bits.FB_NUM - 1) ==
-								p1_fbc[rt_dma].Bits.FBC_CNT)) {
+					if (((p1_fbc[rt_dma].Bits.FB_NUM - p1_fbc[rt_dma].Bits.FBC_CNT) == 0) ||
+						((p1_fbc[rt_dma].Bits.FB_NUM - 1) == p1_fbc[rt_dma].Bits.FBC_CNT) ||
+						(rt_dma == _camsv_imgo_) || (rt_dma == _camsv2_imgo_)) {
 								/* write to     phy     register */
 								/* LOG_INF("[rtbc_%d][ENQUE] write2Phy*/
 								/*directly(%d,%d)",rt_dma,p1_fbc[rt_dma].Bits.*/
@@ -5383,41 +5470,37 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 								pstRTBuf->ring_buf[ch_rrzo].data[i].
 								base_pAddr);
 						}
-					if ((_camsv_imgo_ == rt_dma)
-							|| (_camsv2_imgo_ == rt_dma)) {
-						p1_fbc[rt_dma].Bits.RCNT_INC = 1;
-						ISP_WR32(p1_fbc_reg[rt_dma], p1_fbc[rt_dma].
-								 Reg_val);
-						p1_fbc[rt_dma].Bits.RCNT_INC = 0;
-						ISP_WR32(p1_fbc_reg[rt_dma], p1_fbc[rt_dma].
-								 Reg_val);
-								/**/
+			if ((_camsv_imgo_ == rt_dma) || (_camsv2_imgo_ == rt_dma)) {
+				if (rt_dma == _camsv_imgo_)
+					enqueImd[_camsv_1] = MTRUE;
+				else if (rt_dma == _camsv2_imgo_)
+					enqueImd[_camsv_2] = MTRUE;
+				p1_fbc[rt_dma].Bits.RCNT_INC = 1;
+				ISP_WR32(p1_fbc_reg[rt_dma], p1_fbc[rt_dma].Reg_val);
+				p1_fbc[rt_dma].Bits.RCNT_INC = 0;
+				ISP_WR32(p1_fbc_reg[rt_dma], p1_fbc[rt_dma].Reg_val);
+				IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG, " RCNT_INC(dma:0x%x)\n", rt_dma);
+				/**/
+			} else {
+				if (_openedDma == 1) {
+					p1_fbc[rt_dma].Bits.RCNT_INC = 1;
+					ISP_WR32(p1_fbc_reg[rt_dma], p1_fbc[rt_dma].Reg_val);
+					IRQ_LOG_KEEPER(irqT, 0,	_LOG_DBG, " RCNT_INC(dma:0x%x)\n", rt_dma);
+					/**/
 				} else {
-					if (_openedDma == 1) {
-						p1_fbc[rt_dma].Bits.RCNT_INC = 1;
-							ISP_WR32(p1_fbc_reg[rt_dma],
-							 p1_fbc[rt_dma].Reg_val);
-							IRQ_LOG_KEEPER(irqT, 0,
-								_LOG_DBG, " RCNT_INC(dma:0x%x)\n",
-								rt_dma);
-								/**/
-					} else {
-						p1_fbc[ch_imgo].Bits.RCNT_INC =	1;
-								ISP_WR32(p1_fbc_reg[ch_imgo],
-									p1_fbc[ch_imgo].Reg_val);
-								p1_fbc[ch_rrzo].Bits.RCNT_INC =	1;
-								ISP_WR32(p1_fbc_reg[ch_rrzo],
-								    p1_fbc[ch_rrzo].Reg_val);
-								IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG,
-									"	 RCNT_INC(dma:0x%x)",
-									ch_imgo);
-								IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG,
-									"	 RCNT_INC(dma:0x%x)\n",
-									ch_rrzo);
-						}
-						}
-					}
+					p1_fbc[ch_imgo].Bits.RCNT_INC =	1;
+					ISP_WR32(p1_fbc_reg[ch_imgo], p1_fbc[ch_imgo].Reg_val);
+					p1_fbc[ch_rrzo].Bits.RCNT_INC =	1;
+					ISP_WR32(p1_fbc_reg[ch_rrzo], p1_fbc[ch_rrzo].Reg_val);
+					IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG, "	 RCNT_INC(dma:0x%x)",
+						ch_imgo);
+					IRQ_LOG_KEEPER(irqT, 0, _LOG_DBG, "	 RCNT_INC(dma:0x%x)\n",
+						ch_rrzo);
 				}
+			}
+				/**/
+			}
+		}
 
 #else                           /* for rtbc 1.0 case */
 						/* if ( FB_NUM==FBC_CNT || (FB_NUM-1)==FBC_CNT  ) */
@@ -5607,6 +5690,8 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 						pstRTBuf->ring_buf[rt_dma].data[iBuf + i].dmaoCrop.w;
 					deque_buf.data[i].dmaoCrop.h =
 						pstRTBuf->ring_buf[rt_dma].data[iBuf + i].dmaoCrop.h;
+					deque_buf.data[i].bufIdx =
+						pstRTBuf->ring_buf[rt_dma].data[iBuf + i].bufIdx;
 
 #ifdef _MAGIC_NUM_ERR_HANDLING_
 
@@ -5629,7 +5714,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					    || (m_LastMNum[rt_dma] > _magic)) {
 
 					if ((_DUMMY_MAGIC_ & deque_buf.data[i].image.
-						m_num_0) == 0)
+						m_num_0) == 0) {
 						deque_buf.data[i].image.m_num_0 |=
 						_UNCERTAIN_MAGIC_NUM_FLAG_;
 						/*      */
@@ -5639,6 +5724,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 							       deque_buf.data[i].image.m_num_0,
 							       deque_buf.data[i].image.frm_cnt,
 							       m_LastMNum[rt_dma]);
+					}
 #ifdef T_STAMP_2_0
 					if (m_T_STAMP.fps > SlowMotion) {
 						/*      patch here is because of that uncertain should*/
@@ -5895,6 +5981,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				memset((char *)&g_magQIdx[_camsv_1], 0x0,
 					sizeof(unsigned int)*2);
 				g_firstCnt[_camsv_1] = 0;
+				enqueImd[_camsv_1] = MFALSE;
 				break;
 			case _camsv2_imgo_:
 				memset((char *)&g_magQue[_camsv_2], 0x0,
@@ -5902,6 +5989,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				memset((char *)&g_magQIdx[_camsv_2], 0x0,
 					sizeof(unsigned int)*2);
 				g_firstCnt[_camsv_2] = 0;
+				enqueImd[_camsv_2] = MFALSE;
 				break;
 			default:
 				LOG_PR_ERR("[rtbc][CLEAR]N.S.(%d)\n", rt_dma);
@@ -6610,9 +6698,14 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.h =
 				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_YSIZE) & 0x1FFF) + 1;
 			/* Use m_num_0 instead of phy magic num. */
-			/* For sync buffer with configFrame magic num, first 3 buffer: mag# 0. */
 			if (g_firstCnt[_camsv_1] < camsv_fbc.Bits.FB_NUM) {
-				pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 0;
+				if (enqueImd[_camsv_1] == MFALSE) {
+				/* For sync buffer with configFrame magic num in HAL1, first 3 buffer: mag# 0. */
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 0;
+				} else {
+				/* For sync buffer with DmaCfg magic num in HAL3, first 3 buffer: mag# 1. */
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 1;
+				}
 			} else {
 				unsigned int lastIdx = 0;
 
@@ -6622,16 +6715,26 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 					lastIdx = ISP_RT_BUF_SIZE - 1;
 				else
 					lastIdx = g_magQIdx[_camsv_1][1] - 1;
-				/* Choose current or last g_magQue because */
-				/* configFrame do not comes per-frame. */
-				if (g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]] >=
-					g_magQue[_camsv_1][lastIdx]) {
+
+				if (enqueImd[_camsv_1] == MFALSE) {
+					/* Choose current or last g_magQue because */
+					/* configFrame do not comes per-frame. */
+					if (g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]] >=
+						g_magQue[_camsv_1][lastIdx]) {
+						pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+							g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]];
+						g_magQIdx[_camsv_1][1]++;
+					} else {
+						pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+							g_magQue[_camsv_1][lastIdx];
+					}
+				} else {
+					/* HAL3 immed enque, magic number will be updated per-frame. */
 					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
 						g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]];
+					LOG_DBG("camsv SOF:Ridx(%d), mag(0x%x)", g_magQIdx[_camsv_1][1],
+						g_magQue[_camsv_1][g_magQIdx[_camsv_1][1]]);
 					g_magQIdx[_camsv_1][1]++;
-				} else {
-					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
-						g_magQue[_camsv_1][lastIdx];
 				}
 			}
 		} else {
@@ -6661,9 +6764,14 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 			pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].dmaoCrop.h =
 				(ISP_RD32(ISP_REG_ADDR_IMGO_SV_D_YSIZE) & 0x1FFF) + 1;
 			/* Use m_num_0 instead of phy magic num. */
-			/* For sync buffer with configFrame magic num, first 3 buffer: mag# 0. */
 			if (g_firstCnt[_camsv_2] < camsv_fbc.Bits.FB_NUM) {
-				pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 0;
+				if (enqueImd[_camsv_2] == MFALSE) {
+				/* For sync buffer with configFrame magic num in HAL1, first 3 buffer: mag# 0. */
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 0;
+				} else {
+				/* For sync buffer with DmaCfg magic num in HAL3, first 3 buffer: mag# 1. */
+					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 = 1;
+				}
 			} else {
 				unsigned int lastIdx = 0;
 
@@ -6673,16 +6781,25 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma, union CQ_RTBC_FBC cams
 					lastIdx = ISP_RT_BUF_SIZE - 1;
 				else
 					lastIdx = g_magQIdx[_camsv_2][1] - 1;
-				/* Choose current or last g_magQue because */
-				/* configFrame do not comes per-frame. */
-				if (g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]] >=
-					g_magQue[_camsv_2][lastIdx]) {
+				if (enqueImd[_camsv_2] == MFALSE) {
+					/* Choose current or last g_magQue because */
+					/* configFrame do not comes per-frame. */
+					if (g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]] >=
+						g_magQue[_camsv_2][lastIdx]) {
+						pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+							g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]];
+						g_magQIdx[_camsv_2][1]++;
+					} else {
+						pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
+							g_magQue[_camsv_2][lastIdx];
+					}
+				} else {
+					/* HAL3 immed enque, magic number will be updated per-frame. */
 					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
 						g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]];
+					LOG_DBG("camsv SOF:Ridx(%d), mag(0x%x)", g_magQIdx[_camsv_2][1],
+						g_magQue[_camsv_2][g_magQIdx[_camsv_2][1]]);
 					g_magQIdx[_camsv_2][1]++;
-				} else {
-					pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].image.m_num_0 =
-						g_magQue[_camsv_2][lastIdx];
 				}
 			}
 		}
@@ -7211,6 +7328,7 @@ static signed int ISP_ED_BufQue_Erase(signed int idx, int listTag)
 		P2_EDBUF_MgrList[idx].p2dupCQIdx = -1;
 		P2_EDBUF_MgrList[idx].frameNum = 0;
 		P2_EDBUF_MgrList[idx].dequedNum = 0;
+		P2_EDBUF_MgrList[idx].p2Scenario = -1;
 		/* [2] update first     index */
 		if (P2_EDBUF_MgrList[tmpIdx].p2dupCQIdx == -1) {
 			/* traverse     count needed, cuz user may erase the element */
@@ -7248,6 +7366,7 @@ static signed int ISP_ED_BufQue_Erase(signed int idx, int listTag)
 		P2_EDBUF_RingList[idx].callerID = 0x0;
 		P2_EDBUF_RingList[idx].p2dupCQIdx = -1;
 		P2_EDBUF_RingList[idx].bufSts = ISP_ED_BUF_STATE_NONE;
+		P2_EDBUF_RingList[idx].p2Scenario = -1;
 		EDBufQueRemainNodeCnt--;
 		/* [2]update first index */
 		if (P2_EDBUF_RingList[tmpIdx].bufSts == ISP_ED_BUF_STATE_NONE) {
@@ -7302,30 +7421,32 @@ static signed int ISP_ED_BufQue_Get_FirstMatBuf(struct ISP_ED_BUFQUE_STRUCT para
 	case P2_EDBUF_MLIST_TAG:
 		if (type == 0) { /* for user wait frame, do not care p2 dupCq index, first enqued p2 dupCQ first out */
 			if (P2_EDBUF_MList_FirstBufIdx <= P2_EDBUF_MList_LastBufIdx) {
-				for (i = P2_EDBUF_MList_FirstBufIdx; i <= P2_EDBUF_MList_LastBufIdx;
-				     i++) {
-					if ((P2_EDBUF_MgrList[i].processID == param.processID)
-					    && (P2_EDBUF_MgrList[i].callerID == param.callerID)) {
+				for (i = P2_EDBUF_MList_FirstBufIdx;
+					 i <= P2_EDBUF_MList_LastBufIdx;
+					 i++) {
+					if (compareMgrNodeLossely(
+						 P2_EDBUF_MgrList[i], param)) {
 						idx = i;
 						break;
 					}
 				}
 			} else {
 				for (i = P2_EDBUF_MList_FirstBufIdx;
-				     i < _MAX_SUPPORT_P2_PACKAGE_NUM_; i++) {
-					if ((P2_EDBUF_MgrList[i].processID == param.processID)
-					    && (P2_EDBUF_MgrList[i].callerID == param.callerID)) {
+				     i < _MAX_SUPPORT_P2_PACKAGE_NUM_;
+				     i++) {
+					if (compareMgrNodeLossely(
+						 P2_EDBUF_MgrList[i], param)) {
 						idx = i;
 						break;
 					}
 				}
 				if (idx != -1) {        /*get in the first     for     loop */
 				} else {
-					for (i = 0; i <= P2_EDBUF_MList_LastBufIdx; i++) {
-					if ((P2_EDBUF_MgrList[i].processID ==
-						param.processID)
-						&& (P2_EDBUF_MgrList[i].callerID ==
-						param.callerID)) {
+					for (i = 0;
+						 i <= P2_EDBUF_MList_LastBufIdx;
+						 i++) {
+					if (compareMgrNodeLossely(
+						 P2_EDBUF_MgrList[i], param)) {
 						idx = i;
 						break;
 						}
@@ -7333,44 +7454,38 @@ static signed int ISP_ED_BufQue_Get_FirstMatBuf(struct ISP_ED_BUFQUE_STRUCT para
 				}
 			}
 		} else {        /* for buffer node deque done notify */
-			if (P2_EDBUF_MList_FirstBufIdx <= P2_EDBUF_MList_LastBufIdx) {
-				for (i = P2_EDBUF_MList_FirstBufIdx; i <= P2_EDBUF_MList_LastBufIdx;
+			if (P2_EDBUF_MList_FirstBufIdx
+				 <= P2_EDBUF_MList_LastBufIdx) {
+				for (i = P2_EDBUF_MList_FirstBufIdx;
+					 i <= P2_EDBUF_MList_LastBufIdx;
 				     i++) {
-					if ((P2_EDBUF_MgrList[i].processID == param.processID)
-					    && (P2_EDBUF_MgrList[i].callerID == param.callerID)
-					    && (P2_EDBUF_MgrList[i].p2dupCQIdx == param.p2dupCQIdx)
-					    && (P2_EDBUF_MgrList[i].dequedNum <
-						P2_EDBUF_MgrList[i].frameNum)) {
-						/* avoid race that dupCQ_1 of buffer2 enqued while dupCQ_1*/
-						/*of buffer1 have beend deque done but not been erased yet */
+					if (compareMgrNode(
+						 P2_EDBUF_MgrList[i], param)) {
+						/* avoid race that dupCQ_1 of
+						 *buffer2 enqued while dupCQ_1
+						 *of buffer1 have beend deque
+						 * done but not been erased yet
+						 */
 						idx = i;
 						break;
 					}
 				}
 			} else {
 				for (i = P2_EDBUF_MList_FirstBufIdx;
-				     i < _MAX_SUPPORT_P2_PACKAGE_NUM_; i++) {
-					if ((P2_EDBUF_MgrList[i].processID == param.processID)
-					    && (P2_EDBUF_MgrList[i].callerID == param.callerID)
-					    && (P2_EDBUF_MgrList[i].p2dupCQIdx == param.p2dupCQIdx)
-					    && (P2_EDBUF_MgrList[i].dequedNum <
-						P2_EDBUF_MgrList[i].frameNum)) {
+				     i < _MAX_SUPPORT_P2_PACKAGE_NUM_;
+				     i++) {
+					if (compareMgrNode(
+						 P2_EDBUF_MgrList[i], param)) {
 						idx = i;
 						break;
 					}
 				}
 				if (idx != -1) {        /*get in the first     for     loop */
 				} else {
-					for (i = 0; i <= P2_EDBUF_MList_LastBufIdx; i++) {
-
-					if ((P2_EDBUF_MgrList[i].processID ==
-						param.processID)
-						&& (P2_EDBUF_MgrList[i].callerID ==
-						param.callerID)
-						&& (P2_EDBUF_MgrList[i].p2dupCQIdx ==
-						param.p2dupCQIdx)
-						&& (P2_EDBUF_MgrList[i].dequedNum <
-						P2_EDBUF_MgrList[i].frameNum)) {
+					for (i = 0; i <= P2_EDBUF_MList_LastBufIdx;
+						 i++) {
+					if (compareMgrNode(
+						 P2_EDBUF_MgrList[i], param)) {
 						idx = i;
 						break;
 					}
@@ -7382,16 +7497,14 @@ static signed int ISP_ED_BufQue_Get_FirstMatBuf(struct ISP_ED_BUFQUE_STRUCT para
 	case P2_EDBUF_RLIST_TAG:
 		if (P2_EDBUF_RList_FirstBufIdx <= P2_EDBUF_RList_LastBufIdx) {
 			for (i = P2_EDBUF_RList_FirstBufIdx; i <= P2_EDBUF_RList_LastBufIdx; i++) {
-				if ((P2_EDBUF_RingList[i].processID == param.processID)
-				    && (P2_EDBUF_RingList[i].callerID == param.callerID)) {
+				if (compareRingBufNode(P2_EDBUF_RingList[i], param)) {
 					idx = i;
 					break;
 				}
 			}
 		} else {
 			for (i = P2_EDBUF_RList_FirstBufIdx; i < _MAX_SUPPORT_P2_FRAME_NUM_; i++) {
-				if ((P2_EDBUF_RingList[i].processID == param.processID)
-				    && (P2_EDBUF_RingList[i].callerID == param.callerID)) {
+				if (compareRingBufNode(P2_EDBUF_RingList[i], param)) {
 					idx = i;
 					break;
 				}
@@ -7399,8 +7512,7 @@ static signed int ISP_ED_BufQue_Get_FirstMatBuf(struct ISP_ED_BUFQUE_STRUCT para
 			if (idx != -1) {        /*get in the first     for     loop */
 			} else {
 				for (i = 0; i <= P2_EDBUF_RList_LastBufIdx; i++) {
-					if ((P2_EDBUF_RingList[i].processID == param.processID)
-					    && (P2_EDBUF_RingList[i].callerID == param.callerID)) {
+					if (compareRingBufNode(P2_EDBUF_RingList[i], param)) {
 						idx = i;
 						break;
 					}
@@ -7412,7 +7524,7 @@ static signed int ISP_ED_BufQue_Get_FirstMatBuf(struct ISP_ED_BUFQUE_STRUCT para
 		break;
 	}
 	if (idx == -1)
-		LOG_PR_ERR("Could not find	match buffer tag(%d) pid/cid/p2dupCQidx(%d/0x%x/%d)",
+		LOG_PR_ERR("Could not find	match buffer tag(%d) pid/cid/p2dupCQidx(%d/%lu/%d)",
 			ListTag, param.processID, param.callerID, param.p2dupCQIdx);
 
 	return idx;
@@ -7484,11 +7596,16 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 				P2_EDBUF_RList_LastBufIdx =
 					(P2_EDBUF_RList_LastBufIdx + 1) % _MAX_SUPPORT_P2_FRAME_NUM_;
 			}
-			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].processID = param.processID;
-			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].callerID = param.callerID;
-			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].p2dupCQIdx = param.p2dupCQIdx;
-			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].bufSts =
-				ISP_ED_BUF_STATE_ENQUE;
+			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].processID
+				= param.processID;
+			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].callerID
+				= param.callerID;
+			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].p2dupCQIdx
+				= param.p2dupCQIdx;
+			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].bufSts
+				= ISP_ED_BUF_STATE_ENQUE;
+			P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].p2Scenario
+				= param.p2Scenario;
 			EDBufQueRemainNodeCnt++;
 
 			/* [3] add new buffer package in manager list */
@@ -7506,15 +7623,18 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 						(P2_EDBUF_MList_LastBufIdx +
 						 1) % _MAX_SUPPORT_P2_PACKAGE_NUM_;
 				}
-				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].processID =
-					param.processID;
-				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].callerID =
-					param.callerID;
-				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].p2dupCQIdx =
-					param.p2dupCQIdx;
-				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].frameNum =
-					param.frameNum;
-				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].dequedNum = 0;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].processID
+					= param.processID;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].callerID
+					= param.callerID;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].p2dupCQIdx
+					= param.p2dupCQIdx;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].frameNum
+					= param.frameNum;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].dequedNum
+					= 0;
+				P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].p2Scenario
+					= param.p2Scenario;
 			}
 		/* [4]update global     index */
 		ISP_ED_BufQue_Update_GPtr(P2_EDBUF_RLIST_TAG);
@@ -7563,7 +7683,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 		}
 		spin_unlock(&(SpinLockEDBufQueList));
 		if (idx == -1) {
-			LOG_PR_ERR("Do	not	find match buffer (pid/cid %d/0x%x)	to deque!",
+			LOG_PR_ERR("Do	not	find match buffer (pid/cid %d/%lu)	to deque!",
 				param.processID, param.callerID);
 			ret = -EFAULT;
 			return ret;
@@ -7571,7 +7691,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 			restTime = wait_event_interruptible_timeout(WaitQueueHead_EDBuf_WaitDeque,
 					ISP_GetEDBufQueWaitDequeState(idx), ISP_UsToJiffies(5000000));
 			if (restTime == 0) {
-				LOG_PR_ERR("Wait Deque	fail, idx(%d) pID(%d),cID(0x%x)", idx,
+				LOG_PR_ERR("Wait Deque	fail, idx(%d) pID(%d),cID(%lu)", idx,
 					param.processID, param.callerID);
 				ret = -EFAULT;
 			} else {
@@ -7583,7 +7703,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 	case ISP_ED_BUFQUE_CTRL_DEQUE_FAIL:
 		/* signal that a        buffer is dequeued(fail) */
 		if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
-			LOG_DBG("dq cm(%d),pID(%d),cID(0x%x)\n", param.ctrl, param.processID,
+			LOG_DBG("dq cm(%d),pID(%d),cID(%lu)\n", param.ctrl, param.processID,
 				param.callerID);
 
 		spin_lock(&(SpinLockEDBufQueList));
@@ -7639,7 +7759,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 		idx = ISP_ED_BufQue_Get_FirstMatBuf(param, P2_EDBUF_MLIST_TAG, 0);
 		if (idx == -1) {
 			spin_unlock(&(SpinLockEDBufQueList));
-			LOG_PR_ERR("could not find	match buffer pID/cID (%d/0x%x)", param.processID,
+			LOG_PR_ERR("could not find	match buffer pID/cID (%d/%lu)", param.processID,
 				param.callerID);
 			ret = -EFAULT;
 			return ret;
@@ -7649,14 +7769,14 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 			ISP_ED_BufQue_Erase(idx, P2_EDBUF_MLIST_TAG);
 			spin_unlock(&(SpinLockEDBufQueList));
 			ret = 0;
-			LOG_DBG("Frame is alreay dequeued, return user,	pd(%d/0x%x),idx(%d)",
+			LOG_DBG("Frame is alreay dequeued, return user,	pd(%d/%lu),idx(%d)",
 				param.processID, param.callerID, idx);
 			return ret;
 		}
 			spin_unlock(&(SpinLockEDBufQueList));
 
 			if (IspInfo.DebugMask & ISP_DBG_BUF_CTRL)
-				LOG_DBG("=pd(%d/0x%x_%d)wait(%d	us)=\n", param.processID,
+				LOG_DBG("=pd(%d/%lu_%d)wait(%d	us)=\n", param.processID,
 					param.callerID, idx, param.timeoutUs);
 
 			/* [3]if not, goto wait event and wait for a signal     to check */
@@ -7667,7 +7787,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 										    timeoutUs));
 			if (restTime == 0) {
 				LOG_PR_ERR
-				("Dequeue Buffer	fail, rT(%d),idx(%d) pID(%d),cID(0x%x),p2SupportBNum(%d)\n",
+				("Dequeue Buffer	fail, rT(%d),idx(%d) pID(%d),cID(%lu),p2SupportBNum(%d)\n",
 				 restTime, idx, param.processID, param.callerID,
 				 P2_Support_BurstQNum);
 				ret = -EFAULT;
@@ -7688,6 +7808,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 			P2_EDBUF_RingList[i].processID = 0x0;
 			P2_EDBUF_RingList[i].callerID = 0x0;
 			P2_EDBUF_RingList[i].bufSts = ISP_ED_BUF_STATE_NONE;
+			P2_EDBUF_RingList[i].p2Scenario = -1;
 		}
 		P2_EDBUF_RList_FirstBufIdx = 0;
 		P2_EDBUF_RList_CurBufIdx = 0;
@@ -7699,6 +7820,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 			P2_EDBUF_MgrList[i].p2dupCQIdx = -1;
 			P2_EDBUF_MgrList[i].frameNum = 0;
 			P2_EDBUF_MgrList[i].dequedNum = 0;
+			P2_EDBUF_MgrList[i].p2Scenario = -1;
 		}
 		P2_EDBUF_MList_FirstBufIdx = 0;
 		P2_EDBUF_MList_LastBufIdx = -1;
@@ -7874,7 +7996,7 @@ static signed int ISP_MARK_IRQ(struct ISP_WAIT_IRQ_STRUCT irqinfo)
 	IspInfo.IrqInfo.PassedBySigCnt[irqinfo.UserInfo.UserKey][irqinfo.UserInfo.Type][idx] = 0;
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[eIrq]), flags);
 
-	LOG_VRB("[MARK]	 key/type/sts/idx (%d/%d/0x%x/%d), t(%d/%d)\n",
+	LOG_DBG("[MARK]	 key/type/sts/idx (%d/%d/0x%x/%d), t(%d/%d)\n",
 		irqinfo.UserInfo.UserKey, irqinfo.UserInfo.Type, irqinfo.UserInfo.Status, idx,
 		(int)sec, (int)usec);
 
@@ -7992,14 +8114,14 @@ static signed int ISP_GET_MARKtoQEURY_TIME(struct ISP_WAIT_IRQ_STRUCT *irqinfo)
 		Ret = -EFAULT;
 	}
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[eIrq]), flags);
-	LOG_VRB
+	LOG_DBG
 	(" [ISP_GET_MARKtoQEURY_TIME] user/type/idx(%d/%d/%d),mark sec/usec (%d/%d),",
 	 irqinfo->UserInfo.UserKey, irqinfo->UserInfo.Type, idx,
 	 IspInfo.IrqInfo.MarkedTime_sec[irqinfo->UserInfo.UserKey][irqinfo->UserInfo.
 								   Type][idx],
 	 IspInfo.IrqInfo.MarkedTime_usec[irqinfo->UserInfo.UserKey][irqinfo->UserInfo.
 								    Type][idx]);
-	LOG_VRB
+	LOG_DBG
 	("irq sec/usec (%d/%d),query sec/usec(%d/%d),sig(%d)\n",
 	 IspInfo.IrqInfo.LastestSigTime_sec[irqinfo->UserInfo.Type][idx],
 	 IspInfo.IrqInfo.LastestSigTime_usec[irqinfo->UserInfo.Type][idx],
@@ -8564,7 +8686,7 @@ static signed int ISP_WaitIrq_v3(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 				IspInfo.IrqInfo.Eismeta[WaitIrq->UserInfo.Type][gEismetaRIdx_D].
 				tLastSOF2P1done_usec;
 		}
-		LOG_VRB(" [WAITIRQv3](%d) EisMeta.tLastSOF2P1done_sec(%d)\n",
+		LOG_DBG(" [WAITIRQv3](%d) EisMeta.tLastSOF2P1done_sec(%d)\n",
 			WaitIrq->UserInfo.Type, WaitIrq->EisMeta.tLastSOF2P1done_sec);
 	}
 	/* time period for 3A */
@@ -8624,7 +8746,7 @@ static signed int ISP_WaitIrq_v3(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	/* clear the status     if someone get the irq */
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[eIrq]), flags);
 	if (WaitIrq->UserInfo.UserKey > 0) {
-		LOG_VRB
+		LOG_DBG
 		("[WAITIRQv3]user(%d) mark sec/usec(%d/%d),last irq sec/usec(%d/%d),enterwait(%d/%d),getIRQ(%d/%d)\n",
 			WaitIrq->UserInfo.UserKey,
 			IspInfo.IrqInfo.MarkedTime_sec[WaitIrq->UserInfo.UserKey][WaitIrq->
@@ -8635,7 +8757,7 @@ static signed int ISP_WaitIrq_v3(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 		 IspInfo.IrqInfo.LastestSigTime_usec[WaitIrq->UserInfo.Type][idx],
 		 (int)(time_getrequest.tv_sec), (int)(time_getrequest.tv_usec),
 		 (int)(time_ready2return.tv_sec), (int)(time_ready2return.tv_usec));
-		LOG_VRB
+		LOG_DBG
 		("[WAITIRQv3]user(%d) sigNum(%d/%d),mark sec/usec(%d/%d),irq sec/usec (%d/%d),user(0x%x)\n",
 		 WaitIrq->UserInfo.UserKey,
 		 IspInfo.IrqInfo.PassedBySigCnt[WaitIrq->UserInfo.UserKey][WaitIrq->
@@ -8864,7 +8986,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 		if (pstRTBuf->ring_buf[_camsv_imgo_].active)
 			rt_dma = _camsv_imgo_;
 		else
-			LOG_INF("no main dma port opened at CAMSV SOF\n");
+			LOG_DBG("no main dma port opened at CAMSV SOF\n");
 		buf_idx = (pstRTBuf->ring_buf[_camsv_imgo_].start + 1) %
 			pstRTBuf->ring_buf[_camsv_imgo_].total_count;
 		/* chk this frame have EOF or not */
@@ -8901,6 +9023,9 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 		}
 #ifdef _rtbc_buf_que_2_0_
 
+		if ((enqueImd[_camsv_1] == MFALSE) ||
+		((enqueImd[_camsv_1] == MTRUE) && (g_firstCnt[_camsv_1] < fbc.Bits.FB_NUM))) {
+			/**/
 		if (pstRTBuf->ring_buf[_camsv_imgo_].active) {
 			if (pstRTBuf->ring_buf[_camsv_imgo_].empty_count > 0) {
 				IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
@@ -8935,6 +9060,9 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(signed int Irq, void *DeviceId)
 				break;
 			}
 		}
+			/**/
+		}
+
 #endif
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			union CQ_RTBC_FBC _fbc_chk;
@@ -9096,7 +9224,7 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 		if (pstRTBuf->ring_buf[_camsv2_imgo_].active)
 			rt_dma = _camsv2_imgo_;
 		else
-			LOG_INF("no main dma port opened at CAMSV2 SOF\n");
+			LOG_DBG("no main dma port opened at CAMSV2 SOF\n");
 
 		buf_idx = (pstRTBuf->ring_buf[_camsv2_imgo_].start + 1) %
 			pstRTBuf->ring_buf[_camsv2_imgo_].total_count;
@@ -9134,6 +9262,9 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 		}
 #ifdef _rtbc_buf_que_2_0_
 
+		if ((enqueImd[_camsv_2] == MFALSE) ||
+		((enqueImd[_camsv_2] == MTRUE) && (g_firstCnt[_camsv_2] < fbc.Bits.FB_NUM))) {
+			/**/
 		if (pstRTBuf->ring_buf[_camsv2_imgo_].active) {
 			if (pstRTBuf->ring_buf[_camsv2_imgo_].empty_count > 0) {
 				IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
@@ -9167,6 +9298,8 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(signed int Irq, void *DeviceId)
 				mFwRcnt.curIdx[_CAMSV_D_IRQ] = 0;
 				break;
 			}
+		}
+			/**/
 		}
 #endif
 
@@ -10577,6 +10710,9 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 #endif
 	case ISP_UPDATE_MAGNUM:
 		if (copy_from_user(magInfo, (void *)Param, sizeof(magInfo)) == 0) {
+			union CQ_RTBC_FBC fbc;
+			unsigned int camsv_reg_cal = 0;
+
 			if ((magInfo[1] != _camsv_tg_) && (magInfo[1] != _camsv2_tg_)) {
 				LOG_PR_ERR("invalid channel(0x%x)\n", magInfo[1]);
 				Ret = -EFAULT;
@@ -10584,22 +10720,39 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 			spin_lock((spinlock_t *)(&SpinLockMagNum));
 			if (magInfo[1] == _camsv_tg_) {
-				if (g_magQIdx[_camsv_1][0] >= ISP_RT_BUF_SIZE)
-					g_magQIdx[_camsv_1][0] = 0;
-				g_magQue[_camsv_1][g_magQIdx[_camsv_1][0]] = magInfo[0];
-				/*LOG_INF("ISP_UPDATE_MAGNUM: idx1=%d mag=0x%x",
-				 *   g_magQIdx[_camsv_1][0], magInfo[0]);
-				 */
-				g_magQIdx[_camsv_1][0]++;
-
+				fbc.Reg_val = ISP_RD32(ISP_REG_ADDR_CAMSV_IMGO_FBC);
+				camsv_reg_cal = ISP_RD32(ISP_REG_ADDR_CAMSV_TG_VF_CON);
+				if ((g_firstCnt[_camsv_1] >= fbc.Bits.FB_NUM) && (camsv_reg_cal & 0x1)) {
+					if (g_magQIdx[_camsv_1][0] >= ISP_RT_BUF_SIZE)
+						g_magQIdx[_camsv_1][0] = 0;
+					g_magQue[_camsv_1][g_magQIdx[_camsv_1][0]] = magInfo[0];
+					/*LOG_INF("ISP_UPDATE_MAGNUM: idx1=%d mag=0x%x",
+					 *   g_magQIdx[_camsv_1][0], magInfo[0]);
+					*/
+					g_magQIdx[_camsv_1][0]++;
+				} else if (!(camsv_reg_cal & 0x1)) {
+					/* Need to know is HAL3 before ISP start,
+					 * only hal3 will enter this case.
+					*/
+					enqueImd[_camsv_1] = MTRUE;
+				}
 			} else if (magInfo[1] == _camsv2_tg_) {
-				if (g_magQIdx[_camsv_2][0] >= ISP_RT_BUF_SIZE)
-					g_magQIdx[_camsv_2][0] = 0;
-				g_magQue[_camsv_2][g_magQIdx[_camsv_2][0]] = magInfo[0];
-				/*LOG_INF("ISP_UPDATE_MAGNUM: idx2=%d mag=0x%x",
-				 *   g_magQIdx[_camsv_2][0], magInfo[0]);
-				 */
-				g_magQIdx[_camsv_2][0]++;
+				fbc.Reg_val = ISP_RD32(ISP_REG_ADDR_CAMSV2_IMGO_FBC);
+				camsv_reg_cal = ISP_RD32(ISP_REG_ADDR_CAMSV_TG2_VF_CON);
+				if ((g_firstCnt[_camsv_2] >= fbc.Bits.FB_NUM) && (camsv_reg_cal & 0x1)) {
+					if (g_magQIdx[_camsv_2][0] >= ISP_RT_BUF_SIZE)
+						g_magQIdx[_camsv_2][0] = 0;
+					g_magQue[_camsv_2][g_magQIdx[_camsv_2][0]] = magInfo[0];
+					/*LOG_INF("ISP_UPDATE_MAGNUM: idx2=%d mag=0x%x",
+					 *g_magQIdx[_camsv_2][0], magInfo[0]);
+					 */
+					g_magQIdx[_camsv_2][0]++;
+				} else if (!(camsv_reg_cal & 0x1)) {
+					/* Need to know is HAL3 before ISP start,
+					 *only hal3 will enter this case.
+					 */
+					enqueImd[_camsv_2] = MTRUE;
+				}
 			}
 			spin_unlock((spinlock_t *)(&SpinLockMagNum));
 		} else {
@@ -11245,7 +11398,7 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 	/* do wait queue head init when re-enter in camera */
 	EDBufQueRemainNodeCnt = 0;
 	spin_lock((spinlock_t *)(&SpinLockRegScen));
-	P2_Support_BurstQNum = 1;
+	P2_Support_BurstQNum = 2;
 	spin_unlock((spinlock_t *)(&SpinLockRegScen));
 
 	/*      */
@@ -11253,8 +11406,12 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 		FirstUnusedIrqUserKey = 1;
 		memset((void *)IrqUserKey_UserInfo[i].userName, '\0', USERKEY_STR_LEN);
 		IrqUserKey_UserInfo[i].userKey = -1;
-		/* flushIRQ     v3 */
-		IrqFlush_v3[i] = 0x0;
+
+	/* flushIRQ     v3 */
+	IrqFlush_v3[i] =
+		(ISP_IRQ_P1_STATUS_VS1_INT_ST | ISP_IRQ_P1_STATUS_D_VS1_INT_ST |
+		 ISP_IRQ_P1_STATUS_AF_DON_ST | ISP_IRQ_P1_STATUS_D_AF_DON_ST |
+		 ISP_IRQ_P1_STATUS_PASS1_DON_ST | ISP_IRQ_P1_STATUS_D_PASS1_DON_ST);
 	}
 
 	/* flushIRQ     v1 */
@@ -11277,6 +11434,7 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 		P2_EDBUF_RingList[i].callerID = 0x0;
 		P2_EDBUF_RingList[i].p2dupCQIdx = -1;
 		P2_EDBUF_RingList[i].bufSts = ISP_ED_BUF_STATE_NONE;
+		P2_EDBUF_RingList[i].p2Scenario = -1;
 	}
 	P2_EDBUF_RList_FirstBufIdx = 0;
 	P2_EDBUF_RList_CurBufIdx = 0;
@@ -11287,6 +11445,7 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 		P2_EDBUF_MgrList[i].callerID = 0x0;
 		P2_EDBUF_MgrList[i].p2dupCQIdx = -1;
 		P2_EDBUF_MgrList[i].dequedNum = 0;
+		P2_EDBUF_MgrList[i].p2Scenario = -1;
 	}
 	P2_EDBUF_MList_FirstBufIdx = 0;
 	P2_EDBUF_MList_LastBufIdx = -1;
@@ -11296,14 +11455,17 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 	g_regScen = 0xa5a5a5a5;
 	spin_unlock((spinlock_t *)(&SpinLockRegScen));
 	/*      */
+	spin_lock(&(IspInfo.SpinLockIspRef));
 	IspInfo.BufInfo.Read.pData = kmalloc(ISP_BUF_SIZE, GFP_ATOMIC);
 	IspInfo.BufInfo.Read.Size = ISP_BUF_SIZE;
 	IspInfo.BufInfo.Read.Status = ISP_BUF_STATUS_EMPTY;
 	if (IspInfo.BufInfo.Read.pData == NULL) {
 		LOG_DBG("ERROR:	BufRead	kmalloc	failed");
 		Ret = -ENOMEM;
+		spin_unlock(&(IspInfo.SpinLockIspRef));
 		goto EXIT;
 	}
+	spin_unlock(&(IspInfo.SpinLockIspRef));
 	/*      */
 	if (!ISP_BufWrite_Alloc()) {
 		LOG_DBG("ERROR:	BufWrite kmalloc failed");
@@ -11353,10 +11515,12 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 	/*      */
 EXIT:
 	if (Ret < 0) {
+		spin_lock(&(IspInfo.SpinLockIspRef));
 		if (IspInfo.BufInfo.Read.pData != NULL) {
 			kfree(IspInfo.BufInfo.Read.pData);
 			IspInfo.BufInfo.Read.pData = NULL;
 		}
+		spin_unlock(&(IspInfo.SpinLockIspRef));
 		ISP_BufWrite_Free();
 	} else {
 		/* Enable clock.
@@ -11442,12 +11606,14 @@ static signed int ISP_release(struct inode *pInode, struct file *pFile)
 		memset((void *)IrqUserKey_UserInfo[i].userName, '\0', USERKEY_STR_LEN);
 		IrqUserKey_UserInfo[i].userKey = -1;
 	}
+	spin_lock(&(IspInfo.SpinLockIspRef));
 	if (IspInfo.BufInfo.Read.pData != NULL) {
 		kfree(IspInfo.BufInfo.Read.pData);
 		IspInfo.BufInfo.Read.pData = NULL;
 		IspInfo.BufInfo.Read.Size = 0;
 		IspInfo.BufInfo.Read.Status = ISP_BUF_STATUS_EMPTY;
 	}
+	spin_unlock(&(IspInfo.SpinLockIspRef));
 	/* Reset MCLK   */
 	mMclk1User = 0;
 	mMclk2User = 0;

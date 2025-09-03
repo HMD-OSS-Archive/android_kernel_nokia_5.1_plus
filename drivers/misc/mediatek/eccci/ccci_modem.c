@@ -271,6 +271,8 @@ void ccci_md_config(struct ccci_modem *md)
 {
 	phys_addr_t md_resv_mem_addr = 0, md_resv_smem_addr = 0, md1_md3_smem_phy = 0;
 	unsigned int md_resv_mem_size = 0, md_resv_smem_size = 0, md1_md3_smem_size = 0;
+	phys_addr_t base_ap_view_phy;
+	pgprot_t prot;
 	int ret;
 
 	/* setup config */
@@ -287,7 +289,18 @@ void ccci_md_config(struct ccci_modem *md)
 	/* MD image */
 	md->mem_layout.md_bank0.base_ap_view_phy = md_resv_mem_addr;
 	md->mem_layout.md_bank0.size = md_resv_mem_size;
-
+	/* do not remap whole region, consume too much vmalloc space */
+	base_ap_view_phy = md->mem_layout.md_bank0.base_ap_view_phy;
+	base_ap_view_phy &= PAGE_MASK;
+	if (!pfn_valid(__phys_to_pfn(base_ap_view_phy)))
+		md->mem_layout.md_bank0.base_ap_view_vir =
+			ioremap_wc(md->mem_layout.md_bank0.base_ap_view_phy, MD_IMG_DUMP_SIZE);
+	else {
+		prot = pgprot_noncached(PAGE_KERNEL);
+		md->mem_layout.md_bank0.base_ap_view_vir =
+			(void __iomem *)vmap_reserved_mem(md->mem_layout.md_bank0.base_ap_view_phy,
+							MD_IMG_DUMP_SIZE, prot);
+	}
 	/* Share memory */
 	/*
 	 * MD bank4 is remap to nearest 32M aligned address
@@ -306,7 +319,7 @@ void ccci_md_config(struct ccci_modem *md)
 		md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy = md1_md3_smem_phy;
 	md->mem_layout.md_bank4_noncacheable_total.size = md_resv_smem_size + md1_md3_smem_size;
 	md->mem_layout.md_bank4_noncacheable_total.base_ap_view_vir =
-		ioremap_nocache(md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy,
+		ioremap_wc(md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy,
 			md->mem_layout.md_bank4_noncacheable_total.size);
 	md->mem_layout.md_bank4_noncacheable_total.base_md_view_phy =
 		0x40000000 + md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy -
@@ -319,7 +332,7 @@ void ccci_md_config(struct ccci_modem *md)
 	if (md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy &&
 		md->mem_layout.md_bank4_cacheable_total.size)
 		md->mem_layout.md_bank4_cacheable_total.base_ap_view_vir =
-			ioremap_nocache(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
+			ioremap_wc(md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
 				md->mem_layout.md_bank4_cacheable_total.size);
 	else
 		CCCI_ERROR_LOG(md->index, TAG, "get ccb info base:%lx size:%x\n",
@@ -816,6 +829,8 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 	ap_side_md_feature->feature_set[MISC_INFO_C2K_MEID].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 #endif
 	ap_side_md_feature->feature_set[SMART_LOGGING_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+
+	ap_side_md_feature->feature_set[MD_MTEE_SMEM_ENABLE].support_mask = CCCI_FEATURE_OPTIONAL_SUPPORT;
 }
 
 unsigned int align_to_2_power(unsigned int n)
@@ -1133,6 +1148,12 @@ int ccci_md_prepare_runtime_data(unsigned char md_id, unsigned char *data, int l
 				rt_shm.addr = region->base_md_view_phy;
 				rt_shm.size = region->size;
 				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
+			case MD_MTEE_SMEM_ENABLE:
+				rt_feature.data_len = sizeof(unsigned int);
+				/* use the random_seed as temp_u32 value */
+				random_seed = get_mtee_is_enabled();
+				append_runtime_feature(&rt_data, &rt_feature, &random_seed);
 				break;
 			default:
 				break;

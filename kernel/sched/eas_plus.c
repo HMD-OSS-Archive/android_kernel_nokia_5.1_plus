@@ -111,6 +111,7 @@ static
 int select_prefer_idle_cpu(struct task_struct *p)
 {
 	unsigned long min_util = boosted_task_util(p);
+	int prev_cpu = task_cpu(p);
 	int best_idle_cpu = -1;
 	int iter_cpu;
 #ifdef CONFIG_CGROUP_SCHEDTUNE
@@ -157,7 +158,12 @@ int select_prefer_idle_cpu(struct task_struct *p)
 		}
 	}
 
-	return (best_idle_cpu > 0) ? best_idle_cpu : fallback;
+	if ((best_idle_cpu >= 0) && idle_cpu(prev_cpu) &&
+		is_intra_domain(prev_cpu, best_idle_cpu)) {
+		best_idle_cpu = prev_cpu;
+	}
+
+	return (best_idle_cpu >= 0) ? best_idle_cpu : fallback;
 }
 
 /*
@@ -202,6 +208,7 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 {
 	int target_max_cap = INT_MAX;
 	int target_cpu = task_cpu(p);
+	int prev_cpu;
 	int i, cpu;
 	bool is_tiny = false;
 	int nrg_diff = 0;
@@ -254,9 +261,31 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 	/* Find cpu with sufficient capacity */
 	target_cpu = select_max_spare_capacity_cpu(p, best_cpu);
 
+	prev_cpu = task_cpu(p);
 	/* no need energy calculation if the same domain */
-	if (is_intra_domain(task_cpu(p), target_cpu) && target_cpu != l_plus_cpu)
+	if (is_intra_domain(prev_cpu, target_cpu) && target_cpu != l_plus_cpu) {
+
+		if (idle_cpu(prev_cpu) && idle_cpu(target_cpu)) {
+			struct rq *prev_rq, *target_rq;
+			int prev_idle_idx;
+			int target_idle_idx;
+
+			prev_rq = cpu_rq(prev_cpu);
+			target_rq = cpu_rq(target_cpu);
+
+			rcu_read_lock();
+			prev_idle_idx = idle_get_state_idx(prev_rq);
+			target_idle_idx = idle_get_state_idx(target_rq);
+			rcu_read_unlock();
+
+			/* favoring shallowest idle states */
+			if ((prev_idle_idx <= target_idle_idx) ||
+					target_idle_idx == -1)
+				target_cpu = prev_cpu;
+		}
+
 		return target_cpu;
+	}
 
 	if (task_util(p) <= 0)
 		return target_cpu;
@@ -265,15 +294,22 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 
 	/* no energy comparison if the same cluster */
 	if (target_cpu != task_cpu(p)) {
+		int delta = 0;
 		struct energy_env eenv = {
 			.util_delta     = task_util(p),
 			.src_cpu        = task_cpu(p),
 			.dst_cpu        = target_cpu,
 			.task           = p,
+			.trg_cpu        = target_cpu,
 		};
 
+
+#ifdef CONFIG_SCHED_WALT
+               if (!walt_disabled && sysctl_sched_use_walt_cpu_util)
+                       delta = task_util(p);
+#endif
 		/* Not enough spare capacity on previous cpu */
-		if (cpu_overutilized(task_cpu(p))) {
+		if (__cpu_overutilized(task_cpu(p), delta)) {
 			over_util = true;
 			goto unlock;
 		}

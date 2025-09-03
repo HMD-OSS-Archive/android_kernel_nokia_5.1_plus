@@ -43,6 +43,7 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
+#include <linux/hie.h>
 
 #ifdef CONFIG_MMC_FFU
 #include <linux/mmc/ffu.h>
@@ -1182,31 +1183,23 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 		goto cmd_done;
 	}
 
+	mmc_get_card(card);
+
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	cmdq_en = card->ext_csd.cmdq_mode_en;
 	if (cmdq_en) {
-		mmc_wait_cmdq_empty(card->host);
-		mmc_claim_host(card->host);
 		err = mmc_blk_cmdq_switch(card, 0);
 		if (err) {
 			pr_notice("MMC ioctl: %s disable CQ err %d\n",
 				mmc_hostname(card->host), err);
-			mmc_release_host(card->host);
+			mmc_put_card(card);
 			goto cmd_done;
 		}
 	}
 #endif
 
-	mmc_get_card(card);
-
 	for (i = 0; i < num_of_cmds && !ioc_err; i++)
 		ioc_err = __mmc_blk_ioctl_cmd(card, md, idata[i]);
-
-	mmc_put_card(card);
-
-	/* copy to user if data and response */
-	for (i = 0; i < num_of_cmds && !err; i++)
-		err = mmc_blk_ioctl_copy_to_user(&cmds[i], idata[i]);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (cmdq_en) {
@@ -1215,9 +1208,14 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 			if (mmc_blk_cmdq_switch(card, 1))
 				pr_notice("MMC ioctl: %s re-enable CQ err %d\n",
 					mmc_hostname(card->host), err);
-		mmc_release_host(card->host);
 	}
 #endif
+
+	mmc_put_card(card);
+
+	/* copy to user if data and response */
+	for (i = 0; i < num_of_cmds && !err; i++)
+		err = mmc_blk_ioctl_copy_to_user(&cmds[i], idata[i]);
 
 cmd_done:
 	mmc_blk_put(md);
@@ -1328,7 +1326,7 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 		if ((!card->ext_csd.cmdq_mode_en)
 		 && (md->part_type <= PART_CMDQ_EN)) {
 			mmc_claim_host(card->host);
-			mmc_blk_cmdq_switch(card, 1);
+			(void)mmc_blk_cmdq_switch(card, 1);
 			/* do not return error,
 			 * just work without command queue
 			 */
@@ -2948,6 +2946,7 @@ int mmc_blk_end_queued_req(struct mmc_host *host,
 			break;
 		}
 		mmc = brq->mrq.host;
+		hie_req_end_size(req, brq->data.bytes_xfered);
 		ret = blk_end_request(req, 0,
 			brq->data.bytes_xfered);
 

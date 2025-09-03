@@ -401,7 +401,7 @@ static void cldma_dump_queue_history(struct md_cd_ctrl *md_ctrl, unsigned int qn
 	ccci_md_dump_log_history(md_ctrl->md_id, &md_ctrl->traffic_info, 0, qno, qno);
 }
 
-static int cldma_queue_broadcast_state(struct md_cd_ctrl *md_ctrl, enum MD_STATE state, DIRECTION dir, int index)
+static int cldma_queue_broadcast_state(struct md_cd_ctrl *md_ctrl, enum HIF_STATE state, DIRECTION dir, int index)
 {
 	ccci_port_queue_status_notify(md_ctrl->md_id, md_ctrl->hif_id, index, dir, state);
 	return 0;
@@ -564,12 +564,7 @@ again:
 		ccci_h = *((struct ccci_header *)skb->data);
 #endif
 #endif
-		/* check wakeup source */
-		if (atomic_cmpxchg(&md_ctrl->wakeup_src, 1, 0) == 1) {
-			md_ctrl->wakeup_count++;
-			CCCI_NOTICE_LOG(md_ctrl->md_id, TAG, "CLDMA_MD wakeup source:(%d/%d/%x)(%u)\n",
-				queue->index, ccci_h.channel, ccci_h.reserved, md_ctrl->wakeup_count);
-		}
+
 		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "recv Rx msg (%x %x %x %x) rxq=%d len=%d\n",
 						ccci_h.data[0], ccci_h.data[1], *(((u32 *)&ccci_h) + 2),
 						ccci_h.reserved, queue->index,

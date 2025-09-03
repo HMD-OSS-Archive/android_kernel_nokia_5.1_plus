@@ -1430,12 +1430,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		break;
 	}
 
-	memset(det->volt_tbl, 0, sizeof(det->volt_tbl));
-	memset(det->volt_tbl_pmic, 0, sizeof(det->volt_tbl_pmic));
-	memset(det->volt_offset_drcc, 0, sizeof(det->volt_offset_drcc));
-	memset(det->freq_tbl, 0, sizeof(det->freq_tbl));
-	memset(record_tbl_locked, 0, sizeof(record_tbl_locked));
-
 	/* get DVFS frequency table */
 	if (det->ops->get_freq_table)
 		det->ops->get_freq_table(det);
@@ -1494,6 +1488,13 @@ static void eem_set_eem_volt(struct eem_det *det)
 	unsigned int init2chk = 0;
 #endif
 	unsigned int tmp_clamp_val;
+	int aging_val = 0;
+#if defined(CONFIG_ARM64) && \
+	defined(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES)
+	int len;
+
+	len = sizeof(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
+#endif
 
 	FUNC_ENTER(FUNC_LV_HELP);
 #if ENABLE_LOO
@@ -1544,12 +1545,27 @@ static void eem_set_eem_volt(struct eem_det *det)
 	/* scale of det->volt_offset must equal 10uV */
 	/* if has record table, min with record table of each cpu */
 	for (i = 0; i < det->num_freq_tbl; i++) {
+#if defined(CONFIG_ARM64) && \
+	defined(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES)
+		if ((len > 19) &&
+		    strncmp(&(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES[len - 19]),
+			"k71v1_64_bsp_vcore", 18) == 0) {
+			/* Remove aging margin for QEA project */
+			if (i == 0)
+				aging_val = 4;
+			else {
+				aging_val = 4 - (4 * i / 16);
+				aging_val = clamp(aging_val, 1, 4);
+			}
+		}
+#endif
 		switch (det->ctrl_id) {
 		case EEM_CTRL_2L:
 			det->volt_tbl_pmic[i] = min(
 			(unsigned int)(clamp(
 				det->ops->eem_2_pmic(det,
-					(det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
+					(det->volt_tbl[i] + det->volt_offset +
+					low_temp_offset - aging_val)),
 				det->ops->eem_2_pmic(det, det->VMIN),
 				det->ops->eem_2_pmic(det, det->VMAX))),
 				det->volt_tbl_orig[i]);
@@ -1569,7 +1585,8 @@ static void eem_set_eem_volt(struct eem_det *det)
 				det->volt_tbl_pmic[i] = min(
 				(unsigned int)(clamp(
 					det->ops->eem_2_pmic(det,
-						(det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
+						(det->volt_tbl[i] + det->volt_offset +
+						low_temp_offset - aging_val)),
 					det->ops->eem_2_pmic(det, det->VMIN),
 					det->ops->eem_2_pmic(det, det->VMAX))),
 					tmp_clamp_val);
@@ -1590,7 +1607,8 @@ static void eem_set_eem_volt(struct eem_det *det)
 		case EEM_CTRL_CCI:
 			det->volt_tbl_pmic[i] = min(
 			(unsigned int)(clamp(
-				det->ops->eem_2_pmic(det, (det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
+				det->ops->eem_2_pmic(det, (det->volt_tbl[i] + det->volt_offset +
+				low_temp_offset - aging_val)),
 				det->ops->eem_2_pmic(det, det->VMIN),
 				det->ops->eem_2_pmic(det, det->VMAX))),
 				det->volt_tbl_orig[i]);
@@ -1642,6 +1660,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 #endif
 
 	}
+	dsb(sy);
 
 #if UPDATE_TO_UPOWER
 #if ENABLE_LOO
@@ -1669,10 +1688,10 @@ static void eem_set_eem_volt(struct eem_det *det)
 #endif
 #endif
 
-		if ((0 == (det->disabled % 2)) && (0 == (det->disabled & BY_PROCFS_INIT2)))
-			wake_up_interruptible(&ctrl->wq);
-		else
-			eem_error("Disabled by [%d]\n", det->disabled);
+	if ((0 == (det->disabled % 2)) && (0 == (det->disabled & BY_PROCFS_INIT2)))
+		wake_up_interruptible(&ctrl->wq);
+	else
+		eem_error("Disabled by [%d]\n", det->disabled);
 
 #endif
 

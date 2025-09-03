@@ -1018,8 +1018,7 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 
 #ifdef CONFIG_MTK_QOS_SUPPORT
 		emi_opp =
-		    (opp_level >= HRT_OPP_LEVEL_DEFAULT) ? PM_QOS_EMI_OPP_DEFAULT_VALUE :
-		    layering_rule_get_emi_freq_table(opp_level);
+		    (opp_level >= HRT_OPP_LEVEL_DEFAULT) ? PM_QOS_EMI_OPP_DEFAULT_VALUE : opp_level;
 		mm_freq =
 		    (opp_level >= HRT_OPP_LEVEL_DEFAULT) ? PM_QOS_MM_FREQ_DEFAULT_VALUE :
 		    layering_rule_get_mm_freq_table(opp_level);

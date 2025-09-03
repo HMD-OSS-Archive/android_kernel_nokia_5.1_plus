@@ -18,7 +18,6 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/string.h>
-#include <linux/mutex.h>
 #include <mach/mtk_freqhopping.h>
 #include <mtk_vcorefs_manager.h>
 
@@ -27,6 +26,7 @@
 
 #ifdef MMDVFS_MMP
 #include "mmprofile.h"
+#include "mmprofile_function.h"
 #endif
 
 #undef pr_fmt
@@ -88,7 +88,6 @@ static s32 current_max_step = STEP_UNREQUEST;
 static s32 force_step = STEP_UNREQUEST;
 static bool mmdvfs_enable;
 static struct pm_qos_request vcore_request;
-static DEFINE_MUTEX(step_mutex);
 
 static int mm_freq_notify(struct notifier_block *nb,
 		unsigned long freq_value, void *v);
@@ -232,7 +231,6 @@ static void update_step(void)
 		return;
 	}
 
-	mutex_lock(&step_mutex);
 	old_max_step = current_max_step;
 	current_max_step = step_size;
 	if (force_step != STEP_UNREQUEST) {
@@ -248,7 +246,6 @@ static void update_step(void)
 	}
 
 	if (current_max_step == old_max_step) {
-		mutex_unlock(&step_mutex);
 		return;
 	}
 
@@ -265,10 +262,9 @@ static void update_step(void)
 			vopp_step = vopp_steps[current_max_step];
 			freq_step = current_max_step;
 		}
-		mm_apply_clk_for_all(freq_step);
 		mm_apply_vcore(vopp_step);
+		mm_apply_clk_for_all(freq_step);
 	}
-	mutex_unlock(&step_mutex);
 }
 
 static int mm_freq_notify(struct notifier_block *nb,
@@ -598,6 +594,37 @@ MODULE_PARM_DESC(mmdvfs_enable, "enable or disable mmdvfs");
 
 module_param(log_level, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(log_level, "mmdvfs log level");
+
+static s32 vote_freq;
+static bool vote_req_init;
+struct pm_qos_request vote_req;
+int set_vote_freq(const char *val, const struct kernel_param *kp)
+{
+	int result;
+	int new_vote_freq;
+
+	result = kstrtoint(val, 0, &new_vote_freq);
+	if (result) {
+		pr_notice("force set step failed: %d\n", result);
+		return result;
+	}
+
+	if (!vote_req_init) {
+		pm_qos_add_request(&vote_req, PM_QOS_DISP_FREQ, PM_QOS_MM_FREQ_DEFAULT_VALUE);
+		vote_req_init = true;
+	}
+	vote_freq = new_vote_freq;
+	pm_qos_update_request(&vote_req, vote_freq);
+	return 0;
+}
+static struct kernel_param_ops vote_freq_ops = {
+	.set = set_vote_freq,
+	.get = param_get_int,
+};
+module_param_cb(vote_freq, &vote_freq_ops, &vote_freq, 0644);
+MODULE_PARM_DESC(vote_freq, "vote mmdvfs to specified freq, 0 for unset");
+
+
 
 arch_initcall(mmdvfs_pmqos_init);
 module_exit(mmdvfs_pmqos_exit);

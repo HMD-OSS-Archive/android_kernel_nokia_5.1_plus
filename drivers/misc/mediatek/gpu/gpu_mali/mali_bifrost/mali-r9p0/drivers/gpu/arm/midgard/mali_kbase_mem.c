@@ -831,8 +831,6 @@ struct kbase_va_region *kbase_alloc_free_region(struct kbase_context *kctx, u64 
 	new_reg->start_pfn = start_pfn;
 	new_reg->nr_pages = nr_pages;
 
-	INIT_LIST_HEAD(&new_reg->jit_node);
-
 	return new_reg;
 }
 
@@ -1271,11 +1269,6 @@ int kbase_mem_free_region(struct kbase_context *kctx, struct kbase_va_region *re
 	KBASE_DEBUG_ASSERT(NULL != kctx);
 	KBASE_DEBUG_ASSERT(NULL != reg);
 	lockdep_assert_held(&kctx->reg_lock);
-
-	if (reg->flags & KBASE_REG_JIT) {
-		dev_warn(reg->kctx->kbdev->dev, "Attempt to free JIT memory!\n");
-		return -EINVAL;
-	}
 
 	/*
 	 * Unlink the physical allocation before unmaking it evictable so
@@ -2436,7 +2429,6 @@ static void kbase_jit_destroy_worker(struct work_struct *work)
 		mutex_unlock(&kctx->jit_evict_lock);
 
 		kbase_gpu_vm_lock(kctx);
-		reg->flags &= ~KBASE_REG_JIT;
 		kbase_mem_free_region(kctx, reg);
 		kbase_gpu_vm_unlock(kctx);
 	} while (1);
@@ -2646,8 +2638,6 @@ struct kbase_va_region *kbase_jit_allocate(struct kbase_context *kctx,
 		if (!reg)
 			goto out_unlocked;
 
-		reg->flags |= KBASE_REG_JIT;
-
 		mutex_lock(&kctx->jit_evict_lock);
 		list_add(&reg->jit_node, &kctx->jit_active_head);
 		mutex_unlock(&kctx->jit_evict_lock);
@@ -2667,17 +2657,11 @@ out_unlocked:
 void kbase_jit_free(struct kbase_context *kctx, struct kbase_va_region *reg)
 {
 	/* The physical backing of memory in the pool is always reclaimable */
-	kbase_mem_evictable_mark_reclaim(reg->gpu_alloc);
-
 	kbase_gpu_vm_lock(kctx);
-	reg->flags |= KBASE_REG_DONT_NEED;
-	kbase_mem_shrink_cpu_mapping(kctx, reg, 0, reg->gpu_alloc->nents);
+	kbase_mem_evictable_make(reg->gpu_alloc);
 	kbase_gpu_vm_unlock(kctx);
 
-
 	mutex_lock(&kctx->jit_evict_lock);
-	WARN_ON(!list_empty(&reg->gpu_alloc->evict_node));
-	list_add(&reg->gpu_alloc->evict_node, &kctx->evict_list);
 	list_move(&reg->jit_node, &kctx->jit_pool_head);
 	mutex_unlock(&kctx->jit_evict_lock);
 }
@@ -2720,10 +2704,8 @@ bool kbase_jit_evict(struct kbase_context *kctx)
 	}
 	mutex_unlock(&kctx->jit_evict_lock);
 
-	if (reg) {
-		reg->flags &= ~KBASE_REG_JIT;
+	if (reg)
 		kbase_mem_free_region(kctx, reg);
-	}
 
 	return (reg != NULL);
 }
@@ -2748,7 +2730,6 @@ void kbase_jit_term(struct kbase_context *kctx)
 				struct kbase_va_region, jit_node);
 		list_del(&walker->jit_node);
 		mutex_unlock(&kctx->jit_evict_lock);
-		walker->flags &= ~KBASE_REG_JIT;
 		kbase_mem_free_region(kctx, walker);
 		mutex_lock(&kctx->jit_evict_lock);
 	}
@@ -2759,7 +2740,6 @@ void kbase_jit_term(struct kbase_context *kctx)
 				struct kbase_va_region, jit_node);
 		list_del(&walker->jit_node);
 		mutex_unlock(&kctx->jit_evict_lock);
-		walker->flags &= ~KBASE_REG_JIT;
 		kbase_mem_free_region(kctx, walker);
 		mutex_lock(&kctx->jit_evict_lock);
 	}

@@ -133,6 +133,7 @@ typedef struct GED_KPI_TAG {
 	unsigned long long ullTimeStampS;
 	unsigned long long ullTimeStampH;
 	unsigned int gpu_freq; /* in MHz*/
+	unsigned int gpu_freq_max; /* in MHz*/
 	unsigned int gpu_loading;
 	struct list_head sList;
 	long long t_cpu_remained;
@@ -657,6 +658,8 @@ static inline void ged_kpi_calc_kpi_info(u64 ulID, GED_KPI *psKPI, GED_KPI_HEAD 
 #define GED_KPI_FRC_MODE_MASK 0x7
 #define GED_KPI_FRC_CLIENT_SHIFT 13
 #define GED_KPI_FRC_CLIENT_MASK 0xF
+#define GED_KPI_GPU_FREQ_MAX_INFO_SHIFT 19
+#define GED_KPI_GPU_FREQ_MAX_INFO_MASK 0xFFF /* max @ 4096 MHz */
 #define GED_KPI_GPU_FREQ_INFO_SHIFT 7
 #define GED_KPI_GPU_FREQ_INFO_MASK 0xFFF /* max @ 4096 MHz */
 #define GED_KPI_GPU_LOADING_INFO_SHIFT 0
@@ -678,6 +681,9 @@ static void ged_kpi_statistics_and_remove(GED_KPI_HEAD *psHead, GED_KPI *psKPI)
 	frame_attr |= ((psHead->frc_client & GED_KPI_FRC_CLIENT_MASK) << GED_KPI_FRC_CLIENT_SHIFT);
 	gpu_info |= ((psKPI->gpu_freq & GED_KPI_GPU_FREQ_INFO_MASK) << GED_KPI_GPU_FREQ_INFO_SHIFT);
 	gpu_info |= ((psKPI->gpu_loading & GED_KPI_GPU_LOADING_INFO_MASK) << GED_KPI_GPU_LOADING_INFO_SHIFT);
+	gpu_info |=
+		((psKPI->gpu_freq_max & GED_KPI_GPU_FREQ_MAX_INFO_MASK)
+		<< GED_KPI_GPU_FREQ_MAX_INFO_SHIFT);
 	psKPI->frame_attr = frame_attr;
 
 	/* statistics */
@@ -973,7 +979,11 @@ typedef struct ged_kpi_miss_tag {
 	struct list_head sList;
 } GED_KPI_MISS_TAG;
 
+#define GED_KPI_MISS_TAG_COUNT 16
 static GED_KPI_MISS_TAG *miss_tag_head;
+GED_KPI_MISS_TAG gs_miss_tag[GED_KPI_MISS_TAG_COUNT];
+static int gs_miss_tag_idx;
+module_param(gs_miss_tag_idx, int, 0644);
 
 static void ged_kpi_record_miss_tag(u64 ulID, int i32FrameID, GED_TIMESTAMP_TYPE eTimeStampType)
 {
@@ -982,7 +992,12 @@ static void ged_kpi_record_miss_tag(u64 ulID, int i32FrameID, GED_TIMESTAMP_TYPE
 	if (unlikely(miss_tag_head == NULL)) {
 		miss_tag_head = (GED_KPI_MISS_TAG *)ged_alloc_atomic(sizeof(GED_KPI_MISS_TAG));
 		if (miss_tag_head) {
+			int i;
+
 			memset(miss_tag_head, 0, sizeof(GED_KPI_MISS_TAG));
+			memset(gs_miss_tag, 0, sizeof(gs_miss_tag));
+			for (i = 0; i < GED_KPI_MISS_TAG_COUNT; i++)
+				INIT_LIST_HEAD(&gs_miss_tag[i].sList);
 			INIT_LIST_HEAD(&miss_tag_head->sList);
 		} else {
 			GED_PR_ERR("[GED_KPI][Exception] ged_alloc_atomic(sizeof(GED_KPI_MISS_TAG)) failed\n");
@@ -990,7 +1005,10 @@ static void ged_kpi_record_miss_tag(u64 ulID, int i32FrameID, GED_TIMESTAMP_TYPE
 		}
 	}
 
-	psMiss_tag = (GED_KPI_MISS_TAG *)ged_alloc_atomic(sizeof(GED_KPI_MISS_TAG));
+	psMiss_tag = &gs_miss_tag[gs_miss_tag_idx++];
+	if (gs_miss_tag_idx == GED_KPI_MISS_TAG_COUNT)
+		gs_miss_tag_idx = 0;
+	list_del(&psMiss_tag->sList);
 
 	if (unlikely(!psMiss_tag)) {
 		GED_PR_ERR("[GED_KPI][Exception]: ged_alloc_atomic(sizeof(GED_KPI_MISS_TAG)) failed\n");
@@ -1020,8 +1038,7 @@ static GED_BOOL ged_kpi_find_and_delete_miss_tag(u64 ulID, int i32FrameID, GED_T
 				&& psMiss_tag->i32FrameID == i32FrameID
 				&& psMiss_tag->eTimeStampType == eTimeStampType) {
 				list_del(&psMiss_tag->sList);
-				if (psMiss_tag != miss_tag_head)
-					ged_free(psMiss_tag, sizeof(GED_KPI_MISS_TAG));
+				INIT_LIST_HEAD(&psMiss_tag->sList);
 				ret = GED_TRUE;
 				break;
 			}
@@ -1163,7 +1180,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			/* recording cpu time per frame and boost CPU if needed */
 			phead_last1 = psHead->last_TimeStamp1;
 			psHead->t_cpu_latest =
-				psKPI->ullTimeStamp1 - psHead->last_TimeStamp1 - psHead->last_QedBufferDelay;
+				psKPI->ullTimeStamp1 - psHead->last_TimeStamp1;
 			psKPI->t_cpu = psHead->t_cpu_latest;
 			ged_log_perf_trace_counter("t_cpu", psKPI->t_cpu, psTimeStamp->pid, psTimeStamp->i32FrameID);
 			psKPI->QedBufferDelay = psHead->last_QedBufferDelay;
@@ -1302,6 +1319,14 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 				ged_log_perf_trace_counter("t_gpu",
 					psKPI->t_gpu, psTimeStamp->pid, psTimeStamp->i32FrameID);
 				psKPI->gpu_freq = mt_gpufreq_get_cur_freq() / 1000;
+				psKPI->gpu_freq_max =
+					mt_gpufreq_get_freq_by_idx(
+					mt_gpufreq_get_cur_ceiling_idx())
+					/ 1000;
+				ged_log_perf_trace_counter("gpu_freq_max",
+					(long long)psKPI->gpu_freq_max,
+					psTimeStamp->pid,
+					psTimeStamp->i32FrameID);
 				ged_log_perf_trace_counter("gpu_freq",
 					(long long)psKPI->gpu_freq, psTimeStamp->pid, psTimeStamp->i32FrameID);
 				psHead->last_TimeStamp2 = psTimeStamp->ullTimeStamp;
@@ -1333,13 +1358,18 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					gpu_freq_pre = ged_kpi_gpu_dvfs(
 						time_spent, psKPI->t_gpu_target
 						, g_force_gpu_dvfs_fallback);
+				else
+					gpu_freq_pre = ged_kpi_gpu_dvfs(
+						time_spent, psKPI->t_gpu_target
+						, 1); /* fallback mode */
 
 				last_3D_done = cur_3D_done;
 
-				if (gx_game_mode)
+				if (!g_force_gpu_dvfs_fallback)
 					ged_set_backup_timer_timeout(0);
 				else
-					ged_set_backup_timer_timeout(psKPI->t_gpu_target);
+					ged_set_backup_timer_timeout(
+						psKPI->t_gpu_target << 1);
 #endif
 
 				if (psHead->last_TimeStamp1 != psKPI->ullTimeStamp1) {
@@ -1365,9 +1395,9 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					ged_kpi_set_gpu_dvfs_hint(((int)vsync_period / 1000), 100);
 				}
 				ged_kpi_output_gfx_info(psHead->t_gpu_latest, psKPI->gpu_freq * 1000,
-					mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_cur_ceiling_idx()));
+					psKPI->gpu_freq_max * 1000);
 				ged_kpi_output_gfx_info2(psHead->t_gpu_latest, psKPI->gpu_freq * 1000,
-					mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_cur_ceiling_idx()), ulID);
+					psKPI->gpu_freq_max * 1000, ulID);
 				if (psKPI && (psKPI->ulMask & GED_TIMESTAMP_TYPE_S))
 					ged_kpi_statistics_and_remove(psHead, psKPI);
 			} else {

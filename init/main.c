@@ -81,13 +81,16 @@
 #include <linux/integrity.h>
 #include <linux/proc_ns.h>
 #include <linux/io.h>
+#include <linux/kaiser.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
 #include <asm/setup.h>
 #include <asm/sections.h>
 #include <asm/cacheflush.h>
-
+//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
+#include <linux/utsname.h>
+//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #include <mt-plat/mtk_ram_console.h>
 #endif
@@ -724,6 +727,22 @@ void fih_get_skuid(void)
 }
 /* END, for OEM feature, 20171201 */
 
+//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
+static void fih_info_version(void)
+{
+  char *timezone = NULL;
+
+  printk("%s: SW version(skuid) = %s\n", __func__, fih_skuid);
+  if(strncmp(fih_skuid, "600ID", 5) == 0)
+  {
+    timezone = strstr(init_utsname()->version, "CST");
+    if(timezone != NULL)
+    {
+      memcpy(timezone, "WIB", 3);
+    }
+  }
+}
+//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
 
 /*
  * We need to finalize in a non-__init function or else race conditions
@@ -845,6 +864,7 @@ static void __init mm_init(void)
 	pgtable_init();
 	vmalloc_init();
 	ioremap_huge_init();
+	kaiser_init();
 }
 
 asmlinkage __visible void __init start_kernel(void)
@@ -899,6 +919,10 @@ asmlinkage __visible void __init start_kernel(void)
 	//pr_notice("Alex x = %d, y = %d, z = %d\n", gsen_cali_x, gsen_cali_y, gsen_cali_z);
 
 	fih_get_skuid();
+
+	//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
+	fih_info_version();
+	//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
 
 	pr_notice("Kernel command line: %s\n", boot_command_line);
 	parse_early_param();

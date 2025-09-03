@@ -3922,7 +3922,7 @@ static int hp_impedance_get(struct snd_kcontrol *kcontrol,
 			    struct snd_ctl_elem_value *ucontrol)
 {
 #ifdef BYPASS_HPIMP
-	pr_debug("%s(), VIVO no need calculate hp_impedance\n", __func__);
+	pr_debug("%s(), Customer no need calculate hp_impedance\n", __func__);
 	ucontrol->value.integer.value[0] = 32;
 	return 0;
 #else

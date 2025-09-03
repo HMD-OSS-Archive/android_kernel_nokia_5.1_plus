@@ -286,9 +286,6 @@ struct kbase_va_region {
  * Do not remove, use the next unreserved bit for new flags */
 #define KBASE_REG_RESERVED_BIT_22   (1ul << 22)
 
-/* Memory is handled by JIT - user space should not be able to free it */
-#define KBASE_REG_JIT               (1ul << 24)
-
 #define KBASE_REG_ZONE_SAME_VA      KBASE_REG_ZONE(0)
 
 /* only used with 32-bit clients */
@@ -438,6 +435,7 @@ static inline int kbase_reg_prepare_native(struct kbase_va_region *reg,
 		reg->gpu_alloc = kbase_mem_phy_alloc_get(reg->cpu_alloc);
 	}
 
+	INIT_LIST_HEAD(&reg->jit_node);
 	reg->flags &= ~KBASE_REG_FREE;
 	return 0;
 }
@@ -1314,11 +1312,5 @@ static inline void kbase_mem_pool_unlock(struct kbase_mem_pool *pool)
 {
 	spin_unlock(&pool->pool_lock);
 }
-
-/**
- * kbase_mem_evictable_mark_reclaim - Mark the pages as reclaimable.
- * @alloc: The physical allocation
- */
-void kbase_mem_evictable_mark_reclaim(struct kbase_mem_phy_alloc *alloc);
 
 #endif				/* _KBASE_MEM_H_ */

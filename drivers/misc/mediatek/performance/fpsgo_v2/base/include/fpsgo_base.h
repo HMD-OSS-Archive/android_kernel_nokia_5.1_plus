@@ -62,6 +62,8 @@ struct fbt_thread_blc {
 
 struct fbt_boost_info {
 	int fstb_target_fps;
+	unsigned long long target_time;
+	unsigned int last_blc;
 
 	/* rescue*/
 	struct fbt_proc proc;
@@ -121,6 +123,7 @@ struct render_info {
 	struct fbt_boost_info boost_info;
 	struct fbt_thread_loading *pLoading;
 	struct fbt_thread_blc *p_blc;
+	int is_black;
 
 	struct mutex thr_mlock;
 };
@@ -194,6 +197,12 @@ enum {
 	SWUI = 0,
 	HWUI,
 	GLSURFACE
+};
+
+enum {
+	NOT_ASKED = 0,
+	ASKED_IN = 1,
+	ASKED_OUT = 2,
 };
 
 #endif

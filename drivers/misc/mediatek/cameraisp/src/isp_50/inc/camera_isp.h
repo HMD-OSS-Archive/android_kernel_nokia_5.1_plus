@@ -16,6 +16,12 @@
 
 #include <linux/ioctl.h>
 
+/**
+*boot-T timestamp is supported or not.
+*	undef: not supported
+*/
+#define TS_BOOT_T
+
 #ifndef CONFIG_OF
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
@@ -578,7 +584,8 @@ enum ISP_CMD_ENUM {
 	ISP_CMD_GET_DUMP_INFO,
 	ISP_CMD_SET_MEM_INFO,
 	ISP_CMD_SET_PM_QOS,
-	ISP_CMD_SET_PM_QOS_INFO
+	ISP_CMD_SET_PM_QOS_INFO,
+	ISP_CMD_SET_SEC_DAPC_REG
 };
 
 enum ISP_HALT_DMA_ENUM {
@@ -641,6 +648,8 @@ enum ISP_HALT_DMA_ENUM {
 #define ISP_LARB_MMU_CTL            _IOW(ISP_MAGIC, ISP_CMD_LARB_MMU_CTL, struct ISP_LARB_MMU_STRUCT)
 #define ISP_DUMP_BUFFER            _IOWR(ISP_MAGIC, ISP_CMD_DUMP_BUFFER, struct ISP_DUMP_BUFFER_STRUCT)
 #define ISP_GET_DUMP_INFO          _IOWR(ISP_MAGIC, ISP_CMD_GET_DUMP_INFO, struct ISP_GET_DUMP_INFO_STRUCT)
+
+#define ISP_SET_SEC_DAPC_REG        _IOW(ISP_MAGIC, ISP_CMD_SET_SEC_DAPC_REG, unsigned int)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      struct compat_ISP_REG_IO_STRUCT)

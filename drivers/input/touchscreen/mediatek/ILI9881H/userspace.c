@@ -681,7 +681,7 @@ static ssize_t ilitek_proc_fw_upgrade_read(struct file *filp, char __user *buff,
 	if(res < 0)
 		ipio_info("host download failed!\n");
 #else
-	res = core_firmware_upgrade(UPDATE_FW_PATH, false);
+	res = core_firmware_upgrade(ILI_UPDATE_FW_PATH, false);
 #endif
 
 	ilitek_platform_enable_irq();

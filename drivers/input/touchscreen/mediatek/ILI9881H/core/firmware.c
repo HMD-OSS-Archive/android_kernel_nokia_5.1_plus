@@ -1320,7 +1320,8 @@ int core_firmware_boot_upgrade(void)
 		goto out;
 	}
 
-	flash_fw = kcalloc(flashtab->mem_size, sizeof(uint8_t), GFP_KERNEL);
+	//flash_fw = kcalloc(flashtab->mem_size, sizeof(uint8_t), GFP_KERNEL);
+	flash_fw = (uint8_t*)vmalloc(flashtab->mem_size);
 	if (ERR_ALLOC_MEM(flash_fw)) {
 		ipio_err("Failed to allocate flash_fw memory, %ld\n", PTR_ERR(flash_fw));
 		res = -ENOMEM;
@@ -1362,7 +1363,8 @@ int core_firmware_boot_upgrade(void)
 		res = -EINVAL;
 		goto out;
 	}
-	hex_buffer = kcalloc(fsize, sizeof(uint8_t), GFP_KERNEL);
+	//hex_buffer = kcalloc(fsize, sizeof(uint8_t), GFP_KERNEL);
+	hex_buffer = (uint8_t*)vmalloc(fsize);
 	if (ERR_ALLOC_MEM(hex_buffer)) {
 		ipio_err("Failed to allocate hex_buffer memory, %ld\n", PTR_ERR(hex_buffer));
 		res = -ENOMEM;
@@ -1407,9 +1409,9 @@ out:
 			&ipd->check_esd_status_work, ipd->esd_check_time);
 	}
 
-	ipio_kfree((void **)&flash_fw);
+	ipio_vfree((void **)&flash_fw);
 	ipio_kfree((void **)&g_flash_sector);
-	ipio_kfree((void **)&hex_buffer);
+	ipio_vfree((void **)&hex_buffer);
 	core_firmware->isUpgrading = false;
 	return res;
 }
@@ -1680,7 +1682,8 @@ int core_firmware_upgrade(const char *pFilePath, bool isIRAM)
 		goto out;
 	}
 
-	flash_fw = kcalloc(flashtab->mem_size, sizeof(uint8_t), GFP_KERNEL);
+	//flash_fw = kcalloc(flashtab->mem_size, sizeof(uint8_t), GFP_KERNEL);
+	flash_fw = (uint8_t*)vmalloc(flashtab->mem_size);
 	if (ERR_ALLOC_MEM(flash_fw)) {
 		ipio_err("Failed to allocate flash_fw memory, %ld\n", PTR_ERR(flash_fw));
 		res = -ENOMEM;
@@ -1703,7 +1706,8 @@ int core_firmware_upgrade(const char *pFilePath, bool isIRAM)
 		goto out;
 	}
 
-	hex_buffer = kcalloc(fsize, sizeof(uint8_t), GFP_KERNEL);
+	//hex_buffer = kcalloc(fsize, sizeof(uint8_t), GFP_KERNEL);
+	hex_buffer = (uint8_t*)vmalloc(fsize);
 	if (ERR_ALLOC_MEM(hex_buffer)) {
 		ipio_err("Failed to allocate hex_buffer memory, %ld\n", PTR_ERR(hex_buffer));
 		res = -ENOMEM;
@@ -1764,8 +1768,8 @@ out_hd:
 
 	core_firmware->isUpgrading = false;
 	ipio_kfree((void **)&g_flash_sector);
-	ipio_kfree((void **)&hex_buffer);
-	ipio_kfree((void **)&flash_fw);
+	ipio_vfree((void **)&hex_buffer);
+	ipio_vfree((void **)&flash_fw);
 	ipio_kfree((void **)&g_flash_sector);
 	return res;
 }

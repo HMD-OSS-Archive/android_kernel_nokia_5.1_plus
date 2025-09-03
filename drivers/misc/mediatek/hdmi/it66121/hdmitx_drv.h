@@ -783,7 +783,6 @@ void setHDMITX_ColorDepthPhase(unsigned char ColorDepth, unsigned char bPhase);
 void hdmitx_LoadRegSetting(RegSetEntry table[]);
 
 extern HDMITXDEV hdmiTxDev[1];
-extern unsigned char is_res_change;
 
 void hdmitx_SetInputMode(unsigned char InputMode, unsigned char bInputSignalType);
 void hdmitx_SetCSCScale(unsigned char bInputMode, unsigned char bOutputMode);

@@ -46,6 +46,8 @@
 #define CONNADP_HAS_CLOCK_BUF_CTRL
 #define KERNEL_clk_buf_ctrl connectivity_export_clk_buf_ctrl
 void connectivity_export_clk_buf_ctrl(/*enum clk_buf_id*/ int id, bool onoff);
+#define KERNEL_is_clk_buf_from_pmic connectivity_export_is_clk_buf_from_pmic
+bool connectivity_export_is_clk_buf_from_pmic(void);
 #endif
 
 /*******************************************************************************
@@ -191,3 +193,11 @@ do {                                                              \
 
 #endif /* CONNECTIVITY_BUILD_IN_ADAPTER_H */
 
+/******************************************************************************
+ * GPIO dump information
+ ******************************************************************************/
+#ifndef CONFIG_MTK_GPIO
+#define KERNEL_gpio_dump_regs_range connectivity_export_dump_gpio_info
+extern void gpio_dump_regs_range(int start, int end);
+void connectivity_export_dump_gpio_info(int start, int end);
+#endif

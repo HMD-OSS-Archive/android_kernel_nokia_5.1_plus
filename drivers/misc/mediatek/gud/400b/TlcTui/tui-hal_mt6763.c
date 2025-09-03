@@ -46,7 +46,8 @@ static __always_unused struct tui_mempool g_tui_mem_pool;
  * A real implementation might prefer using more advanced allocator, like ION,
  * in order not to exhaust memory available to kmalloc
  */
-static bool __always_unused allocate_tui_memory_pool(struct tui_mempool *pool, size_t size)
+static bool __always_unused allocate_tui_memory_pool(
+	struct tui_mempool *pool, size_t size)
 {
 	bool ret = false;
 	void *tui_mem_pool = NULL;
@@ -176,8 +177,9 @@ uint32_t hal_tui_alloc(
 		allocbuffer[0].pa = (uint64_t) pa;
 		allocbuffer[1].pa = (uint64_t) (pa + allocsize);
 		allocbuffer[2].pa = (uint64_t) (pa + allocsize*2);
-		pr_debug("%s(%d): buf_1 0x%llx, buf_2 0x%llx, buf_3 0x%llx, extra=0x%x\n", __func__, __LINE__,
-			allocbuffer[0].pa, allocbuffer[1].pa, allocbuffer[2].pa, TUI_EXTRA_MEM_SIZE);
+		pr_debug("%s: buf1=0x%llx buf2=0x%llx buf3=0x%llx ext=0x%x\n",
+			__func__, allocbuffer[0].pa, allocbuffer[1].pa,
+			allocbuffer[2].pa, TUI_EXTRA_MEM_SIZE);
 	} else {
 		pr_notice("%s(%d): tui_region_offline failed!\n",
 			 __func__, __LINE__);

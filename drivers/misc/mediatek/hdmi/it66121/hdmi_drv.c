@@ -211,23 +211,27 @@ int it66121_i2c_read_byte(u8 addr, u8 *data)
 	int ret = 0;
 	struct i2c_client *client = it66121_i2c_client;
 
-	buf = addr;
-	ret = i2c_master_send(client, (const char *)&buf, 1);
-	if (ret < 0) {
-		IT66121_LOG("send command error!!\n");
-		return -EFAULT;
-	}
-	ret = i2c_master_recv(client, (char *)&buf, 1);
-	if (ret < 0) {
-		IT66121_LOG("reads data error!!\n");
-		return -EFAULT;
-	}
+	if (hdmi_powerenable == 1) {
+		buf = addr;
+		ret = i2c_master_send(client, (const char *)&buf, 1);
+		if (ret < 0) {
+			IT66121_LOG("send command error!!\n");
+			return -EFAULT;
+		}
+		ret = i2c_master_recv(client, (char *)&buf, 1);
+		if (ret < 0) {
+			IT66121_LOG("reads data error!!\n");
+			return -EFAULT;
+		}
 #if defined(HDMI_I2C_DEBUG)
-	else
-		IT66121_LOG("%s(0x%02X) = %02X\n", __func__, addr, buf);
+		else
+			IT66121_LOG("%s(0x%02X) = %02X\n", __func__, addr, buf);
 #endif
-	*data = buf;
-	return 0;
+		*data = buf;
+		return 0;
+	} else {
+		return 0;
+	}
 }
 
 /*----------------------------------------------------------------------------*/
@@ -240,16 +244,20 @@ int it66121_i2c_write_byte(u8 addr, u8 data)
 	u8 buf[] = { addr, data };
 	int ret = 0;
 
-	ret = i2c_master_send(client, (const char *)buf, sizeof(buf));
-	if (ret < 0) {
-		IT66121_LOG("send command error!!\n");
-		return -EFAULT;
-	}
+	if (hdmi_powerenable == 1) {
+		ret = i2c_master_send(client, (const char *)buf, sizeof(buf));
+		if (ret < 0) {
+			IT66121_LOG("send command error!!\n");
+			return -EFAULT;
+		}
 #if defined(HDMI_I2C_DEBUG)
-	else
-		IT66121_LOG("%s(0x%02X)= %02X\n", __func__, addr, data);
+		else
+			IT66121_LOG("%s(0x%02X)= %02X\n", __func__, addr, data);
 #endif
-	return 0;
+		return 0;
+	} else {
+		return 0;
+	}
 }
 
 /*----------------------------------------------------------------------------*/
@@ -445,8 +453,8 @@ static int hdmi_timer_kthread(void *data)
 		wait_event_interruptible(hdmi_timer_wq, atomic_read(&hdmi_timer_event));
 		atomic_set(&hdmi_timer_event, 0);
 		/* HDMITX_DevLoopProc_Test(); */
-
-		HDMITX_DevLoopProc();
+		if (hdmi_powerenable == 1)
+			HDMITX_DevLoopProc();
 
 #if defined(CUST_EINT_EINT_HDMI_HPD_NUM)
 		mt_eint_unmask(CUST_EINT_EINT_HDMI_HPD_NUM);
@@ -510,6 +518,7 @@ static int it66121_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VI
 
 	HDMI_Video_Type it66121_video_type = HDMI_480i60_16x9;
 
+
 	IT66121_LOG(">>> %s,\n", __func__);
 
 	if (vformat == HDMI_VIDEO_720x480p_60Hz)
@@ -553,18 +562,14 @@ static void it66121_resume(void)
 	IT66121_LOG("<<< %s,\n", __func__);
 }
 
-enum HDMI_VIDEO_RESOLUTION input_resolution_old;
-unsigned char is_res_change;
+
 static void it66121_get_params(struct HDMI_PARAMS *params)
 {
 	enum HDMI_VIDEO_RESOLUTION input_resolution;
 
 	input_resolution = params->init_config.vformat - 2;
 	memset(params, 0, sizeof(struct HDMI_PARAMS));
-	if (input_resolution_old != input_resolution) {
-		is_res_change = 1;
-		input_resolution_old = input_resolution;
-	}
+
 	IT66121_LOG("it66121_get_params res = %d\n", input_resolution);
 
 	switch (input_resolution) {
@@ -1173,29 +1178,25 @@ static void __exit mtk_hdmitx_exit(void)
 	IT66121_LOG("mtk_hdmitx_exit\n");
 }
 /*----------------------------------------------------------------------------*/
-
 static int __init ite66121_i2c_board_init(void)
 {
 	int ret = 0;
 	unsigned int i2c_port = 0;
 	struct device_node *dn;
-
 	IT66121_LOG("hdmi %s\n", __func__);
-
 	dn = of_find_compatible_node(NULL, NULL, "mediatek,mt8183-hdmitx");
 	if (!dn) {
 		IT66121_LOG("Failed to find HDMI node\n");
 		return -EINVAL;
-	}
-
+		}
 	ret = of_property_read_u32(dn, "mediatek,hdmi_bridgeic_port", &i2c_port);
 	if (ret < 0)
 		i2c_port = 6;
 	ret = i2c_register_board_info(i2c_port, &it66121_i2c_hdmi, 1);
 	if (ret)
 		pr_debug("failed register hdmi i2c,please check port %d\n", i2c_port);
-
 	return ret;
+
 }
 /*----------------------------------------------------------------------------*/
 core_initcall(ite66121_i2c_board_init);

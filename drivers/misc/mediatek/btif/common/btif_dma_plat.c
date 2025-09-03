@@ -510,29 +510,20 @@ int hal_btif_dma_rx_cb_reg(P_MTK_DMA_INFO_STR p_dma_info,
 	return 0;
 }
 
-#define BTIF_STOP_DMA_TIME (HZ/100) /* 10ms */
-
 int btif_tx_dma_ctrl(P_MTK_DMA_INFO_STR p_dma_info, ENUM_DMA_CTRL ctrl_id)
 {
 	unsigned int i_ret = -1;
 	unsigned long base = p_dma_info->base;
 	unsigned int dat;
-	unsigned long timeout;
 
 	BTIF_TRC_FUNC();
 	if (ctrl_id == DMA_CTRL_DISABLE) {
 		/*if write 0 to EN bit, DMA will be stopped imediately*/
 		/*if write 1 to STOP bit, DMA will be stopped after current transaction finished*/
 		/*BTIF_CLR_BIT(TX_DMA_EN(base), DMA_EN_BIT);*/
-		timeout = jiffies + BTIF_STOP_DMA_TIME;
+		BTIF_SET_BIT(TX_DMA_STOP(base), DMA_STOP_BIT);
 		do {
-			if (time_before(jiffies, timeout)) {
-				BTIF_SET_BIT(TX_DMA_STOP(base), DMA_STOP_BIT);
-				dat = BTIF_READ32(TX_DMA_STOP(base));
-			} else {
-				BTIF_ERR_FUNC("******ERROR: BTIF stop dma timeout!******\n");
-				break;
-			}
+			dat = BTIF_READ32(TX_DMA_STOP(base));
 		} while (0x1 & dat);
 		BTIF_DBG_FUNC("BTIF Tx DMA disabled,EN(0x%x),STOP(0x%x)\n",
 			BTIF_READ32(TX_DMA_EN(base)), BTIF_READ32(TX_DMA_STOP(base)));
@@ -555,7 +546,6 @@ int btif_rx_dma_ctrl(P_MTK_DMA_INFO_STR p_dma_info, ENUM_DMA_CTRL ctrl_id)
 	unsigned int i_ret = -1;
 	unsigned long base = p_dma_info->base;
 	unsigned int dat;
-	unsigned long timeout;
 
 	BTIF_TRC_FUNC();
 
@@ -563,15 +553,9 @@ int btif_rx_dma_ctrl(P_MTK_DMA_INFO_STR p_dma_info, ENUM_DMA_CTRL ctrl_id)
 		/*if write 0 to EN bit, DMA will be stopped imediately*/
 		/*if write 1 to STOP bit, DMA will be stopped after current transaction finished*/
 		/*BTIF_CLR_BIT(RX_DMA_EN(base), DMA_EN_BIT);*/
-		timeout = jiffies + BTIF_STOP_DMA_TIME;
+		BTIF_SET_BIT(RX_DMA_STOP(base), DMA_STOP_BIT);
 		do {
-			if (time_before(jiffies, timeout)) {
-				BTIF_SET_BIT(RX_DMA_STOP(base), DMA_STOP_BIT);
-				dat = BTIF_READ32(RX_DMA_STOP(base));
-			} else {
-				BTIF_ERR_FUNC("******ERROR: BTIF stop dma timeout!******\n");
-				break;
-			}
+			dat = BTIF_READ32(RX_DMA_STOP(base));
 		} while (0x1 & dat);
 		BTIF_DBG_FUNC("BTIF Rx DMA disabled,EN(0x%x),STOP(0x%x)\n",
 			BTIF_READ32(RX_DMA_EN(base)), BTIF_READ32(RX_DMA_STOP(base)));
@@ -759,7 +743,7 @@ int hal_tx_dma_irq_handler(P_MTK_DMA_INFO_STR p_dma_info)
 			BTIF_ERR_FUNC
 			    ("BTIF Tx IRQ happened %d times (continiously), between %d.%d and %d.%d\n",
 			     MAX_CONTINIOUS_TIMES, start_timer.tv_sec,
-			     start_timer.tv_usec, end_timer.tv_sec,
+			     start_timer.tv_usec, end_timer.tv_usec,
 			     end_timer.tv_usec);
 		}
 	} else if (vff_len == left_len) {
@@ -1035,7 +1019,7 @@ int hal_rx_dma_irq_handler(P_MTK_DMA_INFO_STR p_dma_info,
 /*disable DMA Rx IER*/
 	hal_btif_dma_ier_ctrl(p_dma_info, false);
 
-	/*clear Rx DMA's interrupt status*/
+/*clear Rx DMA's interrupt status*/
 	BTIF_SET_BIT(RX_DMA_INT_FLAG(base), RX_DMA_INT_DONE | RX_DMA_INT_THRE);
 
 	valid_len = BTIF_READ32(RX_DMA_VFF_VALID_SIZE(base));
@@ -1043,8 +1027,8 @@ int hal_rx_dma_irq_handler(P_MTK_DMA_INFO_STR p_dma_info,
 	wpt = BTIF_READ32(RX_DMA_VFF_WPT(base));
 	if ((valid_len == 0) && (rpt == wpt)) {
 		BTIF_DBG_FUNC
-			("rx int, no data available in Rx DMA, wpt(0x%08x), rpt(0x%08x), flg(0x%x)\n",
-			 rpt, wpt, BTIF_READ32(RX_DMA_INT_FLAG(base)));
+		    ("rx interrupt, no data available in Rx DMA, wpt(0x%08x), rpt(0x%08x)\n",
+		     rpt, wpt);
 	}
 
 	i_ret = 0;
@@ -1168,16 +1152,14 @@ static int hal_tx_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info,
 			       BTIF_READ32(TX_DMA_DEBUG_STATUS(base)));
 		i_ret = 0;
 	} else if (flag == REG_IRQ) {
-		BTIF_INFO_FUNC("TX EN:0x%x,IEN:0x%x,FLG:0x%x,WR:0x%x,RD:0x%x,DBG_STATUS:0x%x\n",
+		BTIF_INFO_FUNC("TX EN:0x%x,IEN:0x%x,FLG:0x%x,WR:0x%x,RD:0x%x\n",
 			       enable, BTIF_READ32(TX_DMA_INT_EN(base)),
-			       int_flag, wpt, rpt, BTIF_READ32(TX_DMA_DEBUG_STATUS(base)));
-		BTIF_INFO_FUNC("INT_BUF_SIZE:0x%x,VALID_SIZE:0x%x,LEFT_SIZE:0x%x\n",
-			       int_buf, valid_size, BTIF_READ32(TX_DMA_VFF_LEFT_SIZE(base)));
+			       int_flag, wpt, rpt);
 	} else {
 		BTIF_WARN_FUNC("unknown flag:%d\n", flag);
 	}
 	BTIF_INFO_FUNC("tx dma %s,data in tx dma is %s sent by HW\n",
-		       (enable & DMA_EN_BIT) && (!(stop && DMA_STOP_BIT)) ?
+		       (enable & DMA_EN_BIT) && (!(stop & DMA_STOP_BIT)) ?
 			"enabled" : "stopped",
 		       ((wpt == rpt) && (int_buf == 0)) ?
 			"completely" : "not completely");
@@ -1247,16 +1229,14 @@ static int hal_rx_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info,
 			       BTIF_READ32(RX_DMA_DEBUG_STATUS(base)));
 		i_ret = 0;
 	}  else if (flag == REG_IRQ) {
-		BTIF_INFO_FUNC("RXEN:0x%x,IEN:0x%x,FLG:0x%x,WR:0x%x,RD:0x%x,DBG_STATUS:0x%x\n",
+		BTIF_INFO_FUNC("RXEN:0x%x,IEN:0x%x,FLG:0x%x,WR:0x%x,RD:0x%x\n",
 			       enable, BTIF_READ32(RX_DMA_INT_EN(base)),
-			       int_flag, wpt, rpt, BTIF_READ32(RX_DMA_DEBUG_STATUS(base)));
-		BTIF_INFO_FUNC("INT_BUF_SIZE:0x%x,VALID_SIZE:0x%x,LEFT_SIZE:0x%x\n",
-			       int_buf, valid_size, BTIF_READ32(RX_DMA_VFF_LEFT_SIZE(base)));
+			       int_flag, wpt, rpt);
 	} else {
 		BTIF_WARN_FUNC("unknown flag:%d\n", flag);
 	}
 	BTIF_INFO_FUNC("rx dma %s,data in rx dma is %s by driver\n",
-		       (enable & DMA_EN_BIT) && (!(stop && DMA_STOP_BIT)) ?
+		       (enable & DMA_EN_BIT) && (!(stop & DMA_STOP_BIT)) ?
 			"enabled" : "stopped",
 		       ((wpt == rpt) && (int_buf == 0)) ?
 			"received" : "not received");
@@ -1277,8 +1257,9 @@ static int hal_rx_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info,
 int hal_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info, ENUM_BTIF_REG_ID flag)
 {
 	unsigned int i_ret = -1;
-
+#ifdef CONFIG_MTK_GIC_V3_EXT
 	mt_irq_dump_status(p_dma_info->p_irq->irq_id);
+#endif
 	if (p_dma_info->dir == DMA_DIR_TX)
 		i_ret = hal_tx_dma_dump_reg(p_dma_info, flag);
 	else if (p_dma_info->dir == DMA_DIR_RX)
@@ -1458,3 +1439,77 @@ static void hal_btif_rx_dma_vff_set_for_4g(void)
 					BTIF_READ32(RX_DMA_VFF_ADDR_H(mtk_btif_rx_dma.base)));
 }
 
+/*****************************************************************************
+ * FUNCTION
+ *  hal_dma_tx_has_pending
+ * DESCRIPTION
+ *  Check whether tx dma vff has pending data
+ * PARAMETERS
+ *  p_dma_info   [IN]        pointer to BTIF dma channel's information
+ * RETURNS
+ *  0 means no pending data
+ *  1 means has pending data
+ *  E_BTIF_FAIL means dma is not enable
+ *****************************************************************************/
+int hal_dma_tx_has_pending(P_MTK_DMA_INFO_STR p_dma_info)
+{
+	unsigned long base = p_dma_info->base;
+	unsigned int enable = BTIF_READ32(TX_DMA_EN(base));
+	unsigned int stop = BTIF_READ32(TX_DMA_STOP(base));
+	unsigned int wpt = BTIF_READ32(TX_DMA_VFF_WPT(base));
+	unsigned int rpt = BTIF_READ32(TX_DMA_VFF_RPT(base));
+	unsigned int int_buf = BTIF_READ32(TX_DMA_INT_BUF_SIZE(base));
+
+	if (!(enable & DMA_EN_BIT) || (stop & DMA_STOP_BIT))
+		return E_BTIF_FAIL;
+
+	return ((wpt == rpt) && (int_buf == 0)) ? 0 : 1;
+}
+
+/*****************************************************************************
+ * FUNCTION
+ *  hal_dma_rx_has_pending
+ * DESCRIPTION
+ *  Check whether rx dma vff has pending data
+ * PARAMETERS
+ *  p_dma_info   [IN]        pointer to BTIF dma channel's information
+ * RETURNS
+ *  0 means no pending data
+ *  1 means has pending data
+ *  E_BTIF_FAIL means dma is not enable
+ *****************************************************************************/
+int hal_dma_rx_has_pending(P_MTK_DMA_INFO_STR p_dma_info)
+{
+	unsigned long base = p_dma_info->base;
+	unsigned int enable = BTIF_READ32(RX_DMA_EN(base));
+	unsigned int stop = BTIF_READ32(RX_DMA_STOP(base));
+	unsigned int wpt = BTIF_READ32(RX_DMA_VFF_WPT(base));
+	unsigned int rpt = BTIF_READ32(RX_DMA_VFF_RPT(base));
+	unsigned int int_buf = BTIF_READ32(RX_DMA_INT_BUF_SIZE(base));
+
+	if (!(enable & DMA_EN_BIT) || (stop & DMA_STOP_BIT))
+		return E_BTIF_FAIL;
+
+	return ((wpt == rpt) && (int_buf == 0)) ? 0 : 1;
+}
+
+/*****************************************************************************
+ * FUNCTION
+ *  hal_rx_dma_lock
+ * DESCRIPTION
+ *  Need to lock data path before checking if the data path is empty.
+ * PARAMETERS
+ *  enable   [IN]        lock or unlock
+ * RETURNS
+ *  0 means success
+ *****************************************************************************/
+int hal_rx_dma_lock(bool enable)
+{
+	static unsigned long flag;
+
+	if (enable)
+		spin_lock_irqsave(&(g_clk_cg_spinlock), flag);
+	else
+		spin_unlock_irqrestore(&(g_clk_cg_spinlock), flag);
+	return 0;
+}

@@ -15,10 +15,10 @@
  *	PengtaoFan
  *  20150624: the first driver from ov8858
  *  20150706: add pip 15fps setting
- *  20150716: æ›´æ–°logçš„æ‰“å°æ–¹æ³•
+ *  20150716: ?´æ–°log?„æ??°æ–¹æ³?
  *  20150720: use non - continue mode
  *  15072011511229: add pdaf, the pdaf old has be delete by recovery
- *  15072011511229: add æ—§çš„logå…¼å®¹ï¼Œæ–°çš„logåœ¨è¿™ä¸ªç‰ˆæœ¬ä¸èƒ½æ‰“å°logï¼Ÿï¼Ÿ
+ *  15072011511229: add ?§ç?log?¼å®¹ï¼Œæ–°?„log?¨è?ä¸ªç??¬ä??½æ??°logï¼Ÿï?
  *  15072209190629: non - continue mode bandwith limited , has <tiaowen> , modify to continue mode
  *  15072209201129: modify not enter init_setting bug
  *  15072718000000: crc addd 0x49c09f86
@@ -208,6 +208,7 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
  { 4208, 3120,	184,  480, 3840, 2160, 1920, 1080,   0,	0, 1920, 1080,	 0, 0, 1920, 1080}, /* slim video */
 };
 
+static int long_shutter_flag = 0;
 
 static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
  //for 3l6
@@ -348,7 +349,7 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 	set_dummy();
 }	/*	set_max_framerate  */
 
-void four_seconds_mode(void)
+static void four_seconds_mode(void)
 {
 	write_cmos_sensor_8(0x0307, 0x60);
 	write_cmos_sensor_8(0x3C1F, 0x03);
@@ -380,7 +381,7 @@ void four_seconds_mode(void)
 }
 
 
-void two_seconds_mode(void)
+static void two_seconds_mode(void)
 {
 	write_cmos_sensor_8(0x0307, 0x60);
 	write_cmos_sensor_8(0x3C1F, 0x03);
@@ -410,75 +411,140 @@ void two_seconds_mode(void)
 	write_cmos_sensor_8(0x0203, 0xA0);
 	write_cmos_sensor_8(0x0104, 0x00);  //20180628 Lissy modify
 }
-#if 0
-static void write_shutter(kal_uint32 shutter)
+
+static void short_mode(void)
 {
-    if(shutter >= 392155)
-        write_cmos_sensor(0x0204, 0x0180);
-    else if(shutter < 392155 && shutter >= 196077)
-        write_cmos_sensor(0x0204, 0x0060);
+    write_cmos_sensor_8(0x0307, 0x78);
+    write_cmos_sensor_8(0x3C1F, 0x00);
+    write_cmos_sensor_8(0x030D, 0x04);
+    write_cmos_sensor_8(0x030E, 0x00);
+    write_cmos_sensor_8(0x030F, 0x64);
+    write_cmos_sensor_8(0x3C17, 0x00);
+    write_cmos_sensor_8(0x0820, 0x04);
+    write_cmos_sensor_8(0x0821, 0xB0);
+    write_cmos_sensor_8(0x38C5, 0x09);
+    write_cmos_sensor_8(0x38D9, 0x2A);
+    write_cmos_sensor_8(0x38DB, 0x0A);
+    write_cmos_sensor_8(0x38DD, 0x0B);
+    write_cmos_sensor_8(0x38C3, 0x0A);
+    write_cmos_sensor_8(0x38C1, 0x0F);
+    write_cmos_sensor_8(0x38D7, 0x0A);
+    write_cmos_sensor_8(0x38D5, 0x09);
+    write_cmos_sensor_8(0x38B1, 0x0F);
+    write_cmos_sensor_8(0x3932, 0x18);
+    write_cmos_sensor_8(0x3938, 0x00);
+    write_cmos_sensor_8(0x0104, 0x01);
+    write_cmos_sensor_8(0x0340, 0x0C);
+    write_cmos_sensor_8(0x0341, 0xBC);
+    write_cmos_sensor_8(0x0342, 0x13);
+    write_cmos_sensor_8(0x0343, 0x20);
+    write_cmos_sensor_8(0x0202, 0x03);
+    write_cmos_sensor_8(0x0203, 0xDE);
+    //write_cmos_sensor_8(0x0106, 0x01);
+    write_cmos_sensor_8(0x0104, 0x00);
+}
 
-    shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
-    //Extend frame length
-    write_cmos_sensor(0x0340, imgsensor.frame_length & 0xFFFF);
-    write_cmos_sensor(0X0202, shutter & 0xFFFF);
-}	/*	write_shutter  */
-#endif
-
-#if 1
-static void write_shutter(kal_uint32 shutter)
+static void stream_off(void) 
 {
-	int i=0;
-  int framecnt=0;
-
-	LOG_INF("Enter! Write Shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
-#if 1	
-	//1. Command Streaming off, Mike 20180525
 	write_cmos_sensor_8(0x0100, 0x00);
-	msleep(10);
+}
 
+static void stream_on(void) 
+{
+    write_cmos_sensor_8(0x3C1E, 0x01);
+    write_cmos_sensor_8(0x0100, 0x01);
+    write_cmos_sensor_8(0x3C1E, 0x00);
+}
 	  	
-	//2. Check Streaming off operation did well, Mike 20180525			
+static bool check_stream_on(int times) 
+{
+    int i=0;
+    int framecnt=0;
+    for (i = 0; i < times; i++) {
+        framecnt = read_cmos_sensor_byte(0x0005); // waiting for sensor to  stop output  then  set the  setting
+        if (framecnt != 0xFF)
+        {
+            LOG_INF("Check Streaming on ok at i=%d\n",i);
+            return true;
+        }
+        else
+        {
+            msleep(5);
+        }
+    }
+	LOG_INF("Check Streaming on Fail...\n");
+    return false;
+}
+static bool check_stream_off(void) 
+{
+    int i=0;
+    int framecnt=0;
 	for (i = 0; i < 100; i++) {
-	 	framecnt = read_cmos_sensor_byte(0x0005); // waiting for sensor to  stop output  then  set the  setting
-	 	if (framecnt == 0xFF)
-	 	{
-	 		LOG_INF("Check Streaming off OK at i=%d\n",i);
-		  break;
-	 	}
-  	else
-  	{
-  		//LOG_INF("[%d]Check Streaming off Fail...\n",i);
-	 		msleep(5);
-  	}
- 	}
+	    framecnt = read_cmos_sensor_byte(0x0005); // waiting for sensor to  stop output  then  set the  setting
+	    if (framecnt == 0xFF)
+	    {
+                LOG_INF("Check Streaming off ok at i=%d\n",i);
+                return true;
+	    }
+  	    else
+  	    {
+	        msleep(5);
+  	    }
+     }
+	LOG_INF("Check Streaming off Fail...\n");
+    return false;
 				 	  
-	//3. Apply mode change setting, Mike 20180525
-	if(framecnt == 0xFF)	
-#endif		
-	{	
-		if(shutter >= 392155)
-		{	
-			four_seconds_mode();
-	 		LOG_INF("4sec shutter cmd...\n");
-		}else if(shutter < 392155 && shutter >= 196077)
-		{	
-			two_seconds_mode();
-	 		LOG_INF("2sec shutter cmd...\n");
-		}
-	}
-				
-#if 1
-	//4. Streaming on, Mike 20180525				
-	write_cmos_sensor_8(0x3C1E, 0x01);
-	write_cmos_sensor_8(0x0100, 0x01);
-	write_cmos_sensor_8(0x3C1E, 0x00);
-	LOG_INF("Streaming on\n");
-#endif					
-	LOG_INF("Exit! Write Shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+}
 
+static void long_to_short_mode(void)
+{
+    short_mode();
+
+    stream_on();
+
+    check_stream_on(100);
+
+    stream_off();
+
+    check_stream_off();
+
+}
+
+static void write_shutter(kal_uint32 shutter)
+	{	
+    LOG_INF("Enter! Write Shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+
+    stream_off();
+    msleep(10);
+    check_stream_off();
+	
+    if(shutter >= 392155)
+    {	
+        long_to_short_mode();
+	four_seconds_mode();
+	LOG_INF("4sec shutter cmd...\n");
+    }   
+    else if(shutter < 392155 && shutter >= 196077)
+    {	
+        long_to_short_mode();
+	two_seconds_mode();
+	LOG_INF("2sec shutter cmd...\n");
+    }
+
+    stream_on();
+
+    if(shutter >= 196077) {
+        check_stream_on(500);
+	msleep(10);
+        stream_off();
+	check_stream_off();
+        short_mode();
+        stream_on();
+        long_shutter_flag = 0;
+    }
+								
+	LOG_INF("Exit! Write Shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 }	/*	write_shutter  */
-#endif
 
 
 /*************************************************************************
@@ -497,11 +563,18 @@ static void write_shutter(kal_uint32 shutter)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
+
 static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
 	//kal_uint32 frame_length = 0;
+	if (long_shutter_flag == 1){
+        return;
+	}
+	if(shutter >= 196077) {
+        long_shutter_flag = 1;
+	}
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
@@ -510,6 +583,7 @@ static void set_shutter(kal_uint32 shutter)
 	// OV Recommend Solution
 	// if shutter bigger than frame_length, should extend frame length first
 	spin_lock(&imgsensor_drv_lock);
+
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
 	else

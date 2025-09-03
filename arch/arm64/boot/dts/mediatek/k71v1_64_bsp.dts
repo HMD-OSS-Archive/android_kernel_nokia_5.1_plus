@@ -9,7 +9,7 @@
 	#size-cells = <2>;
 	ranges;
 
-	zone-movable-cma-memory {
+	zmc-default {
 		compatible = "mediatek,zone_movable_cma";
 		size = <0 0xffc00000>;
 		alignment = <0 0x10000000>;
@@ -19,10 +19,6 @@
 
 /* chosen */
 &chosen {
-	bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram \
-initrd=0x55000000,0x3000000 loglevel=8 \
-androidboot.selinux=permissive androidboot.hardware=mt6771 \
-initcall_debug=1";
 	/* fpga may has no lk, we need to specify display info here */
 	/* fb buffer is reserved using this dts by memory node above */
 

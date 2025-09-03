@@ -84,6 +84,7 @@ obj-$(CONFIG_MTK_BOOT) += boot/
 obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
 obj-$(CONFIG_MTK_CHIP) += chip/
 obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
+obj-$(CONFIG_MTK_TRNG_DRIVER) += trng/
 obj-y += devinfo/
 obj-$(CONFIG_CRYPTO_DEV_DX_CC63P) += dxcc/
 obj-$(CONFIG_MTK_LCM) += lcm/
@@ -102,6 +103,7 @@ obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_MTK_BLOCK_TAG) +=blocktag/
+obj-y += pidmap/
 obj-$(CONFIG_MEDIATEK_SOLUTION)  += sched/
 obj-y += cameraisp/
 obj-$(CONFIG_MTK_IMGSENSOR) += imgsensor/src/
@@ -132,9 +134,8 @@ ifeq ($(CONFIG_HAVE_MTK_IN_HOUSE_TEE_SUPPORT),y)
 #obj-$(CONFIG_TRUSTY) += gcpu/
 endif
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
-obj-$(CONFIG_MTK_LEGACY_SECMEM_SUPPORT) += secmem/
 obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei/
-obj-$(CONFIG_WATCHDATA_TEE_SUPPORT) += watchtrust/
+obj-$(CONFIG_TRUSTKERNEL_TEE_SUPPORT) += tkcore/
 obj-$(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) += mtee/
 obj-$(CONFIG_MTK_DEBUG_LATCH)	+= debug_latch/
 obj-$(CONFIG_MTK_DEBUG_TRACER)	+= debug_tracer/
@@ -161,7 +162,6 @@ obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
 obj-$(CONFIG_MTK_ATF_LOGGER)	+= atf_log/
 obj-$(CONFIG_MTK_MLOG) += mlog/
 obj-$(CONFIG_MTK_EMI_BWL)	+= emi_bwl/
-obj-$(CONFIG_MTK_MJC_DRIVER)	+= mjc/
 #obj-$(CONFIG_MD32_SUPPORT)     += md32/
 obj-$(CONFIG_MTK_EMI_MBW) += emi_mbw/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/tc1_interface/),)

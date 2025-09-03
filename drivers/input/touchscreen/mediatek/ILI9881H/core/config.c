@@ -32,6 +32,7 @@
 #include "gesture.h"
 #include "mp_test.h"
 
+extern int gdouble_tap_enable_nvt;
 /* the list of support chip */
 uint32_t ipio_chip_list[] = {
 	CHIP_TYPE_ILI9881,
@@ -371,8 +372,10 @@ void core_config_ic_suspend(void)
 	ipio_info("Starting to suspend ...\n");
 
 	ilitek_platform_disable_irq();
+	mutex_lock(&ipd->plat_mutex);
 	core_fr->isEnableFR = false;
-
+	core_config->system_suspend = true;
+	mutex_unlock(&ipd->plat_mutex);
 	/* release all touches */
 #ifdef MT_B_TYPE
 	for (i = 0 ; i < MAX_TOUCH_NUM; i++) {
@@ -399,7 +402,9 @@ void core_config_ic_suspend(void)
 
 	ipio_info("Enabled Gesture = %d\n", core_config->isEnableGesture);
 
-	if (core_config->isEnableGesture) {
+	pr_err("ILITEK  %s, %d: gdouble_tap_enable_nvt = %d\n", __func__, __LINE__, gdouble_tap_enable_nvt);
+	if (gdouble_tap_enable_nvt)
+	{
 		core_fr->isEnableFR = true;
 		core_fr->actual_fw_mode = P5_0_FIRMWARE_GESTURE_MODE;
 #ifdef HOST_DOWNLOAD
@@ -408,6 +413,7 @@ void core_config_ic_suspend(void)
 #else 
 		core_gesture_mode_switch(core_gesture->mode);
 #endif
+		enable_irq_wake(ipd->isr_gpio);
 		ilitek_platform_enable_irq();
 	} else {
 		/* sleep in */
@@ -429,7 +435,9 @@ void core_config_ic_resume(void)
 {
 	ipio_info("Starting to resume ...\n");
 	core_fr->isEnableFR = false;
-	if (core_config->isEnableGesture) {
+	pr_err("ILITEK  %s, %d: gdouble_tap_enable_nvt = %d\n", __func__, __LINE__, gdouble_tap_enable_nvt);
+	if (gdouble_tap_enable_nvt)
+	{
 #ifdef HOST_DOWNLOAD
 		ilitek_platform_disable_irq();
 		if(core_gesture_load_ap_code() < 0) {
@@ -460,9 +468,11 @@ void core_config_ic_resume(void)
 		queue_delayed_work(ipd->check_esd_status_queue,
 			&ipd->check_esd_status_work, ipd->esd_check_time);
 #endif
+	disable_irq_wake(ipd->isr_gpio);
 	ilitek_platform_enable_irq();
 	mdelay(10);
 	core_fr->isEnableFR = true;
+	core_config->system_suspend = false;
 	ipio_info("Resume done\n");
 }
 EXPORT_SYMBOL(core_config_ic_resume);
@@ -1011,7 +1021,7 @@ int core_config_init(void)
 			core_config->chip_type = 0x0000;
 
 			core_config->do_ic_reset = false;
-#ifdef GESTURE_ENABLE
+#ifdef GESTURE_MODE
 			core_config->isEnableGesture = true;
 #else
 			core_config->isEnableGesture = false;

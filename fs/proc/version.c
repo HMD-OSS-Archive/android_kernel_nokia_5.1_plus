@@ -11,8 +11,8 @@ extern char fih_skuid[8];
 static int version_proc_show(struct seq_file *m, void *v)
 {
 	int length = 0, offset = 0;
-	char old_linux_version[256] = {0}, new_linux_version[256] = {0};
-	char *timezone = NULL, *at = NULL, *user = NULL, *machine = NULL, *left_parentheses = NULL, *right_parentheses = NULL;	
+	char old_linux_version[384] = {0}, new_linux_version[384] = {0};
+	char *at = NULL, *user = NULL, *machine = NULL, *left_parentheses = NULL, *right_parentheses = NULL;
 
 	printk("%s: SW version(skuid) = %s\n", __func__, fih_skuid);
 	if(strncmp(fih_skuid, "600ID", 5) != 0)
@@ -25,7 +25,7 @@ static int version_proc_show(struct seq_file *m, void *v)
 	}
 	else
 	{
-		snprintf(old_linux_version, 256, linux_proc_banner, utsname()->sysname, utsname()->release, utsname()->version);
+		snprintf(old_linux_version, 384, linux_proc_banner, utsname()->sysname, utsname()->release, utsname()->version);
 		/*
 		Linux version 3.4.0-g8bf076e (fihtdc@fihtdc-sw5) (gcc version 4.9.x-google 20140827 (prerelease) (GCC) ) 
 		#11 SMP PREEMPT Tue Aug 30 15:00:42 CST 2016
@@ -49,15 +49,8 @@ static int version_proc_show(struct seq_file *m, void *v)
 
 		// copy ) and others
 		length = strlen(old_linux_version) - strlen(right_parentheses)+1;
-		snprintf(new_linux_version, 256, "%s%s", new_linux_version, right_parentheses);
+		snprintf(new_linux_version, 384, "%s%s", new_linux_version, right_parentheses);
 		//strncpy(&new_linux_version[offset], right_parentheses, length);
-
-		timezone = strstr(new_linux_version, "CST");
-
-		if(timezone != NULL)
-		{
-			memcpy(timezone, "WIB", 3);
-		}
 
 		seq_printf(m, new_linux_version);
 

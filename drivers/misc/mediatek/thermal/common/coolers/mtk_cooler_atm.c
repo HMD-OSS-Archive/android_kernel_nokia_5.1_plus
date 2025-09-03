@@ -54,6 +54,9 @@
 #include "vpu_dvfs.h"
 #endif
 #endif
+#if defined(CATM_TPCB_EXTEND)
+#include <mt-plat/mtk_devinfo.h>
+#endif
 
 /*****************************************************************************
  *  Local switches
@@ -244,6 +247,11 @@ static int COEF_AE = -1;
 static int COEF_BE = -1;
 static int COEF_AX = -1;
 static int COEF_BX = -1;
+#if defined(CATM_TPCB_EXTEND)
+static int TPCB_EXTEND = -1;
+static int g_turbo_bin;
+#endif
+
 /* static int current_TTJ = -1; */
 static int current_ETJ = -1;
 
@@ -277,13 +285,16 @@ static int CATMP_STEADY_TTJ_DELTA = 10000; /* magic number decided by experience
 	static struct timer_list atm_timer;
 	static unsigned long atm_timer_polling_delay = CLATM_INIT_HRTIMER_POLLING_DELAY;
 	/**
-	 * If curr_temp >= polling_trip_temp1, use interval
+	 * If curr_temp >= polling_trip_temp0, use interval/polling_factor0
+	 * else If curr_temp >= polling_trip_temp1, use interval
 	 * else if cur_temp >= polling_trip_temp2 && curr_temp < polling_trip_temp1,
 	 * use interval*polling_factor1
 	 * else, use interval*polling_factor2
 	 */
+	static int polling_trip_temp0 = 75000;
 	static int polling_trip_temp1 = 65000;
 	static int polling_trip_temp2 = 40000;
+	static int polling_factor0 = 2;
 	static int polling_factor1 = 2;
 	static int polling_factor2 = 4;
 #endif
@@ -1055,13 +1066,30 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 
 #if defined(DDR_STRESS_WORKAROUND)
 	if (tscpu_g_curr_temp > 70000) {
+#if defined(CATM_TPCB_EXTEND)
+		if ((mt_ppm_thermal_get_cur_power() >= mt_ppm_thermal_get_max_power()) ||
+			(g_turbo_bin && (mt_ppm_thermal_get_cur_power() >= mt_ppm_thermal_get_power_big_max_opp(1))))
+#else
 		if (mt_ppm_thermal_get_cur_power() >= mt_ppm_thermal_get_max_power())
+#endif
 			opp0_cool = 1;
 	} else if (tscpu_g_curr_temp < 65000)
 		opp0_cool = 0;
 
+#if defined(CATM_TPCB_EXTEND)
+	if ((g_turbo_bin) && (STEADY_TARGET_TPCB >= 58000))
+		opp0_cool = 0;
+
+	if (g_turbo_bin && (opp0_cool)) {
+		if (cpu_power > mt_ppm_thermal_get_power_big_max_opp(1))
+			cpu_power = mt_ppm_thermal_get_power_big_max_opp(1) - 5;
+	} else if (opp0_cool)
+		cpu_power -= 5;
+
+#else
 	if (opp0_cool)
 		cpu_power -= 5;
+#endif
 #endif
 
 #if defined(THERMAL_VPU_SUPPORT)
@@ -1154,6 +1182,10 @@ static int __phpb_calc_delta(int curr_temp, int prev_temp, int phpb_param_idx)
 		delta_power = (delta_power_tt + delta_power_tp) /
 			      __phpb_dynamic_theta(phpb_theta_max);
 	}
+	if ((tt < 0) && (curr_temp < TARGET_TJ)) {
+		delta_power = 0;
+		tscpu_dprintk("%s Wrong  TARGET_TJ\n", __func__);
+	}
 
 	return delta_power;
 }
@@ -1214,8 +1246,10 @@ static int phpb_calc_total(int prev_total_power, long curr_temp, long prev_temp)
 	 * calculated based on current opp
 	 */
 	int delta_power, total_power, curr_power;
+#if 0
 	int tt = TARGET_TJ - curr_temp;
 	int tp = prev_temp - curr_temp;
+#endif
 
 	delta_power = phpb_calc_delta(curr_temp, prev_temp);
 #if defined(THERMAL_VPU_SUPPORT)
@@ -1225,6 +1259,8 @@ static int phpb_calc_total(int prev_total_power, long curr_temp, long prev_temp)
 		return prev_total_power;
 
 	curr_power = get_total_curr_power();
+
+#if 0 /* Just use previous total power to avoid conflict with fpsgo */
 	/* In some conditions, we will consider using current request power to
 	 * avoid giving unlimit power budget.
 	 * Temp. rising is large,  requset power is of course less than power
@@ -1240,6 +1276,11 @@ static int phpb_calc_total(int prev_total_power, long curr_temp, long prev_temp)
 				prev_temp, curr_temp, prev_total_power, delta_power);
 		total_power = prev_total_power + delta_power;
 	}
+#else
+	tscpu_dprintk("%s prev_temp %ld, curr_temp %ld, prev %d, delta %d, curr %d\n", __func__,
+			prev_temp, curr_temp, prev_total_power, delta_power, curr_power);
+	total_power = prev_total_power + delta_power;
+#endif
 
 	total_power = clamp(total_power, MINIMUM_TOTAL_POWER, MAXIMUM_TOTAL_POWER);
 
@@ -1609,6 +1650,18 @@ static int decide_ttj(void)
 #endif
 
 	return ret;
+}
+#endif
+
+#if defined(CATM_TPCB_EXTEND)
+#define CPUFREQ_SEG_CODE_IDX_0 7
+
+static void mtk_thermal_get_turbo(void)
+{
+
+	g_turbo_bin = (get_devinfo_with_index(CPUFREQ_SEG_CODE_IDX_0) >> 3) & 0x1;
+
+	tscpu_printk("%s: turbo: %d\n", __func__, g_turbo_bin);
 }
 #endif
 
@@ -2018,6 +2071,9 @@ static int tscpu_read_ctm(struct seq_file *m, void *v)
 	seq_printf(m, "CATMP_STEADY_TTJ_DELTA %d\n", CATMP_STEADY_TTJ_DELTA);
 	/* --- cATM+ parameters --- */
 
+#if defined(CATM_TPCB_EXTEND)
+	seq_printf(m, "TPCB_EXTEND %d\n", TPCB_EXTEND);
+#endif
 	return 0;
 }
 
@@ -2029,7 +2085,9 @@ static ssize_t tscpu_write_ctm(struct file *file, const char __user *buffer, siz
 	int t_ctm_on = -1, t_MAX_TARGET_TJ = -1, t_STEADY_TARGET_TJ = -1, t_TRIP_TPCB =
 	    -1, t_STEADY_TARGET_TPCB = -1, t_MAX_EXIT_TJ = -1, t_STEADY_EXIT_TJ = -1, t_COEF_AE =
 	    -1, t_COEF_BE = -1, t_COEF_AX = -1, t_COEF_BX = -1,
-	    t_K_SUM_TT_HIGH = -1, t_K_SUM_TT_LOW = -1, t_CATMP_STEADY_TTJ_DELTA = -1;
+	    t_K_SUM_TT_HIGH = -1, t_K_SUM_TT_LOW = -1, t_CATMP_STEADY_TTJ_DELTA = -1,
+	    t_TPCB_EXTEND = -1;
+	int scan_count = 0;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
@@ -2037,14 +2095,17 @@ static ssize_t tscpu_write_ctm(struct file *file, const char __user *buffer, siz
 
 	desc[len] = '\0';
 
-	if (sscanf(desc, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d", &t_ctm_on, &t_MAX_TARGET_TJ,
+	scan_count = sscanf(desc, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", &t_ctm_on, &t_MAX_TARGET_TJ,
 		   &t_STEADY_TARGET_TJ, &t_TRIP_TPCB, &t_STEADY_TARGET_TPCB, &t_MAX_EXIT_TJ,
 		   &t_STEADY_EXIT_TJ, &t_COEF_AE, &t_COEF_BE, &t_COEF_AX, &t_COEF_BX,
-		   &t_K_SUM_TT_HIGH, &t_K_SUM_TT_LOW, &t_CATMP_STEADY_TTJ_DELTA) >= 11) {
-		tscpu_printk("%s input %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n", __func__, t_ctm_on,
+		   &t_K_SUM_TT_HIGH, &t_K_SUM_TT_LOW, &t_CATMP_STEADY_TTJ_DELTA, &t_TPCB_EXTEND);
+
+	if (scan_count >= 11) {
+		tscpu_printk("%s input %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n", __func__, t_ctm_on,
 			     t_MAX_TARGET_TJ, t_STEADY_TARGET_TJ, t_TRIP_TPCB, t_STEADY_TARGET_TPCB,
 			     t_MAX_EXIT_TJ, t_STEADY_EXIT_TJ, t_COEF_AE, t_COEF_BE, t_COEF_AX,
-			     t_COEF_BX, t_K_SUM_TT_HIGH, t_K_SUM_TT_LOW, t_CATMP_STEADY_TTJ_DELTA);
+			     t_COEF_BX, t_K_SUM_TT_HIGH, t_K_SUM_TT_LOW, t_CATMP_STEADY_TTJ_DELTA,
+			     t_TPCB_EXTEND);
 
 		if (t_ctm_on < 0 || t_ctm_on > 2) {
 			#ifdef CONFIG_MTK_AEE_FEATURE
@@ -2108,6 +2169,18 @@ static ssize_t tscpu_write_ctm(struct file *file, const char __user *buffer, siz
 		COEF_BE = t_COEF_BE;
 		COEF_AX = t_COEF_AX;
 		COEF_BX = t_COEF_BX;
+
+#if defined(CATM_TPCB_EXTEND)
+		if (g_turbo_bin && (STEADY_TARGET_TPCB >= 52000)) {
+			if (t_TPCB_EXTEND > 0 && t_TPCB_EXTEND < 10000) {
+				TRIP_TPCB += t_TPCB_EXTEND;
+				STEADY_TARGET_TPCB += t_TPCB_EXTEND;
+				COEF_AE = STEADY_TARGET_TJ + (STEADY_TARGET_TPCB * COEF_BE) / 1000;
+				COEF_AX = STEADY_EXIT_TJ + (STEADY_TARGET_TPCB * COEF_BX) / 1000;
+				TPCB_EXTEND = t_TPCB_EXTEND;
+			}
+		}
+#endif
 
 		/* +++ cATM+ parameters +++ */
 		if (ctm_on == 2) {
@@ -2563,16 +2636,17 @@ static unsigned long atm_get_timeout_time(int curr_temp)
 	return atm_timer_polling_delay;
 #else
 
-	if (curr_temp >= polling_trip_temp1)
+	if (curr_temp >= polling_trip_temp0)
+		return atm_timer_polling_delay / polling_factor0;
+	else if (curr_temp >= polling_trip_temp1)
 		return atm_timer_polling_delay;
-	else if (curr_temp < polling_trip_temp2)
-		return atm_timer_polling_delay * polling_factor2;
-	else
+	else if (curr_temp >= polling_trip_temp2)
 		return atm_timer_polling_delay * polling_factor1;
+	else
+		return atm_timer_polling_delay * polling_factor2;
 #endif
 }
 #endif
-
 
 #if KRTATM_TIMER == KRTATM_HR
 static enum hrtimer_restart atm_loop(struct hrtimer *timer)
@@ -2855,6 +2929,10 @@ static int __init mtk_cooler_atm_init(void)
 	atm_hrtimer_init();
 #elif KRTATM_SCH == KRTATM_NORMAL
 	atm_timer_init();
+#endif
+
+#if defined(CATM_TPCB_EXTEND)
+	mtk_thermal_get_turbo();
 #endif
 
 	tscpu_dprintk("%s creates krtatm\n", __func__);

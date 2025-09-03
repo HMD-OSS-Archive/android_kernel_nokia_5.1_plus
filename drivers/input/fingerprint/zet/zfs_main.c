@@ -81,6 +81,7 @@
 #endif
 
 #include <linux/fb.h>
+#include <linux/wakelock.h>
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
@@ -1880,6 +1881,8 @@ static int zfs_irq_init(zfs_data_t *zfs,
 		zet_debug(ERR_LOG, "[ZET] %s irq thread request failed, retval=%d\n", __func__, error);
 
 	zfs->irq_count = 1;
+	enable_irq_wake(zfs->irq);///<20181023 Nick add
+
 	zet_disable_irq(zfs);
 /* ----------------------FIH BJ C2 MT6755 END------------------------ */	
 	

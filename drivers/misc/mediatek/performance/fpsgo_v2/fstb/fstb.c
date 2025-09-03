@@ -59,6 +59,7 @@ static void fstb_fps_stats(struct work_struct *work);
 static DECLARE_WORK(fps_stats_work, (void *) fstb_fps_stats);
 static HLIST_HEAD(fstb_frame_infos);
 static HLIST_HEAD(fstb_render_target_fps);
+static HLIST_HEAD(fstb_fteh_list);
 
 static struct hrtimer hrt;
 static struct workqueue_struct *wq;
@@ -227,6 +228,84 @@ int switch_fps_range(int nr_level, struct fps_level *level)
 		return 0;
 	else
 		return 1;
+}
+
+int fpsgo_fbt2fstb_query_fteh_list(int tid)
+{
+	struct FSTB_FTEH_LIST *iter;
+	struct task_struct *tsk, *gtsk;
+	char proc_name[16], thrd_name[16];
+	int ret = 0;
+
+	rcu_read_lock();
+	tsk = find_task_by_vpid(tid);
+	if (tsk) {
+		get_task_struct(tsk);
+		gtsk = find_task_by_vpid(tsk->tgid);
+		if (!strncpy(thrd_name, tsk->comm, 16)) {
+			put_task_struct(tsk);
+			goto out;
+		}
+		put_task_struct(tsk);
+		if (gtsk) {
+			get_task_struct(gtsk);
+			if (!strncpy(proc_name, gtsk->comm, 16)) {
+				put_task_struct(gtsk);
+				goto out;
+			}
+			put_task_struct(gtsk);
+		} else
+			goto out;
+	} else
+		goto out;
+	rcu_read_unlock();
+
+	hlist_for_each_entry(iter, &fstb_fteh_list, hlist) {
+		if (!strncmp(proc_name, iter->process_name,
+				strlen(iter->process_name)) &&
+			!strncmp(thrd_name, iter->thread_name,
+				strlen(iter->thread_name))) {
+			ret = 1;
+			break;
+		}
+	}
+
+	return ret;
+
+out:
+	rcu_read_unlock();
+	return ret;
+}
+
+static int set_fteh_list(char *proc_name,
+	char *thrd_name)
+{
+	struct FSTB_FTEH_LIST *new_fteh_list;
+
+	new_fteh_list =
+		kzalloc(sizeof(*new_fteh_list), GFP_KERNEL);
+	if (new_fteh_list == NULL)
+		return -ENOMEM;
+
+	if (!strncpy(
+				new_fteh_list->process_name,
+				proc_name, 16)) {
+		kfree(new_fteh_list);
+		return -ENOMEM;
+	}
+
+	if (!strncpy(
+				new_fteh_list->thread_name,
+				thrd_name, 16)) {
+		kfree(new_fteh_list);
+		return -ENOMEM;
+	}
+
+	hlist_add_head(&new_fteh_list->hlist,
+			&fstb_fteh_list);
+
+	return 0;
+
 }
 
 static int switch_redner_fps_range(char *proc_name,
@@ -867,10 +946,6 @@ static int calculate_fps_limit(struct FSTB_FRAME_INFO *iter, int target_fps)
 	put_task_struct(gtsk);
 
 	hlist_for_each_entry(rtfiter, &fstb_render_target_fps, hlist) {
-		mtk_fstb_dprintk("%s %s %d %s %d\n",
-				__func__, proc_name, iter->pid,
-				rtfiter->process_name, rtfiter->pid);
-
 		if (!strncmp(proc_name, rtfiter->process_name, 16)
 				|| rtfiter->pid == iter->pid) {
 
@@ -1048,8 +1123,6 @@ static void fstb_fps_stats(struct work_struct *work)
 
 			iter->target_fps = calculate_fps_limit(iter, target_fps);
 			ged_kpi_set_target_FPS(iter->bufid, iter->target_fps);
-			mtk_fstb_dprintk_always("%s pid:%d target_fps:%d frame_type %d\n",
-					__func__, iter->pid, iter->target_fps, iter->frame_type);
 			/* if queue fps == 0, we delete that frame_info */
 		} else {
 			hlist_del(&iter->hlist);
@@ -1315,6 +1388,75 @@ static const struct file_operations fstb_level_fops = {
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.write = fstb_level_write,
+	.release = single_release,
+};
+
+static int fstb_fteh_list_read(struct seq_file *m, void *v)
+{
+	struct FSTB_FTEH_LIST *ftehiter = NULL;
+
+	hlist_for_each_entry(ftehiter, &fstb_fteh_list, hlist) {
+		seq_printf(m, "%s %s\n",
+				ftehiter->process_name, ftehiter->thread_name);
+	}
+
+	return 0;
+}
+
+static ssize_t fstb_fteh_list_write(struct file *file,
+		const char __user *buffer,
+		size_t count, loff_t *data)
+{
+	int ret = count;
+	char *sepstr, *substr, *buf;
+	char proc_name[16], thrd_name[16];
+
+	buf = kmalloc(count + 1, GFP_KERNEL);
+	if (buf == NULL)
+		return -ENOMEM;
+
+	if (copy_from_user(buf, buffer, count)) {
+		ret = -EFAULT;
+		goto err;
+	}
+	buf[count] = '\0';
+	sepstr = buf;
+
+	substr = strsep(&sepstr, " ");
+	if (!substr || !strncpy(proc_name, substr, 16)) {
+		ret = -EINVAL;
+		goto err;
+	}
+	proc_name[15] = '\0';
+
+	substr = strsep(&sepstr, " ");
+
+	if (!substr || !strncpy(thrd_name, substr, 16)) {
+		ret = -EINVAL;
+		goto err;
+	}
+
+	thrd_name[15] = '\0';
+
+	if (set_fteh_list(proc_name, thrd_name))
+		ret = -EINVAL;
+
+err:
+	kfree(buf);
+	return ret;
+}
+
+static int fstb_fteh_list_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, fstb_fteh_list_read, NULL);
+}
+
+static const struct file_operations fstb_fteh_list_fops = {
+	.owner = THIS_MODULE,
+	.open = fstb_fteh_list_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = fstb_fteh_list_write,
 	.release = single_release,
 };
 
@@ -1643,7 +1785,7 @@ static int fpsgo_status_read(struct seq_file *m, void *v)
 		return 0;
 	}
 
-	seq_puts(m, "tid\tname\t\tBypass\tVsync-aligned\trenderMethod\tcurrentFPS\ttargetFPS\n");
+	seq_puts(m, "tid\tname\t\tBypass\tVsync-aligned\trenderMethod\tcurrentFPS\ttargetFPS\tfteh_list\n");
 
 	hlist_for_each_entry(iter, &fstb_frame_infos, hlist) {
 		rcu_read_lock();
@@ -1694,9 +1836,13 @@ static int fpsgo_status_read(struct seq_file *m, void *v)
 		seq_printf(m, "%d\t\t", iter->queue_fps > CFG_MAX_FPS_LIMIT ? CFG_MAX_FPS_LIMIT : iter->queue_fps);
 
 		if (iter->frame_type != BY_PASS_TYPE)
-			seq_printf(m, "%d\t", iter->target_fps);
+			seq_printf(m, "%d\t\t", iter->target_fps);
 		else
-			seq_puts(m, "NA\t");
+			seq_puts(m, "NA\t\t");
+
+		seq_printf(m, "%d\t",
+			fpsgo_fbt2fstb_query_fteh_list(iter->pid));
+
 		seq_puts(m, "\n");
 
 	}
@@ -1777,6 +1923,12 @@ int mtk_fstb_init(void)
 			fstb_debugfs_dir,
 			NULL,
 			&fstb_fps_list_fops);
+
+	debugfs_create_file("fstb_fteh_list",
+			S_IRUGO | S_IWUSR | S_IWGRP,
+			fstb_debugfs_dir,
+			NULL,
+			&fstb_fteh_list_fops);
 
 	debugfs_create_file("fstb_tune_error_threshold",
 			S_IRUGO | S_IWUSR | S_IWGRP,

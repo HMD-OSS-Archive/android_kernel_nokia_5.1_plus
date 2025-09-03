@@ -1141,12 +1141,21 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	}
 	if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR |
 	    I2C_TIMEOUT | I2C_MAS_ERR)) {
+		static u16 tmp_addr;
+
 		if (i2c->irq_stat & I2C_TIMEOUT)
 			dev_info(i2c->dev, "addr: %x, scl timeout error\n",
 				i2c->addr);
-		else
-			dev_info(i2c->dev, "addr: %x, transfer ACK error\n",
-				i2c->addr);
+		else {
+			if (tmp_addr != i2c->addr) {
+				dev_info(i2c->dev,
+					  "addr: %x, transfer ACK error\n",
+					  i2c->addr);
+				tmp_addr = i2c->addr;
+			} else
+				pr_info_ratelimited("addr: %x, transfer ACK error\n",
+						      i2c->addr);
+		}
 
 		if (i2c->ch_offset != 0)
 			i2c_writew(I2C_FIFO_ADDR_CLR_MCH | I2C_FIFO_ADDR_CLR,
@@ -1626,7 +1635,6 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 	else {	/* dump regs info for hw trig i2c if ACK err */
 		if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)) {
 			dev_err(i2c->dev, "addr: %x, transfer ACK error\n", i2c->addr);
-			i2c_dump_info(i2c);
 			mt_i2c_init_hw(i2c);
 		}
 	}

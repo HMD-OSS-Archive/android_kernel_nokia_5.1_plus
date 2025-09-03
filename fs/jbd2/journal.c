@@ -191,7 +191,6 @@ static int kjournald2(void *arg)
 {
 	journal_t *journal = arg;
 	transaction_t *transaction;
-	bool io_boost_done = false;
 
 	/*
 	 * Set up an interval timer which can be used to trigger a commit wakeup
@@ -206,7 +205,7 @@ static int kjournald2(void *arg)
 	journal->j_task = current;
 	wake_up(&journal->j_wait_done_commit);
 
-	mtk_io_boost_test_and_add_tid(current->pid, &io_boost_done);
+	mtk_iobst_register_tid(current->pid);
 
 	/*
 	 * And now, wait forever for commit wakeup events.
@@ -225,8 +224,6 @@ loop:
 		jbd_debug(1, "OK, requests differ\n");
 		write_unlock(&journal->j_state_lock);
 		del_timer_sync(&journal->j_commit_timer);
-
-		mtk_io_boost_test_and_add_tid(current->pid, &io_boost_done);
 
 		jbd2_journal_commit_transaction(journal);
 		write_lock(&journal->j_state_lock);
@@ -283,11 +280,11 @@ loop:
 	goto loop;
 
 end_loop:
-	write_unlock(&journal->j_state_lock);
 	del_timer_sync(&journal->j_commit_timer);
 	journal->j_task = NULL;
 	wake_up(&journal->j_wait_done_commit);
 	jbd_debug(1, "Journal thread exiting.\n");
+	write_unlock(&journal->j_state_lock);
 	return 0;
 }
 
@@ -922,7 +919,7 @@ out:
 }
 
 /*
- * This is a variaon of __jbd2_update_log_tail which checks for validity of
+ * This is a variation of __jbd2_update_log_tail which checks for validity of
  * provided log tail and locks j_checkpoint_mutex. So it is safe against races
  * with other threads updating log tail.
  */
@@ -1391,6 +1388,9 @@ int jbd2_journal_update_sb_log_tail(journal_t *journal, tid_t tail_tid,
 {
 	journal_superblock_t *sb = journal->j_superblock;
 	int ret;
+
+	if (is_journal_aborted(journal))
+		return -EIO;
 
 	BUG_ON(!mutex_is_locked(&journal->j_checkpoint_mutex));
 	jbd_debug(1, "JBD2: updating superblock (start %lu, seq %u)\n",
