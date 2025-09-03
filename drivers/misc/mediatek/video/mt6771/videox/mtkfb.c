@@ -2111,12 +2111,12 @@ static void _mtkfb_draw_block(unsigned long addr, unsigned int x,
 	}
 }
 
-extern void fih_info_set_lcm(char *info);   //PDA: Add LCM info
+extern void fih_info_set_lcm(char *info);   // Add LCM info
 char *mtkfb_find_lcm_driver(void)
 {
 	_parse_tag_videolfb();
 	DISPMSG("%s, %s\n", __func__, mtkfb_lcm_name);
-	fih_info_set_lcm(mtkfb_lcm_name);    //PDA: Add LCM info
+	fih_info_set_lcm(mtkfb_lcm_name);    // Add LCM info
 	return mtkfb_lcm_name;
 }
 

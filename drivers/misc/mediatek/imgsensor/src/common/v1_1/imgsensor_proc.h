@@ -22,7 +22,7 @@
 #define IMGSENSOR_STATUS_INFO_LENGTH 128
 #define camera_info_size 4096
 
-///FIH Start
+///OEM Start
 #define PROC_FSER_INFO "driver/s5k4h7yx_ser_info"
 
 #define PROC_SKBUFFER_INFO "driver/s5k5e9yx_kbuffer_info"
@@ -31,16 +31,16 @@
 
 #define camera_lsc_info_size 2048
 #define camera_wbc_info_size 1024
-///FIH  End
+///OEM  End
 
 extern char mtk_ccm_name[camera_info_size];
-///FIH Start
+///OEM Start
 extern char fih_s5k4h7yx_sernum[20];
 
 extern char fih_s5k5e9yx_kbuffer[camera_info_size];
 extern char fih_s5k5e9yx_lsc[camera_lsc_info_size];
 extern char fih_s5k5e9yx_wbc[1];
-///FIH  End
+///OEM  End
 
 enum IMGSENSOR_RETURN imgsensor_proc_init(void);
 

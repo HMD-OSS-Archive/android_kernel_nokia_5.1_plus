@@ -53,10 +53,10 @@ uint8_t esd_retry = 0;
 uint8_t esd_retry_max = 5;
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
 
-//fihtdc@ray for charging flag work -------------------------------------- st.
+// for charging flag work -------------------------------------- st.
 static struct delayed_work nvt_usb_check_work;
 static struct workqueue_struct *nvt_usb_check_wq;
-//fihtdc@ray for charging flag work -------------------------------------- ed.
+// for charging flag work -------------------------------------- ed.
 
 #define BBOX_TOUCH_PROBE_FAIL    do {printk("BBox;%s: touch probe fail!\n", __func__); printk("BBox::UEC;7::0\n");} while (0);
 #define BBOX_TOUCH_I2C_READ_FAIL    do {printk("BBox;%s: touch i2c read fail!\n", __func__); printk("BBox::UEC;7::1\n");} while (0);
@@ -1104,7 +1104,7 @@ static void nvt_esd_check_func(struct work_struct *work)
 }
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
 
-//fihtdc@ray for charging flag work -------------------------------------- st.
+// for charging flag work -------------------------------------- st.
 static void nvt_usb_check_func(struct work_struct *work)
 {
 	pr_debug("nvt_usb_check_func ++\n");
@@ -1126,7 +1126,7 @@ static void nvt_usb_check_func(struct work_struct *work)
   mutex_unlock(&ts->lock);
   pr_debug("nvt_usb_check_func --\n");
 }
-//fihtdc@ray for charging flag work -------------------------------------- ed.
+// for charging flag work -------------------------------------- ed.
 
 #define POINT_DATA_LEN 65
 /*******************************************************
@@ -1719,10 +1719,10 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 			msecs_to_jiffies(NVT_TOUCH_ESD_CHECK_PERIOD));
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
 
-//fihtdc@ray for charging flag work -------------------------------------- st.
+// for charging flag work -------------------------------------- st.
 	INIT_DELAYED_WORK(&nvt_usb_check_work, nvt_usb_check_func);
 	nvt_usb_check_wq = create_workqueue("nvt_usb_check_wq");
-//fihtdc@ray for charging flag work -------------------------------------- ed.
+// for charging flag work -------------------------------------- ed.
 
 	//---set device node---
 #if NVT_TOUCH_PROC
@@ -2030,7 +2030,7 @@ static void nvt_ts_resume(struct device *dev)
 
 	NVT_LOG("end\n");
 	
-//fihtdc@ray for charging flag work -------------------------------------- st.
+// for charging flag work -------------------------------------- st.
 #if 1
 	queue_delayed_work(nvt_usb_check_wq, &nvt_usb_check_work,
 			msecs_to_jiffies(NVT_TOUCH_USB_CHECK_PERIOD));
@@ -2045,7 +2045,7 @@ static void nvt_ts_resume(struct device *dev)
     }
   }
 #endif
-//fihtdc@ray for charging flag work -------------------------------------- ed.
+// for charging flag work -------------------------------------- ed.
 
 	return;
 }

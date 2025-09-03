@@ -23,13 +23,13 @@
 char mtk_ccm_name[camera_info_size] = { 0 };
 char mtk_i2c_dump[camera_info_size] = { 0 };
 
-///FIH
+///OEM
 char fih_s5k4h7yx_sernum[20] = { 0 };
 
 char fih_s5k5e9yx_kbuffer[camera_info_size] = { 0 };
 char fih_s5k5e9yx_lsc[camera_lsc_info_size] = { 0 };
 char fih_s5k5e9yx_wbc[1] = { 0 };
-//FIH
+//OEM
 
 static int pdaf_type_info_read(struct seq_file *m, void *v)
 {
@@ -287,7 +287,7 @@ static int subsys_camera_info_read(struct seq_file *m, void *v)
 	seq_printf(m, "%s\n", mtk_ccm_name);
 	return 0;
 };
-///FIH
+///OEM
 static int s5k4h7yx_ser_read(struct seq_file *m, void *v)
 {
 	PK_DBG("s5k4h7yx_ser_read %s\n", fih_s5k4h7yx_sernum);
@@ -316,7 +316,7 @@ static int s5k5e9yx_wbc_read(struct seq_file *m, void *v)
 	return 0;
 };
 
-///FIH
+///OEM
 
 static int subsys_camsensor_read(struct seq_file *m, void *v)
 {
@@ -349,7 +349,7 @@ static int imgsensor_proc_status_info_open(struct inode *inode,
 {
 	return single_open(file, imgsensor_proc_status_info_read, NULL);
 };
-///FIH
+///OEM
 static int proc_s5k4h7yx_ser_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, s5k4h7yx_ser_read, NULL);
@@ -369,7 +369,7 @@ static int proc_s5k5e9yx_wbc_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, s5k5e9yx_wbc_read, NULL);
 };
-///FIH
+///OEM
 static const struct file_operations fcamera_proc_fops1 = {
 	.owner = THIS_MODULE,
 	.open = proc_camera_info_open,
@@ -403,7 +403,7 @@ static const struct file_operations fcamera_proc_fops4 = {
 	.open = proc_camsensor_open,
 	.write = CAMERA_HW_Reg_Debug4
 };
-///FIH
+///OEM
 static const struct file_operations fcamera_proc_s5k4h7yx_ser = {
 	.owner = THIS_MODULE,
 	.open = proc_s5k4h7yx_ser_open,
@@ -427,7 +427,7 @@ static const struct file_operations fcamera_proc_s5k5e9yx_wbc = {
 	.open = proc_s5k5e9yx_wbc_open,
 	.read = seq_read,
 };
-///FIH
+///OEM
 
 
 static const struct file_operations fcamera_proc_fops_set_pdaf_type = {
@@ -447,13 +447,13 @@ enum IMGSENSOR_RETURN imgsensor_proc_init(void)
 {
 	memset(mtk_ccm_name, 0, camera_info_size);
 
-///FIH
+///OEM
   memset(fih_s5k4h7yx_sernum, 0, 20);
 
   memset(fih_s5k5e9yx_kbuffer, 0, camera_info_size);
   memset(fih_s5k5e9yx_lsc, 0, camera_lsc_info_size);
   memset(fih_s5k5e9yx_wbc, 0, 1);
-///FIH
+///OEM
 
 	proc_create("driver/camsensor", 0000, NULL, &fcamera_proc_fops);
 	proc_create("driver/camsensor2", 0000, NULL, &fcamera_proc_fops2);
@@ -467,13 +467,13 @@ enum IMGSENSOR_RETURN imgsensor_proc_init(void)
 	/* Camera information */
 	proc_create(PROC_CAMERA_INFO, 0000, NULL, &fcamera_proc_fops1);
 
-///FIH
+///OEM
   proc_create(PROC_FSER_INFO, 0, NULL, &fcamera_proc_s5k4h7yx_ser);
 
   proc_create(PROC_SKBUFFER_INFO, 0, NULL, &fcamera_proc_s5k5e9yx_kbuffer);
   proc_create(PROC_SLSC_INFO, 0, NULL, &fcamera_proc_s5k5e9yx_lsc);
   proc_create(PROC_SWBC_INFO, 0, NULL, &fcamera_proc_s5k5e9yx_wbc);
-///FIH
+///OEM
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }

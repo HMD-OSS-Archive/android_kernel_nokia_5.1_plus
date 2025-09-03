@@ -94,7 +94,7 @@ static struct pinctrl *af_pinctrl;
 static struct pinctrl_state *af_high;
 static struct pinctrl_state *af_low;
 #else
-//shawn
+//OEM
 unsigned int afvdd;
 #endif
 
@@ -183,7 +183,7 @@ void AFRegulatorCtrl(int Stage)
 				lens_device->of_node = node;
 
 				//#if defined(CONFIG_MACH_MT6765)
-				#if 1 //fih,for PDA
+				#if 1 //OEM,for PDA
 				regVCAMAF =
 					regulator_get(lens_device, "vldo28");
 				#else
@@ -281,7 +281,7 @@ static int AF_pinctrl_init(void)
 		lens_device->of_node = kd_node;
 	}
 #else
-	//shawn
+	//OEM
 	struct device_node *node, *kd_node;
 	pr_err("@@AF_pinctrl_init\n");
 	node = of_find_compatible_node(NULL, NULL, "mediatek,CAMERA_MAIN_AF");
@@ -304,7 +304,7 @@ static int AF_pinctrl_init(void)
 
 static int AF_pinctrl_set_power(int enable)
 {
-//shawn
+//OEM
 #if AF_USE_PINCTRL	//pinctrl
 	if (IS_ERR(af_pinctrl)) {
 		pr_err("pinctrl is not available\n");

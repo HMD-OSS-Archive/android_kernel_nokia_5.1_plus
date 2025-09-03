@@ -94,9 +94,9 @@
 #include <asm/setup.h>
 #include <asm/sections.h>
 #include <asm/cacheflush.h>
-//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
+// add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
 #include <linux/utsname.h>
-//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
+// add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #include <mt-plat/mtk_ram_console.h>
 #endif
@@ -384,7 +384,7 @@ static void __init setup_command_line(char *command_line)
 
 
 
-/* Begin, Sunyongshan, for FIH feature, 20171201 */
+/* Begin, OEM feature, 20171201 */
 char fih_skuid[8] = {'0'};
 bool fih_efuse_enable = 1;
 unsigned short fih_hwid = 0xFF;
@@ -429,7 +429,7 @@ unsigned short fih_gethwid(void)
 }
 EXPORT_SYMBOL(fih_gethwid);
 
-/*sunjie + for runin*/
+/*sun + for runin*/
 unsigned int fih_get_ramtest_result(void)
 {
     unsigned char result=0;
@@ -731,9 +731,9 @@ void fih_get_skuid(void)
 	strncpy(fih_skuid, p, 5);
 	//printk("fih_get_skuid fih_skuid = %s\n", fih_skuid);
 }
-/* END, Sunyongshan, for FIH feature, 20171201 */
+/* END, OEM feature, 20171201 */
 
-//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
+// add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
 static void fih_info_version(void)
 {
   char *timezone = NULL;
@@ -748,7 +748,7 @@ static void fih_info_version(void)
     }
   }
 }
-//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
+// add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
 
 /*
  * We need to finalize in a non-__init function or else race conditions
@@ -923,7 +923,7 @@ asmlinkage __visible void __init start_kernel(void)
 	build_all_zonelists(NULL);
 	page_alloc_init();
 
-	// Sunyongshan
+	// OEM
 	fih_hwid = fih_gethwid();
 	if ( ((fih_hwid >> 8) != 0x4) && ((fih_hwid >> 8) != 0x5) )
 		fih_hwid = 0x411;
@@ -935,9 +935,9 @@ asmlinkage __visible void __init start_kernel(void)
 
 	fih_get_skuid();
 
-	//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
+	// add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
 	fih_info_version();
-	//FIH,Michael,add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
+	// add for Indonesia TKDN SW Requirements V1.0-13: Build Time Zone
 
 	pr_notice("Kernel command line: %s\n", boot_command_line);
 	/* parameters may set static keys */

@@ -34,15 +34,15 @@ enum rtc_spare_enum {
 	RTC_32K_LESS,
 	RTC_LP_DET,
 	RTC_FG_INIT,
-        /*Begin, Sunyongshan, for reboot condition, 20171106*/
+        /*Begin, for reboot condition, 20171106*/
 #if 0
         RTC_SPAR0_FIH_FTM,
         RTC_SPAR0_FIH_META,
         RTC_SPAR0_FIH_PRELOADER,
 #endif
-	RTC_SPAR0_FIH_RAMTEST, /*sunjie +*/
+	RTC_SPAR0_FIH_RAMTEST, /*OEM +*/
         RTC_VBAT,
-        /*End, Sunyongshan, for reboot condition, 20171106*/
+        /*End, for reboot condition, 20171106*/
 	RTC_SPAR_NUM
 };
 

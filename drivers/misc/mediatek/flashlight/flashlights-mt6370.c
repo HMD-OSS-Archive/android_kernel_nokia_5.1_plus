@@ -25,14 +25,14 @@
 #include <linux/of.h>
 #include <linux/list.h>
 #include <linux/delay.h>
-/**Panda add FTM Flashlight start*/
+/** add FTM Flashlight start*/
 #define FLASH_PROC_CTL
 #ifdef FLASH_PROC_CTL
 #include <linux/proc_fs.h>   //proc file use
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
 #endif
-/**Panda add FTM Flashlight end*/
+/** add FTM Flashlight end*/
 
 #include "richtek/rt-flashlight.h"
 #include "mtk_charger.h"
@@ -129,7 +129,7 @@ static int mt6370_set_level(int channel, int level);
 static void mt6370_work_disable_ch1(struct work_struct *data);
 static enum hrtimer_restart mt6370_timer_func_ch1(struct hrtimer *timer);
 
-/**Panda add FTM Flashlight start*/
+/** add FTM Flashlight start*/
 #ifdef FLASH_PROC_CTL
 static int mt6370_init(void);
 static int mt6370_uninit(void);
@@ -183,7 +183,7 @@ static  struct file_operations flash_proc_fops = {
     .write = flash_proc_write,
 };
 #endif
-/**Panda add FTM Flashlight end*/
+/** add FTM Flashlight end*/
 #if 0
 static int mt6370_is_charger_ready(void)
 {
@@ -879,11 +879,11 @@ static int __init flashlight_mt6370_init(void)
 
 	pr_debug("Init start.\n");
 
-/**Panda add FTM Flashlight start*/
+/** add FTM Flashlight start*/
 #ifdef FLASH_PROC_CTL
     proc_create("driver/flashlight", 0, NULL, &flash_proc_fops);
 #endif
-/**Panda add FTM Flashlight end*/
+/** add FTM Flashlight end*/
 
 #ifndef CONFIG_OF
 	ret = platform_device_register(&mt6370_platform_device);

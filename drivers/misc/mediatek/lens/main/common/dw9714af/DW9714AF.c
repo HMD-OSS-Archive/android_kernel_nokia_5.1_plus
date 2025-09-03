@@ -24,10 +24,10 @@
 
 #include "lens_info.h"
 
-//JYLee added for slop control 20180607 [
+// added for slop control 20180607 [
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
-//JYLee added for slop control 20180607 ]
+// added for slop control 20180607 ]
 
 #define AF_DRVNAME "DW9714AF_DRV"
 #define AF_I2C_SLAVE_ADDR 0x18
@@ -44,7 +44,7 @@ static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
 
-static unsigned long g_u4AF_INF = 0; //JYLee modified to fix AF init fail 20180409
+static unsigned long g_u4AF_INF = 0; // modified to fix AF init fail 20180409
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4CurrPosition;
 
@@ -91,7 +91,7 @@ static int s4AF_WriteReg(u16 a_u2Data)
 
 	return 0;
 }
-//JYLee added for slop control 20180607 [
+// added for slop control 20180607 [
 static int s4AF_WriteReg_16bit(u16 a_u2Data)
 {
 	int i4RetValue = 0;
@@ -111,7 +111,7 @@ static int s4AF_WriteReg_16bit(u16 a_u2Data)
 
 	return 0;
 }
-//JYLee added for slop control 20180607 ]
+// added for slop control 20180607 ]
 static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
 	struct stAF_MotorInfo stMotorInfo;
@@ -207,11 +207,11 @@ long DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 	case AFIOC_T_SETMACROPOS:
 		i4RetValue = setAFMacro(a_u4Param);
 		break;
-//JYLee modified to fix AF init fail 20180409 [
+// modified to fix AF init fail 20180409 [
 	case AFIOC_S_SETPARA:
 		LOG_INF("No AFIOC_S_SETPARA CMD\n");
 		break;
-//JYLee modified to fix AF init fail 20180409 ]
+// modified to fix AF init fail 20180409 ]
 	default:
 		LOG_INF("No CMD\n");
 		i4RetValue = -EPERM;
@@ -249,14 +249,14 @@ int DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
-	//FIH add for LSC mode
+	// add for LSC mode
 	DW9714AF_LSC_Mode();
 	usleep_range(100000, 110000);
 
 	if (*g_pAF_Opened == 2) {
 		LOG_INF("Wait\n");
 		//s4AF_WriteReg(0x80); /* Power down mode */
-		s4AF_WriteReg_16bit(0x8000); /* Power down mode */ //JYLee added for slop control 20180607
+		s4AF_WriteReg_16bit(0x8000); /* Power down mode */ // added for slop control 20180607
 	}
 
 	if (*g_pAF_Opened) {
@@ -271,7 +271,7 @@ int DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	return 0;
 }
-//JYLee added for slop control 20180607 [
+// added for slop control 20180607 [
 int DW9714AF_Init(void)
 {
 	LOG_INF("DW9714AF_Init Start\n");
@@ -293,7 +293,7 @@ int DW9714AF_Init(void)
 
 	return 1;
 }
-//JYLee added for slop control 20180607 ]
+// added for slop control 20180607 ]
 int DW9714AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 			  spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
@@ -302,7 +302,7 @@ int DW9714AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
 
-	DW9714AF_Init(); //JYLee added for slop control 20180607
+	DW9714AF_Init(); // added for slop control 20180607
 	initAF();
 	LOG_INF("DW9714AF_SetI2Cclient End\n");
 	return 1;

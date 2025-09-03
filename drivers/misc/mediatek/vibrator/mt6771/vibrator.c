@@ -25,7 +25,7 @@
 #include "vibrator.h"
 
 /*******************************************************************************
- * FIH BBS LOG marcro definition
+ * OEM BBS LOG marcro definition
  ******************************************************************************/
 #define BBOX_VIBRATOR_WRTIE_REGISTER_FAIL do {printk("BBox::UEC;19::7\n");} while (0);
 #define BBOX_VIBRATOR_SET_REGULATOR_FAIL do {printk("BBox::UEC;19::8\n");} while (0);

@@ -108,15 +108,15 @@ u16 rtc_spare_reg[RTC_SPAR_NUM][3] = {
 	{RTC_SPAR0, 0x1, 6},
 	{RTC_SPAR0, 0x1, 7},
 	{RTC_AL_HOU, 0xff, 8},
-        /*Begin, Sunyongshan, for reboot command, 20171106*/
+        /*Begin, for reboot command, 20171106*/
 #if 0
         {RTC_SPAR0, 0x1, 14},//FTM
         {RTC_SPAR0, 0x1, 15},//META
         {RTC_SPAR0, 0x1, 12},//Preloader
 #endif
-        {RTC_SPAR0, 0x1, 11}//RAMTEST sunjie +
-//        {RTC_AL_DOM, 0x7f, 8}   //jason add for vbat
-        /*End, Sunyongshan, for reboot command, 20171106*/
+        {RTC_SPAR0, 0x1, 11}//RAMTEST +
+//        {RTC_AL_DOM, 0x7f, 8}   // add for vbat
+        /*End, for reboot command, 20171106*/
 
 };
 

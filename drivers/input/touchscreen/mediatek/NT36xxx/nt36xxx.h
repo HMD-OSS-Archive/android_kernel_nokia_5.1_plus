@@ -80,9 +80,9 @@ extern const uint16_t gesture_key_array[];
 #define NVT_TOUCH_ESD_PROTECT 0
 #define NVT_TOUCH_ESD_CHECK_PERIOD 1500	/* ms */
 
-//fihtdc@ray for charging flag work -------------------------------------- st.
+// for charging flag work -------------------------------------- st.
 #define NVT_TOUCH_USB_CHECK_PERIOD 300	/* ms */
-//fihtdc@ray for charging flag work -------------------------------------- ed.
+// for charging flag work -------------------------------------- ed.
 
 //--I2C DMA info.---
 #define I2C_DMA_SUPPORT 1

@@ -98,7 +98,7 @@ static int __init verity_buildvariant(char *line)
 
 __setup("buildvariant=", verity_buildvariant);
 
-/* SimonSSChang, Allow invalid metadata when the device is no secure fused {*/
+/*  Allow invalid metadata when the device is no secure fused {*/
 static int __init platform_securityfused_state_param(char *line)
 {
 	strlcpy(securityfused, line, sizeof(securityfused));
@@ -106,7 +106,7 @@ static int __init platform_securityfused_state_param(char *line)
 }
 
 __setup("androidboot.securityfused=", platform_securityfused_state_param);
-/* } SimonSSChang */
+/* } */
 
 static inline bool default_verity_key_id(void)
 {
@@ -134,14 +134,14 @@ static inline bool is_unlocked(void)
 	return !strncmp(verifiedbootstate, unlocked, sizeof(unlocked));
 }
 
-/* SimonSSChang, Allow invalid metadata when the device is no secure fused {*/
+/* Allow invalid metadata when the device is no secure fused {*/
 static inline bool is_not_securityfused(void)
 {
 	static const char fused[] = "false";
 
 	return !strncmp(securityfused, fused, sizeof(fused));
 }
-/* } SimonSSChang */
+/* } */
 
 static int read_block_dev(struct bio_read *payload, struct block_device *bdev,
 		sector_t offset, int length)
@@ -733,14 +733,14 @@ static int android_verity_ctr(struct dm_target *ti, unsigned argc, char **argv)
 	if (is_eng())
 		return create_linear_device(ti, dev, target_device);
 
-/* SimonSSChang, skip the system partition dm verity check {*/
+/* skip the system partition dm verity check {*/
 #ifdef FIH_SKIP_SYSTEM_DM_VERITY
 	if(1) {
 		DMWARN("For 000F model, skip system partition dm verity");
 		return create_linear_device(ti, dev, target_device);
 	}
 #endif
-/* } SimonSSChang */
+/* } */
 	strreplace(key_id, '#', ' ');
 
 	DMINFO("key:%s dev:%s", key_id, target_device);
@@ -760,12 +760,12 @@ static int android_verity_ctr(struct dm_target *ti, unsigned argc, char **argv)
 			return create_linear_device(ti, dev, target_device);
 		}
 
-		/* SimonSSChang, Allow invalid metadata when the device is no secure fused {*/
+		/* Allow invalid metadata when the device is no secure fused {*/
 		if (is_not_securityfused()) {
 			DMWARN("Allow invalid metadata when device is not secure fused");
 			return create_linear_device(ti, dev, target_device);
 		}
-		/* } SimonSSChang */
+		/* } */
 
 		DMERR("Error while extracting metadata");
 		handle_error();

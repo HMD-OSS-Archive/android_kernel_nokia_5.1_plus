@@ -109,12 +109,12 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define FALSE 0
 #endif
 
-//zachary add
+//OEM add
 extern void FIH_tp_lcm_resume(void);
 extern void FIH_tp_lcm_suspend(void);
 extern unsigned int islcmconnected;
 extern int gdouble_tap_enable_nvt;
-//zachary add
+//OEM add
 
 extern unsigned short fih_hwid;
 
@@ -1179,7 +1179,7 @@ static unsigned int lcm_esd_check(void)
 
 }
 
-#if 0 //gaty
+#if 0 //OEM
 static unsigned int lcm_ata_check(unsigned char *buffer)
 {
 #ifndef BUILD_LK
@@ -1241,7 +1241,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
-#if 0 //gaty
+#if 0 //OEM
 static void *lcm_switch_mode(int mode)
 {
 #ifndef BUILD_LK

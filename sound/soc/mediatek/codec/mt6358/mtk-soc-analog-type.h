@@ -97,11 +97,11 @@ enum audio_analog_mux_type {
 	AUDIO_ANALOG_MUX_IN_LEVEL_SHIFT_BUFFER,
 	AUDIO_ANALOG_MUX_MUTE,
 	AUDIO_ANALOG_MUX_OPEN,
-/* fihtdc@ray: add for awinic mode -------------------------------- st. */
+/* OEM: add for awinic mode -------------------------------- st. */
 #if defined(CONFIG_SND_SOC_AW87329)
 	AUDIO_ANALOG_DEVICE_SPEAKER_AW87329_MODE,
 #endif //CONFIG_SND_SOC_AW87329
-/* fihtdc@ray: add for awinic mode -------------------------------- ed. */
+/* OEM: add for awinic mode -------------------------------- ed. */
 	AUDIO_ANALOG_MAX_MUX_TYPE
 };
 
@@ -129,11 +129,11 @@ enum audio_analog_device_type {
 	ANA_DEV_IN_PREAMP_R = 18,
 	ANA_DEV_IN_DIGITAL_MIC = 19,
 	ANA_DEV_RECEIVER_SPEAKER_SWITCH = 20,
-/* fihtdc@ray: add for HAC receiver ------------------------------- st. */
+/* OEM: add for HAC receiver ------------------------------- st. */
 #if defined(CONFIG_SND_SOC_AW87329)
 	ANA_DEV_HAC_RECEIVER_SWITCH = 21,
 #endif //CONFIG_SND_SOC_AW87329
-/* fihtdc@ray: add for HAC receiver ------------------------------- ed. */
+/* OEM: add for HAC receiver ------------------------------- ed. */
 	ANA_DEV_MAX
 };
 

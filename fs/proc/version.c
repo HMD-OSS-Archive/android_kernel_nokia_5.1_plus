@@ -6,7 +6,7 @@
 #include <linux/seq_file.h>
 #include <linux/utsname.h>
 
-// Sunyongshan
+// OEM
 extern char fih_skuid[8];
 
 static int version_proc_show(struct seq_file *m, void *v)

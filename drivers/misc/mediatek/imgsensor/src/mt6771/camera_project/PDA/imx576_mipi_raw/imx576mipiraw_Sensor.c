@@ -53,7 +53,7 @@
 #undef VENDOR_EDIT
 
 #ifdef VENDOR_EDIT
-/*Feng.Hu@Camera.Driver 20170815 add for multi project using one build*/
+/*Camera.Driver 20170815 add for multi project using one build*/
 #include <soc/oppo/oppo_project.h>
 #endif
 
@@ -65,13 +65,13 @@
 */
 
 #ifdef VENDOR_EDIT
-/* Add by LiuBin for register device info at 20160616 */
+/* Add for register device info at 20160616 */
 #define DEVICE_VERSION_IMX576     "imx576"
 /*extern void register_imgsensor_deviceinfo(char *name, char *version, u8 module_id);*/
 /*static kal_uint8 deviceInfo_register_value = 0x00;*/
 #endif
 
-/* Add by LiuBin for register device info at 20160616 */
+/* Add for register device info at 20160616 */
 #define DEVICE_VERSION_IMX576     "imx576"
 /* extern void register_imgsensor_deviceinfo(char *name, char *version, u8 module_id); */
 /* static uint8_t deviceInfo_register_value = 0x00; */
@@ -166,7 +166,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.video_delay_frame = 2,
 	.hs_video_delay_frame = 2,
 	.slim_video_delay_frame = 2,
-	/*zhengjiang.zhu@EXP CameraDrv, 2017/03/03  Increase ISP drive ability */
+	/*EXP CameraDrv, 2017/03/03  Increase ISP drive ability */
 	.isp_driving_current = ISP_DRIVING_8MA,  /* 2ma */
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, /* 0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2 */
@@ -237,13 +237,13 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3] = {
 	 0x00, 0x00, 0x0000, 0x0000, 0x00, 0x00, 0x0000, 0x0000}
 };
 
-/*zhaozhengtao 2016/02/19,modify for different module*/
+/* 2016/02/19,modify for different module*/
 #define MODULE_ID_OFFSET 0x0000
 
 #define EEPROM_READ_ID  0xA0
 #define EEPROM_WRITE_ID   0xA1
 
-/*zhaozhengtao 2016/02/19,modify for different module*/
+/* 2016/02/19,modify for different module*/
 static kal_uint16 read_module_id(void)
 {
 	kal_uint16 get_byte = 0;
@@ -1312,7 +1312,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 
-				/*zhaozhengtao 2016/02/19,modify for different module*/
+				/* 2016/02/19,modify for different module*/
 				imgsensor_info.module_id = read_module_id();
 				LOG_INF("IMX576_module_id=%d\n", imgsensor_info.module_id);
 
@@ -1605,7 +1605,7 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
 
 	sensor_resolution->SensorSlimVideoWidth	 = imgsensor_info.slim_video.grabwindow_width;
 	sensor_resolution->SensorSlimVideoHeight	 = imgsensor_info.slim_video.grabwindow_height;
-#ifdef VENDOR_EDIT /*zhaozhengtao add 20160215*/
+#ifdef VENDOR_EDIT /* add 20160215*/
 	sensor_resolution->SensorCustom1Width  =  imgsensor_info.cap.grabwindow_width;
 	sensor_resolution->SensorCustom1Height  =  imgsensor_info.cap.grabwindow_height;
 	sensor_resolution->SensorCustom2Width   = imgsensor_info.cap.grabwindow_width;
@@ -1617,7 +1617,7 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
 	sensor_resolution->SensorCustom5Width   = imgsensor_info.cap.grabwindow_width;
 	sensor_resolution->SensorCustom5Height  =  imgsensor_info.cap.grabwindow_height;
 #endif
-	/* zhaozhengtao add 20160215 */
+	/* add 20160215 */
 	sensor_resolution->SensorCustom1Width  =  imgsensor_info.cap.grabwindow_width;
 	sensor_resolution->SensorCustom1Height  =  imgsensor_info.cap.grabwindow_height;
 	sensor_resolution->SensorCustom2Width   = imgsensor_info.cap.grabwindow_width;
@@ -2198,7 +2198,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		get_imgsensor_id(feature_return_para_32);
 		break;
 	#ifdef VENDOR_EDIT
-	/*zhaozhengtao 2016/02/19,modify for different module*/
+	/* 2016/02/19,modify for different module*/
 	case SENSOR_FEATURE_CHECK_MODULE_ID:
 		*feature_return_para_32 = imgsensor_info.module_id;
 		break;
