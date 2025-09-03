@@ -151,12 +151,17 @@
 #define REG_MMU_DES_RDATA	0x104
 
 #define REG_MMU_PFH_TAG_RDATA    0x108
-#define F_PFH_TAG_VA_GET(mmu, tag)    ((mmu == 0)?F_MMU0_PFH_TAG_VA_GET(tag) : F_MMU1_PFH_TAG_VA_GET(tag))
-#define F_MMU0_PFH_TAG_VA_GET(tag)    (F_MSK_SHIFT(tag, 15, 4)<<(MMU_SET_MSB_OFFSET(0)+1))
-#define F_MMU1_PFH_TAG_VA_GET(tag)    (F_MSK_SHIFT(tag, 15, 4)<<(MMU_SET_MSB_OFFSET(1)+1))
-#define F_MMU_PFH_TAG_VA_LAYER0_MSK(mmu)  ((mmu == 0)?F_MSK(31, 28):F_MSK(31, 28))
+#define F_PFH_TAG_VA_GET(mmu, tag)    \
+	((mmu == 0)?F_MMU0_PFH_TAG_VA_GET(tag) : F_MMU1_PFH_TAG_VA_GET(tag))
+#define F_MMU0_PFH_TAG_VA_GET(tag)    \
+	(F_MSK_SHIFT(tag, 15, 4)<<(MMU_SET_MSB_OFFSET(0)+1))
+#define F_MMU1_PFH_TAG_VA_GET(tag)    \
+	(F_MSK_SHIFT(tag, 15, 4)<<(MMU_SET_MSB_OFFSET(1)+1))
+#define F_MMU_PFH_TAG_VA_LAYER0_MSK(mmu)  \
+	((mmu == 0)?F_MSK(31, 28):F_MSK(31, 28))
 #define F_PFH_TAG_LAYER_BIT	 F_BIT_SET(3)
-#define F_PFH_TAG_16X_BIT	   F_BIT_SET(2)	/* this bit is always 0 -- cost down. */
+/* this bit is always 0 -- cost down. */
+#define F_PFH_TAG_16X_BIT	   F_BIT_SET(2)
 #define F_PFH_TAG_SEC_BIT	   F_BIT_SET(1)
 #define F_PFH_TAG_AUTO_PFH	  F_BIT_SET(0)
 
@@ -170,7 +175,8 @@
 #define MMU_SET_NR(mmu)    (1<<MMU_SET_ORDER(mmu))
 #define MMU_SET_LSB_OFFSET	       15
 #define MMU_SET_MSB_OFFSET(mmu)	 (MMU_SET_LSB_OFFSET+MMU_SET_ORDER(mmu)-1)
-#define MMU_PFH_VA_TO_SET(mmu, va)     F_MSK_SHIFT(va, MMU_SET_MSB_OFFSET(mmu), MMU_SET_LSB_OFFSET)
+#define MMU_PFH_VA_TO_SET(mmu, va)     \
+	F_MSK_SHIFT(va, MMU_SET_MSB_OFFSET(mmu), MMU_SET_LSB_OFFSET)
 
 #define MMU_PAGE_PER_LINE      4
 #define MMU_WAY_NR  4
@@ -191,7 +197,8 @@
 
 #define REG_MMU_IVRP_PADDR       0x114
 #define F_MMU_IVRP_PA_SET(PA)  \
-	((((unsigned long long)PA) & F_MSK(31, 7)) | ((((unsigned long long)PA) >> 32) & F_MSK(1, 0)))
+	((((unsigned long long)PA) & F_MSK(31, 7)) | \
+	((((unsigned long long)PA) >> 32) & F_MSK(1, 0)))
 
 #define REG_MMU_INT_L2_CONTROL      0x120
 #define F_INT_L2_CLR_BIT (1<<12)
@@ -199,7 +206,7 @@
 #define F_INT_L2_TABLE_WALK_FAULT		  F_BIT_SET(1)
 #define F_INT_L2_PFH_DMA_FIFO_OVERFLOW	     F_BIT_SET(2)
 #define F_INT_L2_MISS_DMA_FIFO_OVERFLOW	    F_BIT_SET(3)
-#define F_INT_L2_INVALD_DONE		       F_BIT_SET(4)
+#define F_INT_L2_INVALID_DONE		       F_BIT_SET(4)
 #define F_INT_L2_PFH_FIFO_ERROR		    F_BIT_SET(5)
 #define F_INT_L2_MISS_FIFO_ERR		     F_BIT_SET(6)
 
@@ -247,17 +254,20 @@
 
 #define REG_MMU_PF_MSCNT	    0x160
 #define REG_MMU_PF_CNT	      0x164
-#define REG_MMU_ACC_CNT(mmu)	(0x168+(((mmu)<<3)|((mmu)<<2)))     /* (0x168+((mmu)*12) */
+#define REG_MMU_ACC_CNT(mmu)	\
+	(0x168+(((mmu)<<3)|((mmu)<<2)))     /* (0x168+((mmu)*12) */
 #define REG_MMU_MAIN_MSCNT(mmu)     (0x16c+(((mmu)<<3)|((mmu)<<2)))
 #define REG_MMU_RS_PERF_CNT(mmu)    (0x170+(((mmu)<<3)|((mmu)<<2)))
 
 #define REG_MMU_PFH_VLD_0   (0x180)
 #define REG_MMU_PFH_VLD(mmu, set, way)     \
-	(REG_MMU_PFH_VLD_0+(((set)>>5)<<2)+((way)<<((mmu == 0)?(MMU0_SET_ORDER - 3):(MMU1_SET_ORDER - 3))))
+	(REG_MMU_PFH_VLD_0+(((set)>>5)<<2)+\
+	((way)<<((mmu == 0)?(MMU0_SET_ORDER - 3):(MMU1_SET_ORDER - 3))))
 #define F_MMU_PFH_VLD_BIT(set, way)      F_BIT_SET((set)&0x1f)  /* set%32 */
 
 #define MMU01_SQ_OFFSET (0x600-0x300)
-#define REG_MMU_SQ_START(mmu, x)	     (0x300+((x)<<3)+((mmu)*MMU01_SQ_OFFSET))
+#define REG_MMU_SQ_START(mmu, x)	     \
+	(0x300+((x)<<3)+((mmu)*MMU01_SQ_OFFSET))
 #define F_SQ_VA_MASK		F_MSK(31, 20)
 #define F_SQ_EN_BIT		 (1<<19)
 /* #define F_SQ_MULTI_ENTRY_VAL(x)     (((x)&0xf)<<13) */
@@ -294,8 +304,10 @@
 
 
 #define REG_MMU_MAU_START(mmu, mau)	      (0x900+((mau)*0x20)+((mmu)*0xa4))
-#define REG_MMU_MAU_START_BIT32(mmu, mau)	(0x904+((mau)*0x20)+((mmu)*0xa4))
-#define REG_MMU_MAU_END(mmu, mau)		(0x908+((mau)*0x20)+((mmu)*0xa4))
+#define REG_MMU_MAU_START_BIT32(mmu, mau)	\
+	(0x904+((mau)*0x20)+((mmu)*0xa4))
+#define REG_MMU_MAU_END(mmu, mau)		\
+	(0x908+((mau)*0x20)+((mmu)*0xa4))
 #define REG_MMU_MAU_END_BIT32(mmu, mau)	  (0x90C+((mau)*0x20)+((mmu)*0xa4))
 
 #define REG_MMU_MAU_LARB_EN(mmu)		(0x910+((mmu)*0xa4))
@@ -307,7 +319,8 @@
 #define F_MMU_MAU_ASSERT_ID_PORT(regval)    F_MSK_SHIFT(regval, 4, 0)
 
 #define REG_MMU_MAU_ADDR(mmu, mau)	       (0x91C+((mau)*0x20)+((mmu)*0xa4))
-#define REG_MMU_MAU_ADDR_BIT32(mmu, mau)	 (0x920+((mau)*0x20)+((mmu)*0xa4))
+#define REG_MMU_MAU_ADDR_BIT32(mmu, mau)	 \
+	(0x920+((mau)*0x20)+((mmu)*0xa4))
 
 #define REG_MMU_MAU_CLR(mmu)		(0x924+((mmu)*0xa4))
 #define REG_MMU_MAU_IO(mmu)		(0x928+((mmu)*0xa4))
@@ -368,19 +381,20 @@ static inline void COM_WriteReg32(unsigned long addr, unsigned int Val)
 	mt_reg_sync_writel(Val, (void *)addr);
 }
 
-static inline unsigned int M4U_ReadReg32(unsigned long M4uBase, unsigned int Offset)
+static inline unsigned int M4U_ReadReg32(
+		unsigned long M4uBase, unsigned int Offset)
 {
 	unsigned int val;
 
 	val = COM_ReadReg32((M4uBase + Offset));
-	/* printk("M4U_ReadReg32: M4uBase: 0x%lx, Offset:0x%x, val:0x%x\n", M4uBase, Offset, val); */
+
 	return val;
 }
 
-static inline void M4U_WriteReg32(unsigned long M4uBase, unsigned int Offset, unsigned int Val)
+static inline void M4U_WriteReg32(unsigned long M4uBase,
+	unsigned int Offset, unsigned int Val)
 {
 	COM_WriteReg32((M4uBase + Offset), Val);
-	/* printk("M4U_WriteReg32: M4uBase: 0x%lx, Offset:0x%x, val:0x%x\n", M4uBase, Offset, Val); */
 }
 
 static inline unsigned int m4uHw_set_field(unsigned long M4UBase,
@@ -395,7 +409,8 @@ static inline unsigned int m4uHw_set_field(unsigned long M4UBase,
 	return (old & mask) >> shift;
 }
 
-static inline void m4uHw_set_field_by_mask(unsigned long M4UBase, unsigned int reg,
+static inline void m4uHw_set_field_by_mask(
+	unsigned long M4UBase, unsigned int reg,
 					   unsigned long mask, unsigned int val)
 {
 	unsigned int regval;
@@ -405,7 +420,8 @@ static inline void m4uHw_set_field_by_mask(unsigned long M4UBase, unsigned int r
 	M4U_WriteReg32(M4UBase, reg, regval);
 }
 
-static inline unsigned int m4uHw_get_field_by_mask(unsigned long M4UBase, unsigned int reg,
+static inline unsigned int m4uHw_get_field_by_mask(
+		unsigned long M4UBase, unsigned int reg,
 						   unsigned int mask)
 {
 	return M4U_ReadReg32(M4UBase, reg) & mask;

@@ -13,23 +13,34 @@
 
 #ifndef _MSDC_CUST_MT6771_H_
 #define _MSDC_CUST_MT6771_H_
+#ifdef CONFIG_FPGA_EARLY_PORTING
+#define FPGA_PLATFORM
+#else
+/* #define MTK_MSDC_BRINGUP_DEBUG */
+#endif
 
 #include <dt-bindings/mmc/mt6771-msdc.h>
+/* #define CONFIG_MTK_MSDC_BRING_UP_BYPASS */
+#if !defined(FPGA_PLATFORM)
 #include <dt-bindings/clock/mt6771-clk.h>
-
+#endif
+#ifndef CONFIG_MTK_MSDC_BRING_UP_BYPASS
 #include <spm_v4/mtk_spm_resource_req.h>
-
+#endif
 /**************************************************************/
 /* Section 1: Device Tree                                     */
 /**************************************************************/
 /* Names used for device tree lookup */
 #define DT_COMPATIBLE_NAME      "mediatek,msdc"
 #define MSDC0_CLK_NAME          "msdc0-clock"
+#ifdef CONFIG_MTK_HW_FDE
+#define MSDC0_AES_CLK_NAME          "msdc0-aes-clock"
+#endif
 #define MSDC0_HCLK_NAME         "msdc0-hclock"
 #define MSDC1_CLK_NAME          "msdc1-clock"
 #define MSDC1_HCLK_NAME         "msdc1-hclock"
-#define MSDC0_IOCFG_NAME        "mediatek,pctl-7-syscfg"
-#define MSDC1_IOCFG_NAME        "mediatek,pctl-1-syscfg"
+#define MSDC0_IOCFG_NAME        "mediatek,iocfg_7"
+#define MSDC1_IOCFG_NAME        "mediatek,iocfg_1"
 
 
 /**************************************************************/
@@ -37,6 +48,8 @@
 /**************************************************************/
 #if !defined(FPGA_PLATFORM)
 #define POWER_READY
+#define CLOCK_READY
+//#define SPM_READY
 #endif
 #ifdef POWER_READY
 #if !defined(FPGA_PLATFORM)
@@ -93,7 +106,8 @@
 #define REG_VMCH_OC_RAW_STATUS      PMIC_RG_INT_RAW_STATUS_VMCH_OC_ADDR
 #define MASK_VMCH_OC_RAW_STATUS     PMIC_RG_INT_RAW_STATUS_VMCH_OC_MASK
 #define SHIFT_VMCH_OC_RAW_STATUS    PMIC_RG_INT_RAW_STATUS_VMCH_OC_SHIFT
-#define FIELD_VMCH_OC_RAW_STATUS    (MASK_VMCH_OC_RAW_STATUS << SHIFT_VMCH_OC_RAW_STATUS)
+#define FIELD_VMCH_OC_RAW_STATUS \
+	(MASK_VMCH_OC_RAW_STATUS << SHIFT_VMCH_OC_RAW_STATUS)
 
 #define REG_VMCH_OC_STATUS      PMIC_RG_INT_STATUS_VMCH_OC_ADDR
 #define MASK_VMCH_OC_STATUS     PMIC_RG_INT_STATUS_VMCH_OC_MASK
@@ -158,9 +172,12 @@
 /*--------------------------------------------------------------------------*/
 /* MSDC0~1 GPIO and IO Pad Configuration Base                               */
 /*--------------------------------------------------------------------------*/
-#define MSDC_GPIO_BASE          gpio_base               /* 0x10005000 */
-#define MSDC0_IO_PAD_BASE       (msdc_io_cfg_bases[0])  /* 0x11F30000 IOCFG_7_BASE */
-#define MSDC1_IO_PAD_BASE       (msdc_io_cfg_bases[1])  /* 0x11E80000 IOCFG_1_BASE */
+/* 0x10005000 */
+#define MSDC_GPIO_BASE          gpio_base
+/* 0x11F30000 IOCFG_7_BASE */
+#define MSDC0_IO_PAD_BASE       (msdc_io_cfg_bases[0])
+/* 0x11E80000 IOCFG_1_BASE */
+#define MSDC1_IO_PAD_BASE       (msdc_io_cfg_bases[1])
 
 /*--------------------------------------------------------------------------*/
 /* MSDC GPIO Related Register                                               */
@@ -376,7 +393,8 @@
 
 #define HOST_MAX_BLKSZ          (2048)
 
-#define MSDC_OCR_AVAIL          (MMC_VDD_28_29 | MMC_VDD_29_30 | MMC_VDD_30_31 | MMC_VDD_31_32 | MMC_VDD_32_33)
+#define MSDC_OCR_AVAIL          (MMC_VDD_28_29 \
+	| MMC_VDD_29_30 | MMC_VDD_30_31 | MMC_VDD_31_32 | MMC_VDD_32_33)
 /* data timeout counter. 1048576 * 3 sclk. */
 #define DEFAULT_DTOC            (3)
 

@@ -135,4 +135,3 @@ enum IMGSENSOR_RETURN imgsensor_hw_mclk_open(
 	*pdevice = &device;
 	return IMGSENSOR_RETURN_SUCCESS;
 }
-

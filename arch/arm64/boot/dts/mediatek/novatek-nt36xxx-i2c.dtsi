@@ -17,10 +17,9 @@
  */
 
 &i2c0 {
-
 	/* Novatek device tree node */
 	cap_touch@62 {
-		compatible = "mediatek,cap_touch";	//Use MTK default touch
+		compatible = "mediatek,cap_touch";//Use MTK default touch
 		reg = <0x62>;
 		status = "ok";
 

@@ -16,8 +16,8 @@
 
 #include <linux/types.h>
 #include "mmprofile.h"
-#include "mmprofile_function.h"
 #include "ddp_info.h"
+
 enum DPREC_EVENT {
 	DPREC_EVENT_CMDQ_SET_DIRTY = 0xff00,
 	DPREC_EVENT_CMDQ_WAIT_STREAM_EOF,
@@ -105,24 +105,28 @@ enum DPREC_LOGGER_ENUM {
 	DPREC_LOGGER_NUM
 };
 
-#define DPREC_LOGGER_LEVEL_ALL				0xFFFFFFFF
-#define DPREC_LOGGER_LEVEL_DEFAULT			(DPREC_LOGGER_LEVEL_MMP | DPREC_LOGGER_LEVEL_LOGGER)
-#define DPREC_LOGGER_LEVEL_UART_LOG			(0x1<<0)
-#define DPREC_LOGGER_LEVEL_MOBILE_LOG			(0x1<<1)
-#define DPREC_LOGGER_LEVEL_MMP				(0x1<<2)
-#define DPREC_LOGGER_LEVEL_SYSTRACE			(0x1<<3)
-#define DPREC_LOGGER_LEVEL_AEE_DUMP			(0x1<<4)
-#define DPREC_LOGGER_LEVEL_LOGGER			(0x1<<5)
+#define DPREC_LOGGER_LEVEL_ALL 0xFFFFFFFF
+#define DPREC_LOGGER_LEVEL_DEFAULT \
+		(DPREC_LOGGER_LEVEL_MMP | DPREC_LOGGER_LEVEL_LOGGER)
+#define DPREC_LOGGER_LEVEL_UART_LOG		(0x1<<0)
+#define DPREC_LOGGER_LEVEL_MOBILE_LOG		(0x1<<1)
+#define DPREC_LOGGER_LEVEL_MMP			(0x1<<2)
+#define DPREC_LOGGER_LEVEL_SYSTRACE		(0x1<<3)
+#define DPREC_LOGGER_LEVEL_AEE_DUMP		(0x1<<4)
+#define DPREC_LOGGER_LEVEL_LOGGER		(0x1<<5)
 
 #define LOGGER_BUFFER_SIZE (16 * 1024)
 #define ERROR_BUFFER_COUNT 4
 #define FENCE_BUFFER_COUNT 22
 #define DEBUG_BUFFER_COUNT 16
 #define DUMP_BUFFER_COUNT 10
+#define ONESHOT_DUMP_BUFFER_COUNT 5
 #define STATUS_BUFFER_COUNT 1
-#if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#if defined(CONFIG_MTK_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 #define DEBUG_BUFFER_SIZE (4096 + \
-	(ERROR_BUFFER_COUNT + FENCE_BUFFER_COUNT + DEBUG_BUFFER_COUNT + DUMP_BUFFER_COUNT + STATUS_BUFFER_COUNT) * \
+	(ERROR_BUFFER_COUNT + FENCE_BUFFER_COUNT + DEBUG_BUFFER_COUNT + \
+	DUMP_BUFFER_COUNT + ONESHOT_DUMP_BUFFER_COUNT + \
+	STATUS_BUFFER_COUNT) * \
 	LOGGER_BUFFER_SIZE)
 #else
 #define DEBUG_BUFFER_SIZE 10240
@@ -174,8 +178,9 @@ struct dprec_logger_event {
 enum DPREC_LOGGER_PR_TYPE {
 	DPREC_LOGGER_ERROR,
 	DPREC_LOGGER_FENCE,
-	DPREC_LOGGER_DEBUG,
 	DPREC_LOGGER_DUMP,
+	DPREC_LOGGER_DEBUG,
+	DPREC_LOGGER_ONESHOT_DUMP,
 	DPREC_LOGGER_STATUS,
 	DPREC_LOGGER_PR_NUM
 };
@@ -193,46 +198,60 @@ int _primary_monitor_fps_thread(void *data);
 
 
 void dprec_event_op(enum DPREC_EVENT event);
-void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val, unsigned int mask);
+void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val,
+		  unsigned int mask);
 int dprec_handle_option(unsigned int option);
 int dprec_option_enabled(void);
 int dprec_init(void);
-void dprec_logger_trigger(enum DPREC_LOGGER_ENUM source, unsigned int val1, unsigned int val2);
-void dprec_logger_start(enum DPREC_LOGGER_ENUM source, unsigned int val1, unsigned int val2);
-void dprec_logger_done(enum DPREC_LOGGER_ENUM source, unsigned int val1, unsigned int val2);
+void dprec_logger_trigger(enum DPREC_LOGGER_ENUM source, unsigned int val1,
+			  unsigned int val2);
+void dprec_logger_start(enum DPREC_LOGGER_ENUM source, unsigned int val1,
+			unsigned int val2);
+void dprec_logger_done(enum DPREC_LOGGER_ENUM source, unsigned int val1,
+		       unsigned int val2);
 void dprec_logger_reset(enum DPREC_LOGGER_ENUM source);
 void dprec_logger_reset_all(void);
-int dprec_logger_get_result_string(enum DPREC_LOGGER_ENUM source, char *stringbuf, int strlen);
+int dprec_logger_get_result_string(enum DPREC_LOGGER_ENUM source,
+				   char *stringbuf, int strlen);
 int dprec_logger_get_result_string_all(char *stringbuf, int strlen);
-int dprec_logger_get_result_value(enum DPREC_LOGGER_ENUM source, struct fpsEx *fps);
+int dprec_logger_get_result_value(enum DPREC_LOGGER_ENUM source,
+				  struct fpsEx *fps);
 void cal_fps_for_debug(void);
 void dprec_stub_irq(unsigned int irq_bit);
 void dprec_stub_event(enum DISP_PATH_EVENT event);
 unsigned int dprec_get_vsync_count(void);
-void dprec_logger_submit(enum DPREC_LOGGER_ENUM source, unsigned long long period,
-			 unsigned int fence_idx);
+void dprec_logger_submit(enum DPREC_LOGGER_ENUM source,
+			unsigned long long period, unsigned int fence_idx);
 
 void dprec_logger_dump(char *string);
 void dprec_logger_vdump(const char *fmt, ...);
 void dprec_logger_dump_reset(void);
 char *dprec_logger_get_dump_addr(void);
 unsigned int dprec_logger_get_dump_len(void);
-unsigned long long dprec_logger_get_current_hold_period(unsigned int type_logsrc);
-int dprec_logger_get_buf(enum DPREC_LOGGER_PR_TYPE type, char *stringbuf, int strlen);
+unsigned long long
+dprec_logger_get_current_hold_period(unsigned int type_logsrc);
+int dprec_logger_get_buf(enum DPREC_LOGGER_PR_TYPE type, char *stringbuf,
+			 int strlen);
 int dprec_logger_pr(unsigned int type, char *fmt, ...);
-void dprec_logger_event_init(struct dprec_logger_event *p, char *name, uint32_t level,
-			     MMP_Event *mmp_root);
-void dprec_start(struct dprec_logger_event *event, unsigned int val1, unsigned int val2);
-void dprec_done(struct dprec_logger_event *event, unsigned int val1, unsigned int val2);
-void dprec_trigger(struct dprec_logger_event *event, unsigned int val1, unsigned int val2);
-void dprec_submit(struct dprec_logger_event *event, unsigned int val1, unsigned int val2);
+void dprec_logger_event_init(struct dprec_logger_event *p, char *name,
+			     uint32_t level, MMP_Event *mmp_root);
+void dprec_start(struct dprec_logger_event *event, unsigned int val1,
+		 unsigned int val2);
+void dprec_done(struct dprec_logger_event *event, unsigned int val1,
+		unsigned int val2);
+void dprec_trigger(struct dprec_logger_event *event, unsigned int val1,
+		   unsigned int val2);
+void dprec_submit(struct dprec_logger_event *event, unsigned int val1,
+		  unsigned int val2);
 
 int dprec_mmp_dump_wdma_layer(void *wdma_layer, unsigned int wdma_num);
 int dprec_mmp_dump_rdma_layer(void *wdma_layer, unsigned int wdma_num);
-void dprec_logger_frame_seq_begin(unsigned int session_id, unsigned frm_sequence);
-void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence);
-int dprec_mmp_dump_ovl_layer(struct OVL_CONFIG_STRUCT *ovl_layer, unsigned int l,
-			     unsigned int session /*1:primary, 2:external, 3:memory */);
+void dprec_logger_frame_seq_begin(unsigned int session_id,
+				  unsigned int frm_sequence);
+void dprec_logger_frame_seq_end(unsigned int session_id,
+				unsigned int frm_sequence);
+int dprec_mmp_dump_ovl_layer(struct OVL_CONFIG_STRUCT *ovl_layer,
+			     unsigned int l, unsigned int session);
 void init_log_buffer(void);
 char *get_dprec_status_ptr(int buffer_idx);
-#endif
+#endif /* _DISPLAY_RECOREDR_H_ */

@@ -14,7 +14,7 @@
 #include <linux/kthread.h>
 
 #include "mtk_spm_vcore_dvfs_ipi.h"
-#include "sspm_ipi.h"
+#include "v1/sspm_ipi.h"
 #include <mtk_vcorefs_governor.h>
 
 #ifdef CONFIG_MTK_QOS_SUPPORT
@@ -33,7 +33,8 @@ static int qos_recv_thread(void *arg)
 	ret = sspm_ipi_recv_registration(IPI_ID_QOS, &qos_isr);
 
 	if (ret) {
-		pr_info("@%s: sspm_ipi_recv_registration failed (%d)\n", __func__, ret);
+		printk_deferred("[name:spm&]@%s: sspm_ipi_recv_registration failed (%d)\n",
+			__func__, ret);
 		return 0;
 	}
 

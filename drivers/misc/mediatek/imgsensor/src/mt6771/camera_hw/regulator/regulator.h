@@ -67,4 +67,3 @@ struct REGULATOR {
 enum IMGSENSOR_RETURN imgsensor_hw_regulator_open(struct IMGSENSOR_HW_DEVICE **pdevice);
 
 #endif
-

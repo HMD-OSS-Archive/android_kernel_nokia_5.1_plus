@@ -19,8 +19,8 @@
 extern MBOOL sec_vsync_pushed;
 
 /******************************************************************************
-* Task definition
-******************************************************************************/
+ * Task definition
+ *****************************************************************************/
 enum ccu_msg_id {
 	/*Receive by CCU*/
 	/*CCU Task*/
@@ -71,23 +71,37 @@ enum ccu_msg_id {
 
 	/*Send to APMCU*/
 	/*CCU Ack/Done*/
-	MSG_CCU_DONE_SENSOR_INIT, /**< Ack cmd for #MSG_TO_CCU_SENSOR_INIT */
-	MSG_CCU_DONE_AE_INIT, /**< Ack cmd for #MSG_TO_CCU_AE_INIT */
-	MSG_CCU_ACK_AE_START, /**< Ack cmd for #MSG_TO_CCU_AE_START */
-	MSG_CCU_ACK_AE_STOP, /**< Ack cmd for #MSG_TO_CCU_AE_STOP */
-	MSG_CCU_ACK_SET_AP_AE_FRAME_SYNC_DATA, /**< Ack cmd for #MSG_TO_CCU_SET_AP_AE_FRAME_SYNC_DATA */
-	MSG_CCU_ACK_SET_AP_AE_ONCHANGE_DATA, /**< Ack cmd for #MSG_TO_CCU_SET_AP_AE_ONCHANGE_DATA */
-	MSG_CCU_ACK_GET_CCU_OUTPUT, /**< Ack cmd for #MSG_TO_CCU_GET_CCU_OUTPUT */
-	MSG_CCU_ACK_SET_MAX_FRAMERATE, /**< Ack cmd for #MSG_TO_CCU_SET_MAX_FRAMERATE */
-	MSG_CCU_ACK_GET_AE_DEBUG_INFO, /**< Ack cmd for #MSG_TO_CCU_GET_AE_DEBUG_INFO */
-	MSG_CCU_ACK_SET_3A_SYNC_STATE, /**< Ack cmd for #MSG_TO_CCU_SET_3A_SYNC_STATE */
-	MSG_CCU_ACK_SYNC_AE_SETTING, /**< Ack cmd for #MSG_TO_CCU_SYNC_AE_SETTING */
+	/**< Ack cmd for #MSG_TO_CCU_SENSOR_INIT */
+	MSG_CCU_DONE_SENSOR_INIT,
+	/**< Ack cmd for #MSG_TO_CCU_AE_INIT */
+	MSG_CCU_DONE_AE_INIT,
+	/**< Ack cmd for #MSG_TO_CCU_AE_START */
+	MSG_CCU_ACK_AE_START,
+	/**< Ack cmd for #MSG_TO_CCU_AE_STOP */
+	MSG_CCU_ACK_AE_STOP,
+	/**< Ack cmd for #MSG_TO_CCU_SET_AP_AE_FRAME_SYNC_DATA */
+	MSG_CCU_ACK_SET_AP_AE_FRAME_SYNC_DATA,
+	/**< Ack cmd for #MSG_TO_CCU_SET_AP_AE_ONCHANGE_DATA */
+	MSG_CCU_ACK_SET_AP_AE_ONCHANGE_DATA,
+	/**< Ack cmd for #MSG_TO_CCU_GET_CCU_OUTPUT */
+	MSG_CCU_ACK_GET_CCU_OUTPUT,
+	/**< Ack cmd for #MSG_TO_CCU_SET_MAX_FRAMERATE */
+	MSG_CCU_ACK_SET_MAX_FRAMERATE,
+	/**< Ack cmd for #MSG_TO_CCU_GET_AE_DEBUG_INFO */
+	MSG_CCU_ACK_GET_AE_DEBUG_INFO,
+	/**< Ack cmd for #MSG_TO_CCU_SET_3A_SYNC_STATE */
+	MSG_CCU_ACK_SET_3A_SYNC_STATE,
+	/**< Ack cmd for #MSG_TO_CCU_SYNC_AE_SETTING */
+	MSG_CCU_ACK_SYNC_AE_SETTING,
 	MSG_CCU_ACK_START_FRAME_SYNC,
 	MSG_CCU_ACK_STOP_FRAME_SYNC,
 	MSG_CCU_ACK_QUERY_FRAME_SYNC_DONE,
-	MSG_CCU_ACK_SUSPEND, /**< Ack cmd for #MSG_TO_CCU_SUSPEND */
-	MSG_CCU_ACK_RESUME, /**< Ack cmd for #MSG_TO_CCU_RESUME */
-	MSG_CCU_DONE_SHUTDOWN, /**< Ack cmd for #MSG_TO_CCU_SHUTDOWN */
+	/**< Ack cmd for #MSG_TO_CCU_SUSPEND */
+	MSG_CCU_ACK_SUSPEND,
+	/**< Ack cmd for #MSG_TO_CCU_RESUME */
+	MSG_CCU_ACK_RESUME,
+	/**< Ack cmd for #MSG_TO_CCU_SHUTDOWN */
+	MSG_CCU_DONE_SHUTDOWN,
 
 #ifdef CCU_AF_ENABLE
 	MSG_CCU_ACK_AF_INIT,
@@ -123,33 +137,33 @@ struct ccu_msg { /*16bytes*/
 };
 
 /******************************************************************************
-* Special isr task (execute in isr)
-******************************************************************************/
+ * Special isr task (execute in isr)
+ *****************************************************************************/
 #define ISR_SP_TASK_SHUTDOWN 0x000000FF
 #define ISR_SP_TASK_TRG_I2C_DONE 0x000000C1
 #define ISR_SP_TASK_RST_I2C_DONE 0x000000B9
 
 /******************************************************************************
-* Special ap isr task (execute in apmcu_isr)
-******************************************************************************/
+ * Special ap isr task (execute in apmcu_isr)
+ *****************************************************************************/
 #define APISR_SP_TASK_TRIGGER_I2C 0x000000A1
 #define APISR_SP_TASK_RESET_I2C   0x000000A2
 
 /******************************************************************************
-* Error code definition
-******************************************************************************/
+ * Error code definition
+ *****************************************************************************/
 #define CCU_ERROR_NO               (0)
 #define CCU_ERROR_QUEUE_FULL       (1)
 
 /******************************************************************************
-* Status definition
-******************************************************************************/
+ * Status definition
+ *****************************************************************************/
 #define CCU_STATUS_INIT_DONE              0xffff0000
 #define CCU_STATUS_INIT_DONE_2            0xffff00a5
 
 /******************************************************************************
-* Direct-link source definition
-******************************************************************************/
+ * Direct-link source definition
+ *****************************************************************************/
 #define AE_STREAM_DL_SRC_AAO  0x00000000
 #define AE_STREAM_DL_SRC_PSO  0x00000001
 

@@ -118,7 +118,10 @@ unsigned int read_dram_mode_reg_by_rank(
 #ifdef CONFIG_MTK_MEMORY_LOWPOWER
 extern int __init acquire_buffer_from_memory_lowpower(phys_addr_t *addr);
 #else
-static inline int acquire_buffer_from_memory_lowpower(phys_addr_t *addr) { return -3; }
+static inline int acquire_buffer_from_memory_lowpower(phys_addr_t *addr)
+{
+	return -3;
+}
 #endif
 
 /* DRAMC API config */

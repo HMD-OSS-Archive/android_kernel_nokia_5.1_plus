@@ -25,8 +25,6 @@
 
 #include <mt-plat/upmu_common.h>
 #include "mtk_spm_resource_req.h"
-#include "mtk_idle.h"
-#include "mtk_clk_id.h"
 #include "musb_core.h"
 
 #include <linux/module.h>
@@ -1281,6 +1279,7 @@ void Charger_Detect_Release(void)
 static int mt_usb_dts_probe(struct platform_device *pdev)
 {
 	int retval = 0;
+	pr_notice("%s\n", __func__);
 
 	/* POWER */
 	reg_vusb = regulator_get(&pdev->dev, "vusb");

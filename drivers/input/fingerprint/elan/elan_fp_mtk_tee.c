@@ -32,7 +32,6 @@
 #include "mtk_spi.h"
 #include "mtk_spi_hal.h"
 #endif
-#include "mtk_gpio.h"
 
 /* there is no this file on standardized GPIO platform */
 #ifdef CONFIG_MTK_GPIO
@@ -86,8 +85,8 @@ struct elan_data {
     int                     irq_is_disable;
     struct miscdevice       elan_dev; /* char device for ioctl */
     spinlock_t              irq_lock;
-    struct wake_lock	    wake_lock;
-    struct wake_lock	    hal_wake_lock;
+    struct wakeup_source    wake_lock;
+    struct wakeup_source    hal_wake_lock;
     struct pinctrl          *elan_pinctrl;
     struct pinctrl_state    *eint_as_int, *fp_rst_low, *fp_rst_high;
 };
@@ -390,11 +389,11 @@ static long elan_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         case ID_IOCTL_WAKE_LOCK_UNLOCK: //41
             wake_lock_arg = (int __user)arg;
             if (!wake_lock_arg) {
-                wake_unlock(&fp->hal_wake_lock);
+				__pm_relax(&fp->hal_wake_lock);
                 ELAN_DEBUG("[IOCTL] HAL WAKE UNLOCK = %d\n", wake_lock_arg);
             }
             else if (wake_lock_arg) {
-                wake_lock(&fp->hal_wake_lock);
+				__pm_stay_awake(&fp->hal_wake_lock);
                 ELAN_DEBUG("[IOCTL] HAL WAKE LOCK = %d\n", wake_lock_arg);
             }
             else
@@ -516,7 +515,7 @@ static irqreturn_t elan_irq_handler(int irq, void *_fp)
     if (fp == NULL)
         return IRQ_NONE;
 
-    wake_lock_timeout(&fp->wake_lock,msecs_to_jiffies(1000));
+	__pm_wakeup_event(&fp->wake_lock, msecs_to_jiffies(1000));
 
 #if NET_LINK
     sendnlmsg("7");
@@ -719,8 +718,8 @@ static int elan_probe(struct spi_device *spi)
 
     elan_reset(fp);
 
-    wake_lock_init(&fp->wake_lock, WAKE_LOCK_SUSPEND, "fp_wake_lock");
-    wake_lock_init(&fp->hal_wake_lock, WAKE_LOCK_SUSPEND, "hal_fp_wake_lock");
+	wakeup_source_init(&fp->wake_lock, "fp_wake_lock");
+	wakeup_source_init(&fp->hal_wake_lock, "hal_fp_wake_lock");
 
     ret = request_irq(fp->irq, elan_irq_handler,
             IRQF_NO_SUSPEND | IRQF_TRIGGER_RISING | IRQF_ONESHOT,

@@ -457,7 +457,7 @@ static u8 *mlc_hynix_rr_table_read(struct nandx_chip *chip)
 	static bool only_once;
 	struct nfc_handler *nfc = chip->nfc;
 	u8 rr_type = chip->dev_info->read_retry_type;
-	u32 table_size, set_size, set_offset;
+	u32 table_size = 0, set_size = 0, set_offset = 0;
 	u8 addr_1st[2] = { 0xff, 0xcc };
 	u8 data[2] = { 0x40, 0x4d };
 	u8 command[5] = { 0x16, 0x17, 0x04, 0x19, 0x00 };

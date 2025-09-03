@@ -56,7 +56,8 @@
 #include <linux/socket.h>
 #include <net/sock.h>
 
-#include <linux/sched.h>
+#include <uapi/linux/sched/types.h>
+//#include <linux/sched.h>
 #include <linux/kthread.h>
 #include <linux/wait.h>
 #include <linux/time.h>

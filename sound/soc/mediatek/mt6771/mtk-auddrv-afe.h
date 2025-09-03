@@ -34,7 +34,7 @@
  *------------------------------------------------------------------------------
  *
  *
- *******************************************************************************/
+ ******************************************************************************/
 
 #ifndef _AUDDRV_AFE_H_
 #define _AUDDRV_AFE_H_
@@ -73,7 +73,9 @@ enum audio_sdm_level {
 
 #define APMIXEDSYS_BASE (0x1000C000L)
 /* Register TOP */
-/* We need to write AP_PLL_CON5 to set mux, thus we can set APLL Tuner in AFE setting */
+/* We need to write AP_PLL_CON5 to set mux,
+ * thus we can set APLL Tuner in AFE setting
+ */
 #define AP_PLL_CON5 (0x0014)
 
 #define AFE_BASE                (0L)
@@ -548,7 +550,8 @@ void *Get_Afe_Powertop_Pointer(void);
 void *Get_AudClk_Pointer(void);
 void *Get_Afe_Infra_Pointer(void);
 
-void SetChipModemPcmConfig(int modem_index, struct audio_digital_pcm p_modem_pcm_attribute);
+void SetChipModemPcmConfig(int modem_index,
+			   struct audio_digital_pcm p_modem_pcm_attribute);
 bool SetChipModemPcmEnable(int modem_index, bool modem_pcm_on);
 
 bool EnableSideToneFilter(bool stf_on);

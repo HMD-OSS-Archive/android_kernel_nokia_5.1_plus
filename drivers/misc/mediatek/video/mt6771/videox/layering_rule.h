@@ -64,12 +64,14 @@ enum HRT_BOUND_TYPE {
 	HRT_BOUND_TYPE_LP3_HD,
 	HRT_BOUND_TYPE_LP4_HD,
 	HRT_BOUND_TYPE_LP4_FHD_19,
+	HRT_BOUND_TYPE_LP4_FHD_19_CMD,
 	HRT_BOUND_NUM,
 };
 
 enum HRT_PATH_SCENARIO {
 	HRT_PATH_GENERAL =
-		MAKE_UNIFIED_HRT_PATH_FMT(HRT_PATH_RSZ_NONE, HRT_PATH_PIPE_SINGLE, HRT_PATH_DISP_DUAL_EXT, 1),
+		MAKE_UNIFIED_HRT_PATH_FMT(HRT_PATH_RSZ_NONE,
+			  HRT_PATH_PIPE_SINGLE, HRT_PATH_DISP_DUAL_EXT, 1),
 	HRT_PATH_RPO_L0 =
 		MAKE_UNIFIED_HRT_PATH_FMT(HRT_PATH_RSZ_PARTIAL,
 			  HRT_PATH_PIPE_SINGLE, HRT_PATH_DISP_SINGLE, 2),
@@ -101,6 +103,7 @@ enum HRT_DRAMC_TYPE {
 
 void layering_rule_init(void);
 int layering_rule_get_mm_freq_table(enum HRT_OPP_LEVEL opp_level);
+int layering_rule_get_emi_freq_table(enum HRT_OPP_LEVEL opp_level);
 void layering_rule_set_max_hrt_level(void);
 int layering_rule_get_max_hrt_level(void);
 void antilatency_config_hrt(void);

@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #ifndef __SCP_HELPER_H__
@@ -103,7 +103,9 @@ struct scp_work_struct {
 
 /* scp reserve memory ID definition*/
 enum scp_reserve_mem_id_t {
+#ifdef CONFIG_MTK_VOW_SUPPORT
 	VOW_MEM_ID,
+#endif
 	SENS_MEM_ID,
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	MP3_MEM_ID,
@@ -113,7 +115,7 @@ enum scp_reserve_mem_id_t {
 	SENS_MEM_DIRECT_ID,
 	SCP_A_LOGGER_MEM_ID,
 	AUDIO_IPI_MEM_ID,
-#ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
+#ifdef CONFIG_SND_SOC_MTK_SCP_SMARTPA
 	SPK_PROTECT_MEM_ID,
 #endif
 #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT
@@ -149,6 +151,8 @@ struct scp_region_info_st {
 	uint32_t TaskContext_ptr;
 	uint32_t Il1c_con;
 	uint32_t Dl1c_con;
+	uint32_t scpctl;
+	uint32_t ap_params_start;
 };
 
 /* scp device attribute */
@@ -163,11 +167,9 @@ extern struct device_attribute dev_attr_scp_A_status;
 extern struct bin_attribute bin_attr_scp_dump;
 
 /* scp loggger */
-extern int scp_logger_init(phys_addr_t start, phys_addr_t limit);
-extern void scp_logger_uninit(void);
+int scp_logger_init(phys_addr_t start, phys_addr_t limit);
+void scp_logger_uninit(void);
 
-extern void scp_logger_stop(void);
-extern void scp_logger_cleanup(void);
 
 /* scp exception */
 extern int scp_excep_init(void);
@@ -220,6 +222,8 @@ extern void scp_logger_init_set(unsigned int value);
 extern unsigned int scp_set_reset_status(void);
 extern void scp_enable_sram(void);
 extern int scp_sys_full_reset(void);
+extern void scp_reset_awake_counts(void);
+extern void scp_awake_init(void);
 #if SCP_RECOVERY_SUPPORT
 extern phys_addr_t scp_loader_base_virt;
 extern unsigned int scp_reset_by_cmd;

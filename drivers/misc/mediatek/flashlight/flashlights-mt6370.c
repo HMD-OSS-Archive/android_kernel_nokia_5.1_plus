@@ -30,7 +30,7 @@
 #ifdef FLASH_PROC_CTL
 #include <linux/proc_fs.h>   //proc file use
 #include <linux/seq_file.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #endif
 /** add FTM Flashlight end*/
 
@@ -243,17 +243,17 @@ static int mt6370_enable(void)
 		mode = FLASHLIGHT_MODE_FLASH;
 
 	/* enable channel 1 and channel 2 */
-	if (mt6370_en_ch1)
-		ret |= flashlight_set_mode(
+		if (mt6370_en_ch1)
+			ret |= flashlight_set_mode(
 				flashlight_dev_ch1, mode);
 	else
-		ret |= flashlight_set_mode(
+			ret |= flashlight_set_mode(
 				flashlight_dev_ch1, FLASHLIGHT_MODE_OFF);
-	if (mt6370_en_ch2)
-		ret |= flashlight_set_mode(
+		if (mt6370_en_ch2)
+			ret |= flashlight_set_mode(
 				flashlight_dev_ch2, mode);
 	else
-		ret |= flashlight_set_mode(
+			ret |= flashlight_set_mode(
 				flashlight_dev_ch2, FLASHLIGHT_MODE_OFF);
 
 	if (ret < 0)
@@ -402,14 +402,21 @@ static int mt6370_uninit(void)
 	return mt6370_disable();
 }
 
-
+static char mTorchDuty;
 /******************************************************************************
  * Timer and work queue
  *****************************************************************************/
 static void mt6370_work_disable_ch1(struct work_struct *data)
 {
 	pr_debug("ht work queue callback\n");
-	mt6370_disable();
+
+    if (mt6370_timeout_ms[MT6370_CHANNEL_CH1] == 900000)
+    {
+        if (mTorchDuty == 6) 
+            flashlight_set_torch_brightness(flashlight_dev_ch1, mt6370_torch_level[3]);
+    }
+    else
+        mt6370_disable();
 }
 
 static void mt6370_work_disable_ch2(struct work_struct *data)
@@ -464,8 +471,8 @@ static int mt6370_timer_cancel(int channel)
 static int mt6370_operate(int channel, int enable)
 {
 	ktime_t ktime;
-
-    pr_debug("mt6370_operate add patch modify\n");
+	unsigned int s;
+	unsigned int ns;
 
 	/* setup enable/disable */
 	if (channel == MT6370_CHANNEL_CH1) {
@@ -488,17 +495,31 @@ static int mt6370_operate(int channel, int enable)
 	if (mt6370_en_ch1 != MT6370_NONE) {
 		if (mt6370_en_ch1 == MT6370_DISABLE) {
 			mt6370_disable();
-			mt6370_timer_cancel(MT6370_CHANNEL_CH1);
+					mt6370_timer_cancel(MT6370_CHANNEL_CH1);
 		} else if(mt6370_en_ch2 == MT6370_DISABLE){
 			mt6370_disable();
-			mt6370_timer_cancel(MT6370_CHANNEL_CH2);
+					mt6370_timer_cancel(MT6370_CHANNEL_CH2);
 		} else {
-			if (mt6370_timeout_ms[MT6370_CHANNEL_CH1] && mt6370_en_ch1 != MT6370_DISABLE) {
-				ktime = ktime_set(
-						mt6370_timeout_ms[MT6370_CHANNEL_CH1] / 1000,
-						(mt6370_timeout_ms[MT6370_CHANNEL_CH1] % 1000) * 1000000);
+			if (mt6370_timeout_ms[MT6370_CHANNEL_CH1] &&
+				mt6370_en_ch1 != MT6370_DISABLE) {
+				s = mt6370_timeout_ms[MT6370_CHANNEL_CH1] /
+					1000;
+				ns = mt6370_timeout_ms[MT6370_CHANNEL_CH1] %
+					1000 * 1000000;
+				ktime = ktime_set(s, ns);
 				mt6370_timer_start(MT6370_CHANNEL_CH1, ktime);
 			}
+            #if 0 // add for ROOP single flash
+			if (mt6370_timeout_ms[MT6370_CHANNEL_CH2] &&
+				mt6370_en_ch2 != MT6370_DISABLE) {
+				s = mt6370_timeout_ms[MT6370_CHANNEL_CH2] /
+					1000;
+				ns = mt6370_timeout_ms[MT6370_CHANNEL_CH2] %
+					1000 * 1000000;
+				ktime = ktime_set(s, ns);
+				mt6370_timer_start(MT6370_CHANNEL_CH2, ktime);
+			}
+            #endif
 			mt6370_enable();
 		}
 
@@ -538,6 +559,7 @@ static int mt6370_ioctl(unsigned int cmd, unsigned long arg)
 		pr_debug("FLASH_IOC_SET_DUTY(%d): %d\n",
 				channel, (int)fl_arg->arg);
 		mt6370_set_level(channel, fl_arg->arg);
+        mTorchDuty = fl_arg->arg;
 		break;
 #if 0
 	case FLASH_IOC_SET_SCENARIO:

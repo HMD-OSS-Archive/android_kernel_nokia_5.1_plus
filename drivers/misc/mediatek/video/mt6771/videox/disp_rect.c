@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 #include "disp_drv_log.h"
 #include "disp_rect.h"
@@ -45,7 +45,7 @@ void rect_make(struct disp_rect *in, int left, int top, int width, int height)
 }
 
 int rect_intersect(const struct disp_rect *src, const struct disp_rect *dst,
-		struct disp_rect *out)
+		   struct disp_rect *out)
 {
 	int left = src->x;
 	int top = src->y;
@@ -57,8 +57,8 @@ int rect_intersect(const struct disp_rect *src, const struct disp_rect *dst,
 	int fBottom = dst->y + dst->height - 1;
 
 	if (left < right && top < bottom && !rect_isEmpty(dst) &&
-			fLeft <= right && left <= fRight &&
-			fTop <= bottom && top <= fBottom) {
+	    fLeft <= right && left <= fRight &&
+	    fTop <= bottom && top <= fBottom) {
 		if (fLeft < left)
 			fLeft = left;
 		if (fTop < top)
@@ -68,19 +68,21 @@ int rect_intersect(const struct disp_rect *src, const struct disp_rect *dst,
 		if (fBottom > bottom)
 			fBottom = bottom;
 		rect_set(out, fLeft, fTop, fRight, fBottom);
-		DISPDBG("rect_intersect (%d,%d,%d,%d) & (%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
-			src->x, src->y, src->width, src->height, dst->x, dst->y, dst->width, dst->height,
+		DISPDBG("%s (%d,%d,%d,%d) & (%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
+			__func__,
+			src->x, src->y, src->width, src->height,
+			dst->x, dst->y, dst->width, dst->height,
 			out->x, out->y, out->width, out->height);
 		return 1;
 	}
-	/*make out empty*/
+	/* make out empty */
 	rect_initial(out);
 	return 0;
-
 }
 
-void rect_join_coord(const int x, const int y, const int width, const int height,
-		const struct disp_rect *in2, struct disp_rect *out)
+void rect_join_coord(const int x, const int y, const int width,
+		     const int height, const struct disp_rect *in2,
+		     struct disp_rect *out)
 {
 	struct disp_rect rect_coord = {0, 0, 0, 0};
 
@@ -89,7 +91,7 @@ void rect_join_coord(const int x, const int y, const int width, const int height
 }
 
 void rect_join(const struct disp_rect *in1, const struct disp_rect *in2,
-		struct disp_rect *out)
+	       struct disp_rect *out)
 {
 	int left = in1->x;
 	int top = in1->y;
@@ -105,11 +107,11 @@ void rect_join(const struct disp_rect *in1, const struct disp_rect *in2,
 	int in2_w = in2->width;
 	int in2_h = in2->height;
 
-	/* do nothing if the params are empty*/
+	/* do nothing if the params are empty */
 	if (left > right || top > bottom) {
 		rect_set(out, fLeft, fTop, fRight, fBottom);
 	} else {
-		/* if we are empty, just assign*/
+		/* if we are empty, just assign */
 		if (fLeft > fRight || fTop > fBottom) {
 			rect_set(out, left, top, right, bottom);
 		} else {
@@ -124,9 +126,10 @@ void rect_join(const struct disp_rect *in1, const struct disp_rect *in2,
 			rect_set(out, fLeft, fTop, fRight, fBottom);
 		}
 	}
-	DISPDBG("rect_join (%d,%d,%d,%d) & (%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
-		in1->x, in1->y, in1->width, in1->height, in2_x, in2_y, in2_w, in2_h,
-		in2->x, in2->y, in2->width, in2->height);
+	DISPDBG("%s (%d,%d,%d,%d) & (%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
+		__func__,
+		in1->x, in1->y, in1->width, in1->height, in2_x, in2_y,
+		in2_w, in2_h, in2->x, in2->y, in2->width, in2->height);
 }
 
 int rect_equal(const struct disp_rect *one, const struct disp_rect *two)
@@ -135,12 +138,12 @@ int rect_equal(const struct disp_rect *one, const struct disp_rect *two)
 		(one->width == two->width) && (one->height == two->height);
 }
 
-unsigned long shift_address(const struct disp_rect *ori, const struct disp_rect *dst,
-		const int bpp, const int pitch, unsigned long addr)
+unsigned long shift_address(const struct disp_rect *ori,
+			    const struct disp_rect *dst, const int bpp,
+			    const int pitch, unsigned long addr)
 {
 	int x_shift = dst->x - ori->x;
 	int y_shfit = dst->y - ori->y;
 
 	return addr + y_shfit*pitch + x_shift*bpp;
 }
-

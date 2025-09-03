@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 MediaTek Inc.
+ * Copyright (C) 2018 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -25,8 +25,11 @@
 #define POWER_FLASH	3500	/* mW */
 #define GUARDING_PATTERN	0
 
-#define _BIT_(_bit_)		(unsigned)(1 << (_bit_))
-#define _BITMASK_(_bits_)	(((unsigned) -1 >> (31 - ((1) ? _bits_))) & ~((1U << ((0) ? _bits_)) - 1))
+#define _BIT_(_bit_)		(unsigned int)(1 << (_bit_))
+#define _BITMASK_(_bits_)	\
+(((unsigned int)-1>>(31-((1)?_bits_)))&~((1U<<((0)?_bits_))-1))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 
 struct pbm {
 	u8 feature_en;
@@ -76,11 +79,13 @@ enum pbm_kicker {
 	KR_FLASH		/* 5 */
 };
 
-#define MD_POWER_METER_ENABLE 1
+#define MD_POWER_METER_ENABLE 1 /* FIXME: remove for build pass */
 /*#define TEST_MD_POWER*/
 
-#define SECTION_LEN	0xFFFFFFFF	/* total 4 byte, 6 section =  11 11111 11111 11111 11111 11111 11111 */
-#define SECTION_VALUE	0x1F		/* each section is 0x1F = bit(11111) */
+#define SECTION_LEN	0xFFFFFFFF
+/* total 4 byte, 6 section =  11 11111 11111 11111 11111 11111 11111 */
+#define SECTION_VALUE	0x1F
+/* each section is 0x1F = bit(11111) */
 
 enum section_level_tbl {
 	BIT_SECTION_1 = 0,

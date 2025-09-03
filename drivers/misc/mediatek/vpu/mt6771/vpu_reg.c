@@ -192,7 +192,8 @@ struct vpu_reg_field_desc g_vpu_reg_field_descs[VPU_NUM_REG_FIELDS] = {
 	INS_FIELD(AXI_DEFAULT2, DBG_EN, 0, 0),
 	INS_FIELD(CABGEN_CTL, CABGEN2TO1_SLICE_O_ARTHRES, 22, 21),
 	INS_FIELD(CABGEN_CTL, CABGEN2TO1_SLICE_O_AWTHRES, 20, 19),
-	INS_FIELD(CABGEN_CTL, CABGEN2TO1_SLICE_MI0_OUTSTANDING_EXTEND_EN, 18, 18),
+	INS_FIELD(CABGEN_CTL,
+		CABGEN2TO1_SLICE_MI0_OUTSTANDING_EXTEND_EN, 18, 18),
 	INS_FIELD(CABGEN_CTL, CABGEN2TO1_SLICE_MI0_QOS_ON, 17, 17),
 	INS_FIELD(CABGEN_CTL, CABGEN2TO1_SLICE_CG_DIS, 16, 16),
 	INS_FIELD(CABGEN_CTL, CABGEN2TO1_SLICE_PCLK_EN, 0, 0),
@@ -259,16 +260,16 @@ int vpu_init_reg(int core, struct vpu_device *device)
 	reg_value = 0x0;
 	reg_value2 = 0x0;
 
-	LOG_DBG("vpu_init_reg core(%d)\n", core);
+	LOG_DBG("%s core(%d)\n", __func__, core);
 	vpu_base[core] = device->vpu_base[core];
-	LOG_DBG("vpu_init_reg core(%d) - flag\n", core);
+	LOG_DBG("%s core(%d) - flag\n", __func__, core);
 
 #ifdef MTK_VPU_FPGA_PORTING
 	/* enable clock */
-	LOG_DBG("vpu_init_reg vpu_conn_base value(0x%x)\n",
-		vpu_read_reg32(device->vpu_syscfg_base, 0x0));
-	LOG_DBG("vpu_init_reg vpu_vcore_base value(0x%x)\n",
-		vpu_read_reg32(device->vpu_vcorecfg_base, 0x0));
+	LOG_DBG("%s vpu_conn_base value(0x%x)\n",
+		__func__, vpu_read_reg32(device->vpu_syscfg_base, 0x0));
+	LOG_DBG("%s vpu_vcore_base value(0x%x)\n",
+		__func__, vpu_read_reg32(device->vpu_vcorecfg_base, 0x0));
 
 	if (core == 0) {
 		vpu_write_reg32(device->vpu_vcorecfg_base, 0x8, 0xffffffff);
@@ -279,17 +280,22 @@ int vpu_init_reg(int core, struct vpu_device *device)
 		vpu_write_reg32(device->vpu_syscfg_base, 0xC, 0xfffffffe);
 		vpu_write_reg32(device->vpu_syscfg_base, 0xC, 0x0);
 
-		LOG_DBG("after.. vpu_init_reg vpu_conn_base value(0x%x)\n",
-			vpu_read_reg32(device->vpu_syscfg_base, 0x0));
-		LOG_DBG("after.. vpu_init_reg vpu_vcore_base value(0x%x)\n",
-			vpu_read_reg32(device->vpu_vcorecfg_base, 0x0));
+		LOG_DBG("after.. %s vpu_conn_base value(0x%x)\n",
+			__func__,
+			vpu_read_reg32(device->vpu_syscfg_base,
+			0x0));
+		LOG_DBG("after.. %s vpu_vcore_base value(0x%x)\n",
+			__func__,
+			vpu_read_reg32(device->vpu_vcorecfg_base,
+			0x0));
 	}
-	vpu_write_reg32(device->vpu_base[core], CTRL_BASE_OFFSET + 0x8, 0xffffffff);
+	vpu_write_reg32(
+		device->vpu_base[core], CTRL_BASE_OFFSET + 0x8, 0xffffffff);
 
-	LOG_DBG("after vpu_init_reg vpu_conn_base value(0x%x)\n",
-		vpu_read_reg32(device->vpu_syscfg_base, 0x0));
-	LOG_DBG("after vpu_init_reg vpu_vcore_base value(0x%x)\n",
-		vpu_read_reg32(device->vpu_vcorecfg_base, 0x0));
+	LOG_DBG("after %s vpu_conn_base value(0x%x)\n",
+		__func__, vpu_read_reg32(device->vpu_syscfg_base, 0x0));
+	LOG_DBG("after %s vpu_vcore_base value(0x%x)\n",
+		__func__, vpu_read_reg32(device->vpu_vcorecfg_base, 0x0));
 
 #endif
 	return 0;
@@ -313,6 +319,7 @@ uint32_t vpu_read_field(int core, enum vpu_reg_field f)
 	return (reg_val & (((1L << (msb - lsb + 1)) - 1) << lsb)) >> lsb;
 }
 
+/* #define VPU_OLD_WRITE */
 
 void vpu_write_field(int core, enum vpu_reg_field f, uint32_t v)
 {
@@ -325,9 +332,17 @@ void vpu_write_field(int core, enum vpu_reg_field f, uint32_t v)
 	reg = &g_vpu_reg_descs[field->reg];
 	msb = field->msb;
 	lsb = field->lsb;
-
+#ifdef VPU_OLD_WRITE
 	temp = F_REG(vpu_base[core], reg->offset);
+#else
+	temp = vpu_read_reg32(vpu_base[core], reg->offset);
+#endif
 	temp &= ~F_MSK(msb, lsb);
 	temp |= F_VAL(v, msb, lsb);
+#ifdef VPU_OLD_WRITE
 	F_REG(vpu_base[core], reg->offset) = temp;
+#else
+	vpu_write_reg32(vpu_base[core], reg->offset, temp);
+#endif
+
 }

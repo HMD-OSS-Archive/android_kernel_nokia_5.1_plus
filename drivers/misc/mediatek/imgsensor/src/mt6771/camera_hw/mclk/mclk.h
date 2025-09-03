@@ -43,4 +43,3 @@ struct mclk {
 enum IMGSENSOR_RETURN imgsensor_hw_mclk_open(struct IMGSENSOR_HW_DEVICE **pdevice);
 
 #endif
-

@@ -73,7 +73,8 @@ struct ddp_clk {
 	struct clk *pclk;
 	const char *clk_name;
 	int refcnt;
-	unsigned int belong_to; /* bit 0: main display , bit 1: second display */
+	/* bit 0: main display , bit 1: second display */
+	unsigned int belong_to;
 	enum DISP_MODULE_ENUM module_id;
 };
 

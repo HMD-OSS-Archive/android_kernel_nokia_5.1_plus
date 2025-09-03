@@ -1,16 +1,16 @@
 /*
-* Copyright (c) 2014 MediaTek Inc.
-* Author: Roy Chen <roy-cc.chen@mediatek.com>
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*/
+ * Copyright (c) 2014 MediaTek Inc.
+ * Author: Roy Chen <roy-cc.chen@mediatek.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
 
 #ifndef _DT_BINDINGS_CLK_MT6771_H
 #define _DT_BINDINGS_CLK_MT6771_H
@@ -137,7 +137,7 @@
 #define APMIXED_ARMPLL_L 2
 #define APMIXED_CCIPLL 3
 #define APMIXED_MAINPLL 4
-#define APMIXED_UNIVPLL 5
+#define APMIXED_UNIV2PLL 5
 #define APMIXED_MSDCPLL 6
 #define APMIXED_MMPLL 7
 #define APMIXED_MFGPLL 8

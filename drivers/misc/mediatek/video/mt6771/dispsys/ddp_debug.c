@@ -68,6 +68,7 @@ unsigned char aal_debug_flag;
 static unsigned int dbg_log_level;
 static unsigned int irq_log_level;
 static unsigned int dump_to_buffer;
+static enum ONESHOT_DUMP_STAGE oneshot_dump = ONESHOT_DUMP_INIT;
 
 static int dbg_force_roi;
 static int dbg_partial_x;
@@ -112,9 +113,9 @@ static char cmd_help_analysis[] =
 	"3: font size(default 3)\n"
 	"1: the location of lcm(default 1)\n";
 
-/* --------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 /* Command Processor */
-/* --------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 static int low_power_cust_mode = LP_CUST_DISABLE;
 static unsigned int vfp_backup;
 
@@ -154,7 +155,8 @@ static void process_dbg_opt(const char *opt)
 		}
 		va = ioremap(pa, 4);
 		DDPMSG("get_reg: 0x%lx = 0x%08X\n", pa, DISP_REG_GET(va));
-		snprintf(buf, buf_size_left, "get_reg: 0x%lx = 0x%08X\n", pa, DISP_REG_GET(va));
+		snprintf(buf, buf_size_left, "get_reg: 0x%lx = 0x%08X\n",
+			 pa, DISP_REG_GET(va));
 		iounmap(va);
 		return;
 	}
@@ -170,8 +172,10 @@ static void process_dbg_opt(const char *opt)
 		}
 		va = ioremap(pa, 4);
 		DISP_CPU_REG_SET(va, val);
-		DDPMSG("set_reg: 0x%lx = 0x%08X(0x%x)\n", pa, DISP_REG_GET(va), val);
-		snprintf(buf, buf_size_left, "set_reg: 0x%lx = 0x%08X(0x%x)\n", pa, DISP_REG_GET(va), val);
+		DDPMSG("set_reg: 0x%lx = 0x%08X(0x%x)\n",
+		       pa, DISP_REG_GET(va), val);
+		snprintf(buf, buf_size_left, "set_reg: 0x%lx = 0x%08X(0x%x)\n",
+			 pa, DISP_REG_GET(va), val);
 		iounmap(va);
 		return;
 	}
@@ -213,8 +217,10 @@ static void process_dbg_opt(const char *opt)
 
 			DISP_CPU_REG_SET(addr, val);
 			regVal = DISP_REG_GET(addr);
-			DDPMSG("regw: 0x%lx, 0x%08X = 0x%08X\n", addr, val, regVal);
-			sprintf(buf, "regw: 0x%lx, 0x%08X = 0x%08X\n", addr, val, regVal);
+			DDPMSG("regw: 0x%lx, 0x%08X = 0x%08X\n",
+			       addr, val, regVal);
+			sprintf(buf, "regw: 0x%lx, 0x%08X = 0x%08X\n",
+				addr, val, regVal);
 		} else {
 			sprintf(buf, "regw, invalid address 0x%lx\n", addr);
 			goto Error;
@@ -265,16 +271,17 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "met_on:", 7) == 0) {
 		int met_on, rdma0_mode, rdma1_mode;
 
-		ret = sscanf(opt, "met_on:%d,%d,%d\n", &met_on, &rdma0_mode, &rdma1_mode);
+		ret = sscanf(opt, "met_on:%d,%d,%d\n",
+			     &met_on, &rdma0_mode, &rdma1_mode);
 		if (ret != 3) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
 			return;
 		}
 		ddp_init_met_tag(met_on, rdma0_mode, rdma1_mode);
-		DDPMSG("process_dbg_opt, met_on=%d,rdma0_mode %d, rdma1 %d\n", met_on, rdma0_mode,
-		       rdma1_mode);
-		sprintf(buf, "met_on:%d,rdma0_mode:%d,rdma1_mode:%d\n", met_on, rdma0_mode,
-			rdma1_mode);
+		DDPMSG("%s, met_on=%d,rdma0_mode %d, rdma1 %d\n",
+		       __func__, met_on, rdma0_mode, rdma1_mode);
+		sprintf(buf, "met_on:%d,rdma0_mode:%d,rdma1_mode:%d\n",
+			met_on, rdma0_mode, rdma1_mode);
 	} else if (strncmp(opt, "backlight:", 10) == 0) {
 		char *p = (char *)opt + 10;
 		unsigned int level;
@@ -293,21 +300,24 @@ static void process_dbg_opt(const char *opt)
 		}
 	} else if (strncmp(opt, "partial:", 8) == 0) {
 		ret = sscanf(opt, "partial:%d,%d,%d,%d,%d\n", &dbg_force_roi,
-			&dbg_partial_x, &dbg_partial_y, &dbg_partial_w, &dbg_partial_h);
+			     &dbg_partial_x, &dbg_partial_y, &dbg_partial_w,
+			     &dbg_partial_h);
 		if (ret != 5) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
 			return;
 		}
-		DDPMSG("process_dbg_opt, partial force=%d (%d,%d,%d,%d)\n", dbg_force_roi,
-			dbg_partial_x, dbg_partial_y, dbg_partial_w, dbg_partial_h);
+		DDPMSG("%s, partial force=%d (%d,%d,%d,%d)\n",
+		       __func__, dbg_force_roi, dbg_partial_x, dbg_partial_y,
+		       dbg_partial_w, dbg_partial_h);
 	} else if (strncmp(opt, "partial_s:", 10) == 0) {
 		ret = sscanf(opt, "partial_s:%d\n", &dbg_partial_statis);
 		if (ret != 5) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
 			return;
 		}
-		DDPMSG("process_dbg_opt, partial_s:%d\n", dbg_partial_statis);
-	} else if (strncmp(opt, "pwm0:", 5) == 0 || strncmp(opt, "pwm1:", 5) == 0) {
+		DDPMSG("%s, partial_s:%d\n", __func__, dbg_partial_statis);
+	} else if (strncmp(opt, "pwm0:", 5) == 0 ||
+		   strncmp(opt, "pwm1:", 5) == 0) {
 		char *p = (char *)opt + 5;
 		unsigned int level;
 
@@ -330,24 +340,25 @@ static void process_dbg_opt(const char *opt)
 		}
 	} else if (strncmp(opt, "rdma_color:", 11) == 0) {
 		if (strncmp(opt + 11, "on", 2) == 0) {
-			/* char *p = (char *)opt + 14; */
-			unsigned int red, green, blue;
-
+			unsigned int r, g, b; /* red, green, blue */
 			struct rdma_color_matrix matrix = { 0 };
 			struct rdma_color_pre pre = { 0 };
 			struct rdma_color_post post = { 255, 0, 0 };
 
-			ret = sscanf(opt, "rdma_color:on,%d,%d,%d\n", &red, &green, &blue);
+			ret = sscanf(opt, "rdma_color:on,%d,%d,%d\n",
+				     &r, &g, &b);
 			if (ret != 3) {
-				snprintf(buf, 50, "error to parse cmd %s\n", opt);
+				snprintf(buf, 50, "error to parse cmd %s\n",
+					 opt);
 				pr_info("error to parse cmd %s\n", opt);
 				return;
 			}
 
-			post.ADD0 = red;
-			post.ADD1 = green;
-			post.ADD2 = blue;
-			rdma_set_color_matrix(DISP_MODULE_RDMA0, &matrix, &pre, &post);
+			post.ADD0 = r;
+			post.ADD1 = g;
+			post.ADD2 = b;
+			rdma_set_color_matrix(DISP_MODULE_RDMA0, &matrix, &pre,
+					      &post);
 			rdma_enable_color_transform(DISP_MODULE_RDMA0);
 		} else if (strncmp(opt + 11, "off", 3) == 0) {
 			rdma_disable_color_transform(DISP_MODULE_RDMA0);
@@ -390,9 +401,9 @@ static void process_dbg_opt(const char *opt)
 	} else if (strncmp(opt, "pwm_test:", 9) == 0) {
 		disp_pwm_test(opt + 9, buf);
 	} else if (strncmp(opt, "dither_test:", 12) == 0) {
-		/*dither_test(opt + 12, buf);*/
+		/* dither_test(opt + 12, buf); */
 	} else if (strncmp(opt, "ccorr_test:", 11) == 0) {
-		/*ccorr_test(opt + 11, buf);*/
+		/* ccorr_test(opt + 11, buf); */
 	} else if (strncmp(opt, "od_test:", 8) == 0) {
 		/* od_test(opt + 8, buf); */
 	} else if (strncmp(opt, "dump_reg:", 9) == 0) {
@@ -405,7 +416,7 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 
-		DDPMSG("process_dbg_opt, module=%d\n", module);
+		DDPMSG("%s, module=%d\n", __func__, module);
 		if (module < DISP_MODULE_NUM) {
 			ddp_dump_reg(module);
 			sprintf(buf, "dump_reg: %d\n", module);
@@ -423,7 +434,7 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 
-		DDPMSG("process_dbg_opt, path mutex=%d\n", mutex_idx);
+		DDPMSG("%s, path mutex=%d\n", __func__, mutex_idx);
 		dpmgr_debug_path_status(mutex_idx);
 		sprintf(buf, "dump_path: %d\n", mutex_idx);
 
@@ -438,8 +449,8 @@ static void process_dbg_opt(const char *opt)
 				i, ddp_get_module_name(i), ddp_get_module_va(i),
 				ddp_get_module_pa(i), ddp_get_module_irq(i));
 			sprintf(buf_temp,
-				"i=%d, module=%s, va=0x%lx, pa=0x%lx, irq(%d)\n", i,
-				ddp_get_module_name(i), ddp_get_module_va(i),
+				"i=%d, module=%s, va=0x%lx, pa=0x%lx, irq(%d)\n",
+				i, ddp_get_module_name(i), ddp_get_module_va(i),
 				ddp_get_module_pa(i), ddp_get_module_irq(i));
 			buf_temp += strlen(buf_temp);
 		}
@@ -456,7 +467,6 @@ static void process_dbg_opt(const char *opt)
 
 		if (enable == 1) {
 			DDPMSG("[DDP] debug=1, trigger AEE\n");
-			/* aee_kernel_exception("DDP-TEST-ASSERT", "[DDP] DDP-TEST-ASSERT"); */
 		} else if (enable == 2) {
 			ddp_mem_test();
 		} else if (enable == 3) {
@@ -494,16 +504,15 @@ static void process_dbg_opt(const char *opt)
 		char para[15] = {0};
 		char fmt[256] = "set_dsi_cmd:0x%x";
 
-		for (i = 0; i < ARRAY_SIZE(para); i++) {
-			/* make fmt like: "set_dsi_cmd:0x%x,0x%hhx,0x%hhx,0x%hhx,0x%hhx\n" */
+		for (i = 0; i < ARRAY_SIZE(para); i++)
 			strncat(fmt, ",0x%hhx", sizeof(fmt) - strlen(fmt) - 1);
-		}
+
 		strncat(fmt, "\n", sizeof(fmt) - strlen(fmt) - 1);
 
-		ret = sscanf(opt, fmt,
-			&cmd, &para[0], &para[1], &para[2], &para[3], &para[4],
-			&para[5], &para[6], &para[7], &para[8], &para[9],
-			&para[10], &para[11], &para[12], &para[13], &para[14]);
+		ret = sscanf(opt, fmt, &cmd, &para[0], &para[1], &para[2],
+			     &para[3], &para[4], &para[5], &para[6], &para[7],
+			     &para[8], &para[9], &para[10], &para[11],
+			     &para[12], &para[13], &para[14]);
 
 		if (ret < 1 || ret > ARRAY_SIZE(para) + 1) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
@@ -530,12 +539,14 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 
-		DSI_dcs_read_lcm_reg_v2(DISP_MODULE_DSI0, NULL, cmd, para, size);
+		DSI_dcs_read_lcm_reg_v2(DISP_MODULE_DSI0, NULL, cmd,
+					para, size);
 
 		tmp += snprintf(buf, buf_size_left, "dsi_read cmd=0x%x:", cmd);
 
 		for (i = 0; i < size; i++)
-			tmp += snprintf(buf + tmp, buf_size_left - tmp, "para[%d]=0x%x,", i, para[i]);
+			tmp += snprintf(buf + tmp, buf_size_left - tmp,
+					"para[%d]=0x%x,", i, para[i]);
 		DISPMSG("%s\n", buf);
 	} else {
 		dbg_buf[0] = '\0';
@@ -559,10 +570,9 @@ static void process_dbg_cmd(char *cmd)
 		process_dbg_opt(tok);
 }
 
-
-/* --------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 /* Debug FileSystem Routines */
-/* --------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
 
 static int debug_open(struct inode *inode, struct file *file)
 {
@@ -573,17 +583,19 @@ static int debug_open(struct inode *inode, struct file *file)
 
 static char cmd_buf[512];
 
-static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count,
+			  loff_t *ppos)
 {
 	if (strlen(dbg_buf))
-		return simple_read_from_buffer(ubuf, count, ppos, dbg_buf, strlen(dbg_buf));
+		return simple_read_from_buffer(ubuf, count, ppos, dbg_buf,
+					       strlen(dbg_buf));
 	else
-		return simple_read_from_buffer(ubuf, count, ppos, STR_HELP, strlen(STR_HELP));
-
+		return simple_read_from_buffer(ubuf, count, ppos, STR_HELP,
+					       strlen(STR_HELP));
 }
 
-
-static ssize_t debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
+static ssize_t debug_write(struct file *file, const char __user *ubuf,
+			   size_t count, loff_t *ppos)
 {
 	const int debug_bufmax = sizeof(cmd_buf) - 1;
 	size_t ret;
@@ -610,7 +622,8 @@ static const struct file_operations debug_fops = {
 	.open = debug_open,
 };
 
-static ssize_t lp_cust_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+static ssize_t lp_cust_read(struct file *file, char __user *ubuf, size_t count,
+			    loff_t *ppos)
 {
 	char *mode0 = "low power mode(1)\n";
 	char *mode1 = "just make mode(2)\n";
@@ -619,24 +632,26 @@ static ssize_t lp_cust_read(struct file *file, char __user *ubuf, size_t count, 
 
 	switch (low_power_cust_mode) {
 	case LOW_POWER_MODE:
-		return simple_read_from_buffer(ubuf, count, ppos, mode0, strlen(mode0));
+		return simple_read_from_buffer(ubuf, count, ppos, mode0,
+					       strlen(mode0));
 	case JUST_MAKE_MODE:
-		return simple_read_from_buffer(ubuf, count, ppos, mode1, strlen(mode1));
+		return simple_read_from_buffer(ubuf, count, ppos, mode1,
+					       strlen(mode1));
 	case PERFORMANC_MODE:
-		return simple_read_from_buffer(ubuf, count, ppos, mode2, strlen(mode2));
+		return simple_read_from_buffer(ubuf, count, ppos, mode2,
+					       strlen(mode2));
 	default:
-		return simple_read_from_buffer(ubuf, count, ppos, mode4, strlen(mode4));
-
-
+		return simple_read_from_buffer(ubuf, count, ppos, mode4,
+					       strlen(mode4));
 	}
-
 }
 
 static const struct file_operations low_power_cust_fops = {
 	.read = lp_cust_read,
 };
 
-static ssize_t debug_dump_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+static ssize_t debug_dump_read(struct file *file, char __user *buf,
+			       size_t size, loff_t *ppos)
 {
 	char *str = "idlemgr disable mtcmos now, all the regs may 0x00000000\n";
 
@@ -646,20 +661,22 @@ static ssize_t debug_dump_read(struct file *file, char __user *buf, size_t size,
 	dpmgr_debug_path_status(-1);
 	dump_to_buffer = 0;
 	if (is_mipi_enterulps())
-		return simple_read_from_buffer(buf, size, ppos, str, strlen(str));
-	else
-		return simple_read_from_buffer(buf, size, ppos, dprec_logger_get_dump_addr(),
+		return simple_read_from_buffer(buf, size, ppos, str,
+					       strlen(str));
+	return simple_read_from_buffer(buf, size, ppos,
+				       dprec_logger_get_dump_addr(),
 				       dprec_logger_get_dump_len());
 }
-
 
 static const struct file_operations debug_fops_dump = {
 	.read = debug_dump_read,
 };
 
-static ssize_t cmd_help_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+static ssize_t cmd_help_read(struct file *file, char __user *ubuf,
+		size_t count, loff_t *ppos)
 {
-	return simple_read_from_buffer(ubuf, count, ppos, cmd_help_analysis, sizeof(cmd_help_analysis));
+	return simple_read_from_buffer(ubuf, count, ppos, cmd_help_analysis,
+			sizeof(cmd_help_analysis));
 };
 
 static const struct file_operations cmd_help_fops = {
@@ -670,28 +687,21 @@ void ddp_debug_init(void)
 {
 	struct dentry *d;
 
-	if (!debug_init) {
-		debug_init = 1;
-		debugfs = debugfs_create_file("dispsys",
-					      S_IFREG | S_IRUGO, NULL, (void *)0, &debug_fops);
+	if (debug_init)
+		return;
 
+	debug_init = 1;
+	debugfs = debugfs_create_file("dispsys", S_IFREG | 0444, NULL,
+				      (void *)0, &debug_fops);
 
-		debugDir = debugfs_create_dir("disp", NULL);
-		if (debugDir) {
+	debugDir = debugfs_create_dir("disp", NULL);
+	if (!debugDir)
+		return;
 
-			debugfs_dump = debugfs_create_file("dump",
-							   S_IFREG | S_IRUGO, debugDir, NULL,
-							   &debug_fops_dump);
-			debug_cmd_help = debugfs_create_file("cmd_help",
-							   S_IFREG | S_IRUGO, debugDir, NULL,
-							   &cmd_help_fops);
-			d = debugfs_create_file("lowpowermode", S_IFREG | S_IRUGO, debugDir, NULL,
-						&low_power_cust_fops);
-			/*if (!d)*/
-			/*return -ENOMEM;*/
-
-		}
-	}
+	debugfs_dump = debugfs_create_file("dump", S_IFREG | 0444, debugDir,
+					   NULL, &debug_fops_dump);
+	d = debugfs_create_file("lowpowermode", S_IFREG | 0444, debugDir,
+				NULL, &low_power_cust_fops);
 }
 
 unsigned int ddp_debug_analysis_to_buffer(void)
@@ -756,3 +766,14 @@ int ddp_lcd_test(void)
 {
 	return -1;
 }
+
+enum ONESHOT_DUMP_STAGE get_oneshot_dump(void)
+{
+	return oneshot_dump;
+}
+
+void set_oneshot_dump(enum ONESHOT_DUMP_STAGE value)
+{
+	oneshot_dump = value;
+}
+

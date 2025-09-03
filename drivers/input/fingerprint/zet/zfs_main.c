@@ -60,7 +60,7 @@
 #endif
 #endif /* ZET_SPI_DRIVER */
 
-#include "mtk_gpio.h"
+//#include "mtk_gpio.h"
 
 #else /* else FPC_MTK */
 	
@@ -81,7 +81,7 @@
 #endif
 
 #include <linux/fb.h>
-#include <linux/wakelock.h>
+#include <linux/pm_wakeup.h>
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>

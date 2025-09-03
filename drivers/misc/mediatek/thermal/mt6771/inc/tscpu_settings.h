@@ -27,10 +27,12 @@
  */
 #define MIN(_a_, _b_) ((_a_) > (_b_) ? (_b_) : (_a_))
 #define MAX(_a_, _b_) ((_a_) > (_b_) ? (_a_) : (_b_))
-#define _BIT_(_bit_)		(unsigned)(1 << (_bit_))
-#define _BITMASK_(_bits_)	(((unsigned) -1 >> (31 - ((1) ? _bits_))) & ~((1U << ((0) ? _bits_)) - 1))
+#define _BIT_(_bit_)		(unsigned int)(1 << (_bit_))
+#define _BITMASK_(_bits_)	(((unsigned int) -1 >> (31 - ((1) ?	\
+				_bits_))) & ~((1U << ((0) ? _bits_)) - 1))
 
-#define THERMAL_TPROFILE_INIT() long long thermal_pTime_us, thermal_cTime_us, thermal_diff_us
+#define THERMAL_TPROFILE_INIT() long long thermal_pTime_us,	\
+				thermal_cTime_us, thermal_diff_us
 
 #define THERMAL_GET_PTIME() {thermal_pTime_us = thermal_get_current_time_us()}
 
@@ -42,9 +44,11 @@
 	do {                                    \
 		thermal_diff_us = thermal_cTime_us - thermal_pTime_us;	\
 		if (thermal_diff_us > THERMAL_TIME_TH) {                \
-			pr_notice(TSCPU_LOG_TAG "%s: %llu us\n", __func__, thermal_diff_us); \
+			pr_notice(TSCPU_LOG_TAG "%s: %llu us\n",	\
+					__func__, thermal_diff_us); \
 		} else if (thermal_diff_us < 0) {	\
-			pr_notice(TSCPU_LOG_TAG "Warning: tProfiling uses incorrect %s %d\n", __func__, __LINE__); \
+			pr_notice(TSCPU_LOG_TAG "Warning: tProfiling "	\
+			"uses incorrect %s %d\n", __func__, __LINE__); \
 		}	\
 	} while (0)
 
@@ -72,7 +76,8 @@
 /* 1: turn on supports to MET logging; 0: turn off */
 #define CONFIG_SUPPORT_MET_MTKTSCPU				(0)
 
-/* Thermal controller HW filtering function. Only 1, 2, 4, 8, 16 are valid values,
+/* Thermal controller HW filtering function.
+ * Only 1, 2, 4, 8, 16 are valid values,
  * they means one reading is a avg of X samples
  */
 #define THERMAL_CONTROLLER_HW_FILTER			(2) /* 1, 2, 4, 8, 16 */
@@ -102,8 +107,9 @@
 /* 1: thermal driver update temp to MET directly, use hrtimer; 0: turn off */
 #define THERMAL_DRV_UPDATE_TEMP_DIRECT_TO_MET	(1)
 
-/* Define this in tscpu_settings.h enables this feature. It polls CPU TS in hrtimer and
- * run ATM in RT 98 kthread. This is for Everest only.
+/* Define this in tscpu_settings.h enables this feature.
+ * It polls CPU TS in hrtimer and run ATM in RT 98 kthread.
+ * This is for Ever est only.
  */
 #define FAST_RESPONSE_ATM						(1)
 #define THERMAL_INIT_VALUE						(0xDA1)
@@ -112,16 +118,19 @@
 #define CFG_THERM_LVTS							(0)
 
 /* Thermal VPU throttling support */
-#define THERMAL_VPU_SUPPORT
+/* #define THERMAL_VPU_SUPPORT */
+
+/* EARA_Thermal power budget allocation support */
+#define EARA_THERMAL_SUPPORT
 
 /* Thermal workaround for DDR/stressapptest fail
-* 8core@OPP0 can't over 70 degreeC
-*/
+ * 8core@OPP0 can't over 70 degreeC
+ */
 #define DDR_STRESS_WORKAROUND
 
 /* Perf 1st thermal config for turbo
-* Extend steady Tpcb
-*/
+ * Extend steady Tpcb
+ */
 #define CATM_TPCB_EXTEND
 
 /*=============================================================
@@ -131,7 +140,9 @@
 /* double check */
 #define TS_CONFIGURE		TS_CON1_TM	/* depend on CPU design*/
 #define TS_CONFIGURE_P		TS_CON1_P	/* depend on CPU design*/
-#define TS_TURN_ON			0xFFFFFFCF	/* turn on TS_CON1[5:4] 2'b 00  11001111 -> 0xCF  ~(0x30)*/
+#define TS_TURN_ON		0xFFFFFFCF	/* turn on TS_CON1[5:4] 2'b 00
+						 * 11001111 -> 0xCF  ~(0x30
+						 */
 #define TS_TURN_OFF			0x00000030	/* turn off thermal*/
 
 /* chip dependent */
@@ -194,8 +205,11 @@
  *=============================================================
  */
 
-#define thermal_setl(addr, val)     mt_reg_sync_writel(readl(addr) | (val), ((void *)addr))
-#define thermal_clrl(addr, val)     mt_reg_sync_writel(readl(addr) & ~(val), ((void *)addr))
+#define thermal_setl(addr, val)     mt_reg_sync_writel(readl(addr) |	\
+					(val), ((void *)addr))
+
+#define thermal_clrl(addr, val)     mt_reg_sync_writel(readl(addr) &	\
+					~(val), ((void *)addr))
 
 #define MTKTSCPU_TEMP_CRIT 120000 /* 120.000 degree Celsius */
 
@@ -296,9 +310,9 @@ extern int tscpu_polling_factor2;
 
 #if MTKTSCPU_FAST_POLLING
 /* Combined fast_polling_trip_temp and fast_polling_factor,
-*it means polling_delay will be 1/5 of original interval
-*after mtktscpu reports > 65C w/o exit point
-*/
+ *it means polling_delay will be 1/5 of original interval
+ *after mtktscpu reports > 65C w/o exit point
+ */
 extern int fast_polling_trip_temp;
 extern int fast_polling_trip_temp_high;
 extern int fast_polling_factor;
@@ -313,6 +327,7 @@ extern void tscpu_workqueue_start_timer(void);
 
 extern void __iomem  *therm_clk_infracfg_ao_base;
 extern int Num_of_GPU_OPP;
+extern int gpu_max_opp;
 extern struct mt_gpufreq_power_table_info *mtk_gpu_power;
 extern int tscpu_read_curr_temp;
 #if MTKTSCPU_FAST_POLLING
@@ -332,9 +347,9 @@ extern int bts_cur_temp;	/* in mtk_ts_bts.c */
 
 #if PRECISE_HYBRID_POWER_BUDGET
 /*	tscpu_prev_cpu_temp: previous CPUSYS temperature
-*	tscpu_curr_cpu_temp: current CPUSYS temperature
-*	tscpu_prev_gpu_temp: previous GPUSYS temperature
-*	tscpu_curr_gpu_temp: current GPUSYS temperature
+ *	tscpu_curr_cpu_temp: current CPUSYS temperature
+ *	tscpu_prev_gpu_temp: previous GPUSYS temperature
+ *	tscpu_curr_gpu_temp: current GPUSYS temperature
  */
 extern int tscpu_prev_cpu_temp, tscpu_prev_gpu_temp;
 extern int tscpu_curr_cpu_temp, tscpu_curr_gpu_temp;
@@ -389,10 +404,12 @@ extern int get_io_reg_base(void);
 extern void tscpu_config_all_tc_hw_protect(int temperature, int temperature2);
 extern void tscpu_reset_thermal(void);
 extern void tscpu_thermal_initial_all_tc(void);
-extern void tscpu_thermal_read_tc_temp(int tc_num, enum thermal_sensor type, int order);
+extern void tscpu_thermal_read_tc_temp
+	(int tc_num, enum thermal_sensor type, int order);
 extern void tscpu_thermal_cal_prepare(void);
 extern void tscpu_thermal_cal_prepare_2(unsigned int ret);
-extern irqreturn_t tscpu_thermal_all_tc_interrupt_handler(int irq, void *dev_id);
+extern irqreturn_t tscpu_thermal_all_tc_interrupt_handler
+	(int irq, void *dev_id);
 extern int tscpu_thermal_clock_on(void);
 extern int tscpu_thermal_clock_off(void);
 extern int tscpu_read_temperature_info(struct seq_file *m, void *v);
@@ -407,14 +424,14 @@ extern int (*max_temperature_in_bank[THERMAL_BANK_NUM])(void);
 extern void thermal_disable_all_periodoc_temp_sensing(void);
 
 /*
-*In drivers/misc/mediatek/gpu/hal/mtk_gpu_utility.c
-*It's not our api, ask them to provide header file
-*/
+ *In drivers/misc/mediatek/gpu/hal/mtk_gpu_utility.c
+ *It's not our api, ask them to provide header file
+ */
 extern bool mtk_get_gpu_loading(unsigned int *pLoading);
 /*
-*In drivers/misc/mediatek/auxadc/mt_auxadc.c
-*It's not our api, ask them to provide header file
-*/
+ *In drivers/misc/mediatek/auxadc/mt_auxadc.c
+ *It's not our api, ask them to provide header file
+ */
 extern int IMM_IsAdcInitReady(void);
 /*aee related*/
 #if (CONFIG_THERMAL_AEE_RR_REC == 1)
@@ -507,10 +524,12 @@ extern void __iomem *INFRACFG_AO_base;
  */
 
 /*APB Module infracfg_ao*/
-/* chip dependent */
-#define INFRA_GLOBALCON_RST_0_SET (INFRACFG_AO_BASE_2 + 0x120) /*yes, 0x10000000*/
-#define INFRA_GLOBALCON_RST_0_CLR (INFRACFG_AO_BASE_2 + 0x124) /*yes, 0x10000000*/
-#define INFRA_GLOBALCON_RST_0_STA (INFRACFG_AO_BASE_2 + 0x128) /*yes, 0x10000000*/
+/*yes, 0x10000000*/
+#define INFRA_GLOBALCON_RST_0_SET (INFRACFG_AO_BASE_2 + 0x120)
+/*yes, 0x10000000*/
+#define INFRA_GLOBALCON_RST_0_CLR (INFRACFG_AO_BASE_2 + 0x124)
+/*yes, 0x10000000*/
+#define INFRA_GLOBALCON_RST_0_STA (INFRACFG_AO_BASE_2 + 0x128)
 /*******************************************************************************
  * APMixedSys Configuration Register Definition
  *****************************************************************************
@@ -716,6 +735,6 @@ extern void __iomem *INFRACFG_AO_base;
 #define THERMAL_MSRCTL2_MASK    0x000001C0
 
 /*cpu core nums*/
-#define TZCPU_NO_CPU_CORES              (8)
+#define TZCPU_NO_CPU_CORES             CONFIG_NR_CPUS
 
 #endif	/* __TSCPU_SETTINGS_H__ */

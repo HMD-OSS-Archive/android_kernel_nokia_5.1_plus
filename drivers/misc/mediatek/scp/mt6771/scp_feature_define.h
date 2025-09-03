@@ -1,20 +1,18 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 #ifndef __SCP_FEATURE_DEFINE_H__
 #define __SCP_FEATURE_DEFINE_H__
-
-
 
 
 /* scp platform configs*/
@@ -51,6 +49,11 @@ enum feature_id {
 	FLP_FEATURE_ID,
 	RTOS_FEATURE_ID,
 	SPEAKER_PROTECT_FEATURE_ID,
+	VOW_BARGEIN_FEATURE_ID,
+	VOW_DUMP_FEATURE_ID,
+	VOW_VENDOR_M_FEATURE_ID,
+	VOW_VENDOR_A_FEATURE_ID,
+	VOW_VENDOR_G_FEATURE_ID,
 #if SCP_VCORE_TEST_ENABLE
 	VCORE_TEST_FEATURE_ID,
 	VCORE_TEST2_FEATURE_ID,
@@ -58,7 +61,6 @@ enum feature_id {
 	VCORE_TEST4_FEATURE_ID,
 	VCORE_TEST5_FEATURE_ID,
 #endif
-	VOW_BARGEIN_FEATURE_ID,
 	NUM_FEATURE_ID,
 };
 

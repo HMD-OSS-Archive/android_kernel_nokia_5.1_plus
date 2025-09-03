@@ -15,7 +15,7 @@
 #define __DISP_DRV_PLATFORM_H__
 
 #include <linux/dma-mapping.h>
-#include "mt-plat/mtk_gpio.h"
+/* #include "mt-plat/mtk_gpio.h" */
 /* #include <mach/mt_reg_base.h> */
 /* #include <mach/mt_irq.h> */
 #include "mt-plat/sync_write.h"
@@ -48,15 +48,19 @@
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
 
-#define PRIMARY_SESSION_INPUT_LAYER_COUNT			(12) /* phy(4+2) + ext(3+3) */
-#define EXTERNAL_SESSION_INPUT_LAYER_COUNT			(2 /*2+3*/) /* 2 is enough, no need ext layer */
-#define MEMORY_SESSION_INPUT_LAYER_COUNT			(2 /*2+3*/) /* 2 is enough, no need ext layer */
-#define DISP_SESSION_OVL_TIMELINE_ID(x)				(x)
+/* platform dependency */
+/* phy(4+2) + ext(3+3) */
+#define PRIMARY_SESSION_INPUT_LAYER_COUNT	(12)
+/* 2 is enough, no need ext layer */
+#define EXTERNAL_SESSION_INPUT_LAYER_COUNT	(2)
+/* 2 is enough, no need ext layer */
+#define MEMORY_SESSION_INPUT_LAYER_COUNT	(2)
+#define DISP_SESSION_OVL_TIMELINE_ID(x)		(x)
 
 /* Display HW Capabilities */
-#define DISP_HW_MODE_CAP DISP_OUTPUT_CAP_SWITCHABLE
-#define DISP_HW_PASS_MODE DISP_OUTPUT_CAP_SINGLE_PASS
-#define DISP_HW_MAX_LAYER 4
+#define DISP_HW_MODE_CAP	DISP_OUTPUT_CAP_SWITCHABLE
+#define DISP_HW_PASS_MODE	DISP_OUTPUT_CAP_SINGLE_PASS
+#define DISP_HW_MAX_LAYER	4
 
 enum DISP_SESSION_ENUM {
 	DISP_SESSION_OUTPUT_TIMELINE_ID = PRIMARY_SESSION_INPUT_LAYER_COUNT,
@@ -66,7 +70,7 @@ enum DISP_SESSION_ENUM {
 	DISP_SESSION_TIMELINE_COUNT,
 };
 
-#define MAX_SESSION_COUNT					5
+#define MAX_SESSION_COUNT	5
 
 /* macros for display path hardware */
 #define FBCONFIG_SHOULD_KICK_IDLEMGR
@@ -76,6 +80,6 @@ enum DISP_SESSION_ENUM {
 /* #define DISP_PLATFORM_HAS_SHADOW_REG */
 
 /* define MET ready to use*/
-#define CONFIG_MTK_MET
+/* #define CONFIG_MTK_MET */
 
-#endif				/* __DISP_DRV_PLATFORM_H__ */
+#endif	/* __DISP_DRV_PLATFORM_H__ */

@@ -26,14 +26,14 @@ enum charger_type {
 	WIRELESS_CHARGER,
 };
 
-#if defined(CONFIG_USB_MTK_HDRC) || defined(CONFIG_USB_MU3D_DRV)
+#if defined(CONFIG_USB_MTK_HDRC) || defined(CONFIG_USB_MU3D_DRV) \
+	|| defined(CONFIG_EXTCON_MTK_USB)
 extern void mt_usb_connect(void);
 extern void mt_usb_disconnect(void);
 #else
 #define mt_usb_connect() do { } while (0)
 #define mt_usb_disconnect() do { } while (0)
 #endif
-extern void charger_ignore_usb(bool ignore);
 
 extern enum charger_type mt_get_charger_type(void);
 extern void mtk_charger_int_handler(void);

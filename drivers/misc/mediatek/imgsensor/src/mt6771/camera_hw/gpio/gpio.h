@@ -106,4 +106,3 @@ struct GPIO {
 enum IMGSENSOR_RETURN imgsensor_hw_gpio_open(struct IMGSENSOR_HW_DEVICE **pdevice);
 
 #endif
-

@@ -50,13 +50,13 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/io.h>
-#include "mt-plat/mtk_smi.h"
+/* #include "mt-plat/mtk_smi.h" */
 /* #include <mach/mt_reg_base.h> */
 /* #include <mach/mt_irq.h> */
 #include "ddp_clkmgr.h"
 /* #include "mach/mt_irq.h" */
 #include "mt-plat/sync_write.h"
-#include "mt-plat/mtk_smi.h"
+/* #include "mt-plat/mtk_smi.h" */
 
 #include "ddp_drv.h"
 #include "ddp_reg.h"
@@ -97,7 +97,8 @@ static unsigned int ddp_ms2jiffies(unsigned long ms)
 }
 #endif
 
-static int _disp_init_cmdq_slots(cmdqBackupSlotHandle *pSlot, int count, int init_val)
+static int _disp_init_cmdq_slots(cmdqBackupSlotHandle *pSlot,
+		int count, int init_val)
 {
 	int i;
 
@@ -109,7 +110,8 @@ static int _disp_init_cmdq_slots(cmdqBackupSlotHandle *pSlot, int count, int ini
 	return 0;
 }
 
-static int _disp_get_cmdq_slots(cmdqBackupSlotHandle Slot, unsigned int slot_index, unsigned int *value)
+static int _disp_get_cmdq_slots(cmdqBackupSlotHandle Slot,
+		unsigned int slot_index, unsigned int *value)
 {
 	int ret;
 
@@ -122,29 +124,38 @@ static int _disp_get_cmdq_slots(cmdqBackupSlotHandle Slot, unsigned int slot_ind
 	return ret;
 }
 
-int disp_get_ovl_bandwidth(unsigned int in_fps, unsigned int out_fps, unsigned int *bandwidth)
+int disp_get_ovl_bandwidth(unsigned int in_fps, unsigned int out_fps,
+		unsigned int *bandwidth)
 {
 	int ret = 0;
 	unsigned int is_dc;
 	unsigned int ovl0_bw, ovl0_2l_bw, rdma0_bw, wdma0_bw;
 
-	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE, DISP_SLOT_IS_DC, &is_dc);
-	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE, DISP_SLOT_OVL0_BW, &ovl0_bw);
-	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE, DISP_SLOT_OVL0_2L_BW, &ovl0_2l_bw);
-	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE, DISP_SLOT_RDMA0_BW, &rdma0_bw);
-	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE, DISP_SLOT_WDMA0_BW, &wdma0_bw);
+	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE,
+		DISP_SLOT_IS_DC, &is_dc);
+	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE,
+		DISP_SLOT_OVL0_BW, &ovl0_bw);
+	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE,
+		DISP_SLOT_OVL0_2L_BW, &ovl0_2l_bw);
+	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE,
+		DISP_SLOT_RDMA0_BW, &rdma0_bw);
+	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE,
+		DISP_SLOT_WDMA0_BW, &wdma0_bw);
 
 	/* cmdq get slot fail */
 	if (ret) {
 		DDPERR("DISP CMDQ get slot failed:%d\n", ret);
 		*bandwidth = 0;
-	} else {
-		if (is_dc)
-			*bandwidth = ((ovl0_bw + ovl0_2l_bw + wdma0_bw) * in_fps) + (rdma0_bw * out_fps);
-		else
-			*bandwidth = (ovl0_bw + ovl0_2l_bw) * out_fps;
-		do_div(*bandwidth, 1000);
+
+		return ret;
 	}
+
+	if (is_dc) {
+		*bandwidth = ((ovl0_bw + ovl0_2l_bw + wdma0_bw) * in_fps) +
+			 (rdma0_bw * out_fps);
+	} else
+		*bandwidth = (ovl0_bw + ovl0_2l_bw) * out_fps;
+	*bandwidth /= 1000;
 
 	return ret;
 }
@@ -154,7 +165,8 @@ int disp_get_rdma_bandwidth(unsigned int out_fps, unsigned int *bandwidth)
 	int ret = 0;
 	unsigned int rdma0_bw;
 
-	ret = _disp_get_cmdq_slots(DISPSYS_SLOT_BASE, DISP_SLOT_RDMA0_BW, &rdma0_bw);
+	ret = _disp_get_cmdq_slots(DISPSYS_SLOT_BASE, DISP_SLOT_RDMA0_BW,
+			&rdma0_bw);
 
 	/* cmdq get slot fail */
 	if (ret) {
@@ -162,20 +174,23 @@ int disp_get_rdma_bandwidth(unsigned int out_fps, unsigned int *bandwidth)
 		*bandwidth = 0;
 	} else {
 		*bandwidth = rdma0_bw * out_fps;
-		do_div(*bandwidth, 1000);
+		*bandwidth /= 1000;
 	}
 
 	return ret;
 }
 
-static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long disp_unlocked_ioctl(struct file *file, unsigned int cmd,
+		unsigned long arg)
 {
 	return 0;
 }
 
-static long disp_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long disp_compat_ioctl(struct file *file, unsigned int cmd,
+			      unsigned long arg)
 {
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && \
+	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	if (cmd == DISP_IOCTL_SET_TPLAY_HANDLE)
 		return disp_unlocked_ioctl(file, cmd, arg);
 #endif
@@ -187,11 +202,12 @@ static int disp_open(struct inode *inode, struct file *file)
 {
 	struct disp_node_struct *pNode = NULL;
 
-	DDPDBG("enter disp_open() process:%s\n", current->comm);
+	DDPDBG("enter %s process:%s\n", __func__, current->comm);
 
-	/* Allocate and initialize private data */
-	file->private_data = kmalloc(sizeof(struct disp_node_struct), GFP_ATOMIC);
-	if (file->private_data == NULL) {
+	/* allocate and initialize private data */
+	file->private_data = kmalloc(sizeof(struct disp_node_struct),
+				     GFP_ATOMIC);
+	if (!file->private_data) {
 		DDPMSG("Not enough entry for DDP open operation\n");
 		return -ENOMEM;
 	}
@@ -205,7 +221,8 @@ static int disp_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static ssize_t disp_read(struct file *file, char __user *data, size_t len, loff_t *ppos)
+static ssize_t disp_read(struct file *file, char __user *data, size_t len,
+			 loff_t *ppos)
 {
 	return 0;
 }
@@ -214,19 +231,15 @@ static int disp_release(struct inode *inode, struct file *file)
 {
 	struct disp_node_struct *pNode = NULL;
 
-	/* unsigned int index = 0; */
-	DDPDBG("enter disp_release() process:%s\n", current->comm);
+	DDPDBG("enter %s() process:%s\n", __func__, current->comm);
 
 	pNode = (struct disp_node_struct *)file->private_data;
 
 	spin_lock(&pNode->node_lock);
-
 	spin_unlock(&pNode->node_lock);
 
-	if (file->private_data != NULL) {
-		kfree(file->private_data);
-		file->private_data = NULL;
-	}
+	kfree(file->private_data);
+	file->private_data = NULL;
 
 	return 0;
 }
@@ -237,13 +250,15 @@ static int disp_flush(struct file *file, fl_owner_t a_id)
 }
 
 /* remap register to user space */
-#if defined(CONFIG_MT_ENG_BUILD)
+#if defined(CONFIG_MTK_ENG_BUILD)
 static int disp_mmap(struct file *file, struct vm_area_struct *a_pstVMArea)
 {
-#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
-				defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || \
+	defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
+	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	a_pstVMArea->vm_page_prot = pgprot_noncached(a_pstVMArea->vm_page_prot);
-	if (remap_pfn_range(a_pstVMArea, a_pstVMArea->vm_start, a_pstVMArea->vm_pgoff,
+	if (remap_pfn_range(a_pstVMArea, a_pstVMArea->vm_start,
+			    a_pstVMArea->vm_pgoff,
 			    (a_pstVMArea->vm_end - a_pstVMArea->vm_start),
 			    a_pstVMArea->vm_page_prot)) {
 		DDPPR_ERR("MMAP failed!!\n");
@@ -253,7 +268,7 @@ static int disp_mmap(struct file *file, struct vm_area_struct *a_pstVMArea)
 
 	return 0;
 }
-#endif
+#endif /* CONFIG_MTK_ENG_BUILD */
 
 struct dispsys_device {
 	struct device *dev;
@@ -264,10 +279,12 @@ struct device *disp_get_device(void)
 	return &(mydev.dev);
 }
 
-#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
-				defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || \
+	defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
+	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 static struct miscdevice disp_misc_dev;
 #endif
+
 /* Kernel interface */
 static const struct file_operations disp_fops = {
 	.owner = THIS_MODULE,
@@ -277,7 +294,7 @@ static const struct file_operations disp_fops = {
 	.release = disp_release,
 	.flush = disp_flush,
 	.read = disp_read,
-#if defined(CONFIG_MT_ENG_BUILD)
+#if defined(CONFIG_MTK_ENG_BUILD)
 	.mmap = disp_mmap
 #endif
 };
@@ -316,10 +333,10 @@ static int disp_probe(struct platform_device *pdev)
 {
 	static unsigned int disp_probe_cnt;
 
-	if (disp_probe_cnt != 0)
+	if (disp_probe_cnt)
 		return 0;
 
-	pr_info("disp driver(1) disp_probe begin\n");
+	pr_info("disp driver(1) %s begin\n", __func__);
 
 	/* save pdev for disp_probe_1 */
 	memcpy(&mydev, pdev, sizeof(mydev));
@@ -331,7 +348,7 @@ static int disp_probe(struct platform_device *pdev)
 
 	disp_probe_cnt++;
 
-	pr_info("disp driver(1) disp_probe end\n");
+	pr_info("disp driver(1) %s end\n", __func__);
 
 	return 0;
 }
@@ -339,7 +356,7 @@ static int disp_probe(struct platform_device *pdev)
 /* begin for irq check */
 static inline unsigned int gic_irq(struct irq_data *d)
 {
-	return d->hwirq;
+	return d ? d->hwirq : 0;
 }
 
 static inline unsigned int virq_to_hwirq(unsigned int virq)
@@ -350,6 +367,8 @@ static inline unsigned int virq_to_hwirq(unsigned int virq)
 	desc = irq_to_desc(virq);
 
 	WARN_ON(!desc);
+	if (!desc)
+		return 0;
 
 	hwirq = gic_irq(&desc->irq_data);
 
@@ -364,9 +383,10 @@ static int __init disp_probe_1(void)
 	unsigned long va;
 	unsigned int irq;
 
-	pr_info("disp driver(1) disp_probe_1 begin\n");
+	pr_info("disp driver(1) %s begin\n", __func__);
 
-#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
+#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || \
+	defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
 	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	disp_misc_dev.minor = MISC_DYNAMIC_MINOR;
 	disp_misc_dev.name = "mtk_disp";
@@ -390,16 +410,18 @@ static int __init disp_probe_1(void)
 		if (!is_ddp_module_has_reg_info(i))
 			continue;
 
-		node = of_find_compatible_node(NULL, NULL, ddp_get_module_dtname(i));
+		node = of_find_compatible_node(NULL, NULL,
+					       ddp_get_module_dtname(i));
 		if (node == NULL) {
-			DDPPR_ERR("[ERR]DT, i=%d, module=%s, unable to find node, dt_name=%s\n",
-			       i, ddp_get_module_name(i), ddp_get_module_dtname(i));
+			DDPERR("[ERR]DT, i=%d, module=%s, unable to find node, dt_name=%s\n",
+			       i, ddp_get_module_name(i),
+			       ddp_get_module_dtname(i));
 			continue;
 		}
 
 		va = (unsigned long)of_iomap(node, 0);
 		if (!va) {
-			DDPPR_ERR("[ERR]DT, i=%d, module=%s, unable to ge VA, of_iomap fail\n",
+			DDPERR("[ERR]DT, i=%d, module=%s, unable to ge VA, of_iomap fail\n",
 			       i, ddp_get_module_name(i));
 			continue;
 		} else {
@@ -408,15 +430,17 @@ static int __init disp_probe_1(void)
 
 		status = of_address_to_resource(node, 0, &res);
 		if (status < 0) {
-			DDPPR_ERR("[ERR]DT, i=%d, module=%s, unable to get PA\n",
+			DDPERR("[ERR]DT, i=%d, module=%s, unable to get PA\n",
 			       i, ddp_get_module_name(i));
 			continue;
 		}
 
 		if (ddp_get_module_pa(i) != res.start)
-			DDPPR_ERR("[ERR]DT, i=%d, module=%s, map_addr=%p, reg_pa=0x%lx!=0x%pa\n",
-			       i, ddp_get_module_name(i), (void *)ddp_get_module_va(i),
-			       ddp_get_module_pa(i), (void *)(uintptr_t)res.start);
+			DDPERR("[ERR]DT, i=%d, module=%s, map_addr=%p, reg_pa=0x%lx!=0x%pa\n",
+			       i, ddp_get_module_name(i),
+			       (void *)ddp_get_module_va(i),
+			       ddp_get_module_pa(i),
+			       (void *)(uintptr_t)res.start);
 
 		/* get IRQ ID and request IRQ */
 		irq = irq_of_parse_and_map(node, 0);
@@ -432,39 +456,50 @@ static int __init disp_probe_1(void)
 
 	/* register irq */
 	for (i = 0; i < DISP_MODULE_NUM; i++) {
-		if (ddp_is_irq_enable(i) == 1) {
-			if (ddp_get_module_irq(i) == 0) {
-				DDPPR_ERR("[ERR]DT, i=%d, module=%s, map_irq=%d\n",
-				       i, ddp_get_module_name(i), ddp_get_module_irq(i));
-				ddp_module_irq_disable(i);
-				continue;
-			}
+		if (ddp_is_irq_enable(i) != 1)
+			continue;
+
+		if (ddp_get_module_irq(i) == 0) {
+			DDPERR("[ERR]DT, i=%d, module=%s, map_irq=%d\n",
+			       i, ddp_get_module_name(i),
+			       ddp_get_module_irq(i));
+			ddp_module_irq_disable(i);
+			continue;
+		}
 
 #ifdef CONFIG_MTK_SYSIRQ
-			/* In MTK SYSIRQ, the irq offset has been removed. */
-			if (ddp_get_module_checkirq(i) - 32 != virq_to_hwirq(ddp_get_module_irq(i))) {
+		/* In MTK SYSIRQ, the irq offset has been removed. */
+		if (ddp_get_module_checkirq(i) - 32 !=
+		    virq_to_hwirq(ddp_get_module_irq(i))) {
 #else
-			if (ddp_get_module_checkirq(i) != virq_to_hwirq(ddp_get_module_irq(i))) {
+		if (ddp_get_module_checkirq(i) !=
+		    virq_to_hwirq(ddp_get_module_irq(i))) {
 #endif
-				DDPPR_ERR("[ERR]DT, i=%d, module=%s, map_irq=%d, virtohw_irq=%d, check_irq=%d\n",
-				       i, ddp_get_module_name(i), ddp_get_module_irq(i),
-				       virq_to_hwirq(ddp_get_module_irq(i)), ddp_get_module_checkirq(i));
+			DDPERR("[ERR]DT, i=%d, module=%s, map_irq=%d, virtohw_irq=%d, check_irq=%d\n",
+			       i, ddp_get_module_name(i), ddp_get_module_irq(i),
+			       virq_to_hwirq(ddp_get_module_irq(i)),
+			       ddp_get_module_checkirq(i));
 
-				ddp_module_irq_disable(i);
-				continue;
-			}
-
-			/* IRQF_TRIGGER_NONE dose not take effect here, real trigger mode set in dts file */
-			ret = request_irq(ddp_get_module_irq(i), (irq_handler_t)disp_irq_handler,
-					  IRQF_TRIGGER_NONE, ddp_get_module_name(i), NULL);
-			if (ret) {
-				DDPPR_ERR("[ERR]DT, i=%d, module=%s, request_irq(%d) fail\n",
-				       i, ddp_get_module_name(i), ddp_get_module_irq(i));
-				continue;
-			}
-			DDPMSG("irq enabled, module=%s, irq=%d\n",
-			       ddp_get_module_name(i), ddp_get_module_irq(i));
+			ddp_module_irq_disable(i);
+			continue;
 		}
+
+		/*
+		 * IRQF_TRIGGER_NONE dose not take effect here,
+		 * real trigger mode set in dts file
+		 */
+		ret = request_irq(ddp_get_module_irq(i),
+				  (irq_handler_t)disp_irq_handler,
+				  IRQF_TRIGGER_NONE, ddp_get_module_name(i),
+				  NULL);
+		if (ret) {
+			DDPERR("[ERR]DT, i=%d, module=%s, req_irq(%d) fail\n",
+			       i, ddp_get_module_name(i),
+			       ddp_get_module_irq(i));
+			continue;
+		}
+		DDPMSG("irq enabled, module=%s, irq=%d\n",
+		       ddp_get_module_name(i), ddp_get_module_irq(i));
 	}
 
 	DPI_REG = (struct DPI_REGS *)ddp_get_module_va(DISP_MODULE_DPI);
@@ -485,15 +520,16 @@ static int __init disp_probe_1(void)
 	ddp_path_init();
 	disp_m4u_init();
 
-	pr_info("disp driver(1) disp_probe_1 end\n");
+	pr_info("disp driver(1) %s end\n", __func__);
 	/* NOT_REFERENCED(class_dev); */
 	return ret;
 }
 
 static int disp_remove(struct platform_device *pdev)
 {
-#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
-				defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || \
+	defined(CONFIG_TRUSTONIC_TEE_SUPPORT)) && \
+	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	misc_deregister(&disp_misc_dev);
 #endif
 	return 0;
@@ -568,7 +604,7 @@ static int __init disp_late(void)
 {
 	int ret = 0;
 
-	DDPMSG("disp driver(1) disp_late begin\n");
+	DDPMSG("disp driver(1) %s begin\n", __func__);
 	/* for rt5081 */
 	ret = display_bias_regulator_init();
 	if (ret < 0)
@@ -576,7 +612,7 @@ static int __init disp_late(void)
 
 	display_bias_enable();
 
-	DDPMSG("disp driver(1) disp_late end\n");
+	DDPMSG("disp driver(1) %s end\n", __func__);
 	return 0;
 }
 

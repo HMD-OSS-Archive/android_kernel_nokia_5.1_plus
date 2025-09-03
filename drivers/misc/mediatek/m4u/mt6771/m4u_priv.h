@@ -15,20 +15,23 @@
 #define __M4U_PRIV_H__
 #include <linux/ioctl.h>
 #include <linux/fs.h>
-#include <aee.h>
+
 #include <linux/debugfs.h>
 #include <linux/platform_device.h>
 #include <linux/miscdevice.h>
 
 #include "m4u.h"
 #include "m4u_reg.h"
-#include "../2.0/m4u_pgtable.h"
+#include "../2.4/m4u_pgtable.h"
+#include <aee.h>
 
 #define M4UMSG(string, args...)		pr_notice("[M4U][ERR] "string, ##args)
 #define M4UINFO(string, args...)	pr_debug("[M4U] "string, ##args)
 
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_TEE_GP_SUPPORT)
+#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) || \
+	defined(CONFIG_MICROTRUST_TEE_SUPPORT)) && \
+	defined(CONFIG_MTK_TEE_GP_SUPPORT)
 #define M4U_TEE_SERVICE_ENABLE
 #endif
 
@@ -46,9 +49,9 @@
 #define MMProfileStart(...)
 #define MMProfileEnableEvent(...)
 #define MMP_Event unsigned int
+#define mmprofile_log_ex(...)
 #else
 #include <mmprofile.h>
-#include <mmprofile_function.h>
 
 extern void MMProfileEnable(int enable);
 extern void MMProfileStart(int start);
@@ -143,7 +146,7 @@ struct m4u_device {
 };
 
 struct m4u_domain {
-	imu_pgd_t *pgd;
+	struct imu_pgd_t *pgd;
 	dma_addr_t pgd_pa;
 	struct mutex pgtable_mutex;
 	unsigned int pgsize_bitmap;
@@ -154,7 +157,7 @@ struct m4u_buf_info_t {
 	unsigned long va;
 	unsigned int mva;
 	unsigned int size;
-	M4U_PORT_ID port;
+	int port;
 	unsigned int prot;
 	unsigned int flags;
 	struct sg_table *sg_table;
@@ -166,7 +169,7 @@ struct m4u_buf_info_t {
 };
 
 struct M4U_MAU_STRUCT {
-	M4U_PORT_ID port;
+	int port;
 	bool write;
 	unsigned int mva;
 	unsigned int size;
@@ -175,14 +178,15 @@ struct M4U_MAU_STRUCT {
 };
 
 struct M4U_TF_STRUCT {
-	M4U_PORT_ID port;
+	int port;
 	bool fgEnable;
 };
 
 /* ================================ */
 /* === define in m4u_mva.c========= */
 
-typedef int (mva_buf_fn_t)(void *priv, unsigned int mva_start, unsigned int mva_end, void *data);
+typedef int (mva_buf_fn_t)(void *priv,
+	unsigned int mva_start, unsigned int mva_end, void *data);
 
 void m4u_mvaGraph_init(void *priv_reserve);
 void m4u_mvaGraph_dump_raw(void);
@@ -191,8 +195,10 @@ void *mva_get_priv_ext(unsigned int mva);
 int mva_foreach_priv(mva_buf_fn_t *fn, void *data);
 void *mva_get_priv(unsigned int mva);
 unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv);
-unsigned int m4u_do_mva_alloc_fix(unsigned long va, unsigned int mva, unsigned int size, void *priv);
-unsigned int m4u_do_mva_alloc_start_from(unsigned long va, unsigned int mva, unsigned int size, void *priv);
+unsigned int m4u_do_mva_alloc_fix(unsigned long va,
+	unsigned int mva, unsigned int size, void *priv);
+unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
+	unsigned int mva, unsigned int size, void *priv);
 int m4u_do_mva_free(unsigned int mva, unsigned int size);
 
 /* ================================= */
@@ -201,16 +207,19 @@ void m4u_dump_pgtable(struct m4u_domain *domain, struct seq_file *seq);
 void m4u_dump_pte_nolock(struct m4u_domain *domain, unsigned int mva);
 void m4u_dump_pte(struct m4u_domain *domain, unsigned int mva);
 int m4u_pgtable_init(struct m4u_device *m4u_dev, struct m4u_domain *m4u_domain);
-int m4u_map_4K(struct m4u_domain *m4u_domain, unsigned int mva, phys_addr_t pa, unsigned int prot);
-int m4u_clean_pte(struct m4u_domain *domain, unsigned int mva, unsigned int size);
+int m4u_map_4K(struct m4u_domain *m4u_domain,
+	unsigned int mva, phys_addr_t pa, unsigned int prot);
+int m4u_clean_pte(struct m4u_domain *domain,
+	unsigned int mva, unsigned int size);
 
 unsigned long m4u_get_pte(struct m4u_domain *domain, unsigned int mva);
 
 
 /* ================================= */
 /* ==== define in m4u_hw.c     ===== */
-void m4u_invalid_tlb_by_range(struct m4u_domain *m4u_domain, unsigned int mva_start, unsigned int mva_end);
-struct m4u_domain *m4u_get_domain_by_port(M4U_PORT_ID port);
+void m4u_invalid_tlb_by_range(struct m4u_domain *m4u_domain,
+	unsigned int mva_start, unsigned int mva_end);
+struct m4u_domain *m4u_get_domain_by_port(int port);
 struct m4u_domain *m4u_get_domain_by_id(int id);
 int m4u_get_domain_nr(void);
 int m4u_reclaim_notify(int port, unsigned int mva, unsigned int size);
@@ -218,9 +227,9 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id);
 int m4u_hw_deinit(struct m4u_device *m4u_dev, int m4u_id);
 int m4u_reg_backup(void);
 int m4u_reg_restore(void);
-int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int MVAEnd);
+int m4u_insert_seq_range(int port, unsigned int MVAStart, unsigned int MVAEnd);
 int m4u_invalid_seq_range_by_id(int port, int seq_id);
-void m4u_print_port_status(struct seq_file *seq, int only_print_active);
+void m4u_print_port_status(struct seq_file *seq, int tf_port);
 
 int m4u_dump_main_tlb(int m4u_id, int m4u_slave_id);
 int m4u_dump_pfh_tlb(int m4u_id);
@@ -240,13 +249,17 @@ extern int gM4U_4G_DRAM_Mode;
 /* ==== define in m4u.c     ===== */
 int m4u_dump_buf_info(struct seq_file *seq);
 int m4u_map_sgtable(struct m4u_domain *m4u_domain, unsigned int mva,
-		    struct sg_table *sg_table, unsigned int size, unsigned int prot);
+		    struct sg_table *sg_table,
+		    unsigned int size, unsigned int prot);
 int m4u_unmap(struct m4u_domain *domain, unsigned int mva, unsigned int size);
 
 
-void m4u_get_pgd(m4u_client_t *client, M4U_PORT_ID port, void **pgd_va, void **pgd_pa, unsigned int *size);
-unsigned long m4u_mva_to_pa(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva);
-int m4u_query_mva_info(unsigned int mva, unsigned int size, unsigned int *real_mva, unsigned int *real_size);
+void m4u_get_pgd(struct m4u_client_t *client,
+	int port, void **pgd_va, void **pgd_pa, unsigned int *size);
+unsigned long m4u_mva_to_pa(struct m4u_client_t *client,
+	int port, unsigned int mva);
+int m4u_query_mva_info(unsigned int mva, unsigned int size,
+	unsigned int *real_mva, unsigned int *real_size);
 
 /* ================================= */
 /* ==== define in m4u_debug.c ===== */
@@ -285,7 +298,6 @@ extern int gM4U_log_to_uart;
 #define M4ULOG_MID(string, args...) _M4ULOG(M4U_LOG_LEVEL_MID, string, ##args)
 #define M4ULOG_HIGH(string, args...) _M4ULOG(M4U_LOG_LEVEL_HIGH, string, ##args)
 
-
 #define M4UERR(string, args...) do {\
 	pr_notice("[M4U][ERR]:"string, ##args);  \
 		aee_kernel_exception("M4U", "[M4U] error:"string, ##args);  \
@@ -294,10 +306,12 @@ extern int gM4U_log_to_uart;
 #define m4u_aee_print(string, args...) do {\
 		char m4u_name[100];\
 		snprintf(m4u_name, 100, "[M4U]"string, ##args); \
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_MMPROFILE_BUFFER | DB_OPT_DUMP_DISPLAY, \
+	aee_kernel_warning_api(__FILE__, __LINE__, \
+		DB_OPT_MMPROFILE_BUFFER | DB_OPT_DUMP_DISPLAY, \
 		m4u_name, "[M4U] error"string, ##args); \
 	pr_notice("[M4U] error:"string, ##args);  \
 	} while (0)
+
 /*aee_kernel_warning(m4u_name, "[M4U] error:"string,##args); */
 
 #define M4U_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
@@ -305,12 +319,13 @@ extern int gM4U_log_to_uart;
 		if (seq_file)\
 			seq_printf(seq_file, fmt, ##args);\
 		else\
-			pr_info(fmt, ##args);\
+			pr_debug(fmt, ##args);\
 	} while (0)
 
 /* ======================================= */
 /* ==== other macros ============ */
-#define M4U_GET_PAGE_NUM(va, size) ((((va)&(PAGE_SIZE-1))+(size)+(PAGE_SIZE-1))>>12)
+#define M4U_GET_PAGE_NUM(va, size) \
+	((((va)&(PAGE_SIZE-1))+(size)+(PAGE_SIZE-1))>>12)
 #define M4U_PAGE_MASK 0xfffL
 
 enum M4U_MMP_TYPE {
@@ -320,13 +335,12 @@ enum M4U_MMP_TYPE {
 	M4U_MMP_M4U_ERROR,
 	M4U_MMP_CACHE_SYNC,
 	M4U_MMP_TOGGLE_CG,
-	M4U_MMP_TOGGLE_MVA_DBG,
 	M4U_MMP_MAX,
 };
 extern MMP_Event M4U_MMP_Events[M4U_MMP_MAX];
 
 struct M4U_MOUDLE_STRUCT {
-	M4U_PORT_ID port;
+	int port;
 	unsigned long BufAddr;
 	unsigned int BufSize;
 	unsigned int prot;
@@ -336,17 +350,17 @@ struct M4U_MOUDLE_STRUCT {
 };
 
 struct M4U_CACHE_STRUCT {
-	M4U_PORT_ID port;
-	M4U_CACHE_SYNC_ENUM eCacheSync;
+	int port;
+	enum M4U_CACHE_SYNC_ENUM eCacheSync;
 	unsigned long va;
 	unsigned int size;
 	unsigned int mva;
 };
 
 struct M4U_DMA_STRUCT {
-	M4U_PORT_ID port;
-	M4U_DMA_TYPE eDMAType;
-	M4U_DMA_DIR eDMADir;
+	int port;
+	enum M4U_DMA_TYPE eDMAType;
+	enum M4U_DMA_DIR eDMADir;
 	unsigned long va;
 	unsigned int size;
 	unsigned int mva;
@@ -385,17 +399,15 @@ struct M4U_DMA_STRUCT {
 
 #define MTK_M4U_T_SEC_INIT	    _IOW(MTK_M4U_MAGICNO, 50, int)
 
-#ifdef CONFIG_MACH_MT6771
-int larb_clock_on(int larb, bool config_mtcmos);
-int larb_clock_off(int larb, bool config_mtcmos);
-#endif
-
 #ifdef M4U_TEE_SERVICE_ENABLE
-int m4u_config_port_tee(M4U_PORT_STRUCT *pM4uPort);
+int m4u_config_port_tee(
+	struct M4U_PORT_STRUCT *pM4uPort);
 int m4u_larb_backup_sec(unsigned int larb_idx);
 int m4u_larb_restore_sec(unsigned int larb_idx);
 int m4u_config_port_array_tee(unsigned char *port_array);
 int m4u_sec_init(void);
+int larb_clock_on(int larb, bool config_mtcmos);
+int larb_clock_off(int larb, bool config_mtcmos);
 #endif
 
 

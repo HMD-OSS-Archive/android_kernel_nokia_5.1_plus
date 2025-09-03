@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Encryption policy functions for per-file encryption support.
  *
@@ -19,14 +20,15 @@
  */
 static bool is_encryption_context_consistent_with_policy(
 				const struct fscrypt_context *ctx,
-				const struct fscrypt_policy *policy)
+				const struct fscrypt_policy *policy,
+				const struct inode *inode)
 {
 
 	if ((ctx->contents_encryption_mode !=
 		 policy->contents_encryption_mode) &&
-		!(hie_is_ready() &&
+		!(hie_is_capable(inode->i_sb) &&
 		 (ctx->contents_encryption_mode ==
-		  FS_ENCRYPTION_MODE_PRIVATE)))
+		 FS_ENCRYPTION_MODE_PRIVATE)))
 		return 0;
 
 	return memcmp(ctx->master_key_descriptor, policy->master_key_descriptor,
@@ -53,7 +55,8 @@ static int create_encryption_context_from_policy(struct inode *inode,
 		return -EINVAL;
 
 	ctx.contents_encryption_mode =
-		fscrypt_data_crypt_mode(policy->contents_encryption_mode);
+		fscrypt_data_crypt_mode(inode,
+		policy->contents_encryption_mode);
 	ctx.filenames_encryption_mode = policy->filenames_encryption_mode;
 	ctx.flags = policy->flags;
 	BUILD_BUG_ON(sizeof(ctx.nonce) != FS_KEY_DERIVATION_NONCE_SIZE);
@@ -88,6 +91,8 @@ int fscrypt_ioctl_set_policy(struct file *filp, const void __user *arg)
 	if (ret == -ENODATA) {
 		if (!S_ISDIR(inode->i_mode))
 			ret = -ENOTDIR;
+		else if (IS_DEADDIR(inode))
+			ret = -ENOENT;
 		else if (!inode->i_sb->s_cop->empty_dir(inode))
 			ret = -ENOTEMPTY;
 		else
@@ -95,7 +100,8 @@ int fscrypt_ioctl_set_policy(struct file *filp, const void __user *arg)
 								    &policy);
 	} else if (ret == sizeof(ctx) &&
 		   is_encryption_context_consistent_with_policy(&ctx,
-								&policy)) {
+								&policy,
+								inode)) {
 		/* The file already uses the same encryption policy. */
 		ret = 0;
 	} else if (ret >= 0 || ret == -ERANGE) {
@@ -214,7 +220,8 @@ int fscrypt_has_permitted_context(struct inode *parent, struct inode *child)
 	child_ci = child->i_crypt_info;
 
 	if (parent_ci && child_ci) {
-		return memcmp(parent_ci->ci_master_key, child_ci->ci_master_key,
+		return memcmp(parent_ci->ci_master_key_descriptor,
+			      child_ci->ci_master_key_descriptor,
 			      FS_KEY_DESCRIPTOR_SIZE) == 0 &&
 			(parent_ci->ci_data_mode == child_ci->ci_data_mode) &&
 			(parent_ci->ci_filename_mode ==
@@ -231,9 +238,11 @@ int fscrypt_has_permitted_context(struct inode *parent, struct inode *child)
 		return 0;
 
 	parent_ctx.contents_encryption_mode =
-		fscrypt_data_crypt_mode(parent_ctx.contents_encryption_mode);
+		fscrypt_data_crypt_mode(parent,
+		parent_ctx.contents_encryption_mode);
 	child_ctx.contents_encryption_mode =
-		fscrypt_data_crypt_mode(child_ctx.contents_encryption_mode);
+		fscrypt_data_crypt_mode(child,
+		child_ctx.contents_encryption_mode);
 
 	return memcmp(parent_ctx.master_key_descriptor,
 		      child_ctx.master_key_descriptor,
@@ -274,9 +283,10 @@ int fscrypt_inherit_context(struct inode *parent, struct inode *child,
 	ctx.contents_encryption_mode = ci->ci_data_mode;
 	ctx.filenames_encryption_mode = ci->ci_filename_mode;
 	ctx.flags = ci->ci_flags;
-	memcpy(ctx.master_key_descriptor, ci->ci_master_key,
+	memcpy(ctx.master_key_descriptor, ci->ci_master_key_descriptor,
 	       FS_KEY_DESCRIPTOR_SIZE);
 	get_random_bytes(ctx.nonce, FS_KEY_DERIVATION_NONCE_SIZE);
+	BUILD_BUG_ON(sizeof(ctx) != FSCRYPT_SET_CONTEXT_MAX_SIZE);
 	res = parent->i_sb->s_cop->set_context(child, &ctx,
 						sizeof(ctx), fs_data);
 	if (res)
@@ -287,19 +297,28 @@ EXPORT_SYMBOL(fscrypt_inherit_context);
 
 int fscrypt_set_bio_ctx(struct inode *inode, struct bio *bio)
 {
-	struct fscrypt_info *ci = inode->i_crypt_info;
+	struct fscrypt_info *ci;
 	int ret = -ENOENT;
+
+	if (!inode || !bio)
+		return ret;
+
+	ci = inode->i_crypt_info;
 
 	if (S_ISREG(inode->i_mode) && ci &&
 	    (ci->ci_data_mode == FS_ENCRYPTION_MODE_PRIVATE)) {
-		WARN_ON(!hie_is_ready());
+		WARN_ON(!hie_is_capable(inode->i_sb));
 		/* HIE: default use aes-256-xts */
-		bio->bi_crypt_ctx.bc_flags |= (BC_CRYPT | BC_AES_256_XTS);
+		bio_bcf_set(bio, BC_CRYPT | BC_AES_256_XTS);
 		bio->bi_crypt_ctx.bc_key_size = FS_AES_256_XTS_KEY_SIZE;
-		bio->bi_crypt_ctx.bc_keyring_key = ci->ci_keyring_key;
-		bio->bi_crypt_ctx.bc_fs_type = inode->i_sb->s_magic;
 		bio->bi_crypt_ctx.bc_ino = inode->i_ino;
 		bio->bi_crypt_ctx.bc_sb = inode->i_sb;
+
+		bio->bi_crypt_ctx.bc_info_act = &fscrypt_crypt_info_act;
+		bio->bi_crypt_ctx.bc_info =
+			fscrypt_crypt_info_act(
+			ci, BIO_BC_INFO_GET);
+		WARN_ON(!bio->bi_crypt_ctx.bc_info);
 
 #ifdef CONFIG_HIE_DEBUG
 		if (hie_debug(HIE_DBG_FS))
@@ -308,30 +327,30 @@ int fscrypt_set_bio_ctx(struct inode *inode, struct bio *bio)
 #endif
 		ret = 0;
 	} else
-		bio->bi_crypt_ctx.bc_flags &= ~BC_CRYPT;
+		bio_bcf_clear(bio, BC_CRYPT);
 
 	return ret;
 }
 
 int fscrypt_key_payload(struct bio_crypt_ctx *ctx,
-		const char *data, const unsigned char **key)
+		const unsigned char **key)
 {
-	struct fscrypt_key *master_key;
+	struct fscrypt_info *fi;
 
-	master_key = (struct fscrypt_key *)data;
+	fi = (struct fscrypt_info *)ctx->bc_info;
 
-	if (!master_key) {
-		pr_info("%s: master key was not exist\n", __func__);
+	if (!fi) {
+		pr_info("HIE: %s: missing crypto info\n", __func__);
 		return -ENOKEY;
 	}
 
 	if (key)
-		*key = &master_key->raw[0];
+		*key = &(fi->ci_raw_key[0]);
 
-	return master_key->size;
+	return ctx->bc_key_size;
 }
 
-int fscrypt_is_hw_encrypt(struct inode *inode)
+int fscrypt_is_hw_encrypt(const struct inode *inode)
 {
 	struct fscrypt_info *ci = inode->i_crypt_info;
 
@@ -339,7 +358,7 @@ int fscrypt_is_hw_encrypt(struct inode *inode)
 		ci->ci_data_mode == FS_ENCRYPTION_MODE_PRIVATE;
 }
 
-int fscrypt_is_sw_encrypt(struct inode *inode)
+int fscrypt_is_sw_encrypt(const struct inode *inode)
 {
 	struct fscrypt_info *ci = inode->i_crypt_info;
 

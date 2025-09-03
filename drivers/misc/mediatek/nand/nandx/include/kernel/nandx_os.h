@@ -148,7 +148,7 @@ static inline void nand_event_init(void *event)
 
 /*
  * timeout value is millisecond
- * return non-zero for complete, else timout
+ * return non-zero for complete, else timeout
  */
 static inline int nand_event_wait_complete(void *event, u32 timeout)
 {
@@ -168,7 +168,7 @@ static inline u64 get_current_time_us(void)
 	struct timespec64 ts;
 	u64 usec;
 
-	getnstimeofday64(&ts);
+	getrawmonotonic64(&ts);
 
 	usec = ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000;
 

@@ -16,25 +16,19 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/gpio.h>
-
+#include <linux/sched/clock.h>
 #include "cust_alsps.h"
 #include "ltr303.h"
 #include "alsps.h"
 
-/******************************************************************************
- * configuration
-*******************************************************************************/
-/*----------------------------------------------------------------------------*/
 #define LTR303_DEV_NAME			"ltr303"
-
-/*----------------------------------------------------------------------------*/
 #define APS_TAG					"[ALS] "
 #define APS_FUN(f)              pr_info(APS_TAG"%s\n", __func__)
-#define APS_ERR(fmt, args...)   pr_info(APS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define APS_ERR(fmt, args...)   pr_info(APS_TAG"%s %d : "\
+		fmt, __func__, __LINE__, ##args)
 #define APS_LOG(fmt, args...)   pr_info(APS_TAG fmt, ##args)
 #define APS_DBG(fmt, args...)   pr_info(APS_TAG fmt, ##args)
 
-/*----------------------------------------------------------------------------*/
 static const struct i2c_device_id ltr303_i2c_id[] = {
 	{LTR303_DEV_NAME, 0},
 	{},
@@ -43,21 +37,20 @@ static unsigned long long int_top_time;
 struct alsps_hw alsps_cust;
 static struct alsps_hw *hw = &alsps_cust;
 
-/*----------------------------------------------------------------------------*/
-static int ltr303_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
+static int ltr303_i2c_probe(struct i2c_client *client,
+				const struct i2c_device_id *id);
 static int ltr303_i2c_remove(struct i2c_client *client);
-static int ltr303_i2c_detect(struct i2c_client *client, struct i2c_board_info *info);
+static int ltr303_i2c_detect(struct i2c_client *client,
+				struct i2c_board_info *info);
 static int ltr303_i2c_suspend(struct device *dev);
 static int ltr303_i2c_resume(struct device *dev);
 static int als_gainrange;
 static int final_lux_val;
 
-/*----------------------------------------------------------------------------*/
 enum CMC_BIT {
 	CMC_BIT_ALS = 1,
 };
 
-/*----------------------------------------------------------------------------*/
 struct ltr303_priv {
 	struct alsps_hw  *hw;
 	struct i2c_client *client;
@@ -67,9 +60,9 @@ struct ltr303_priv {
 	u16		als_modulus;
 	atomic_t	i2c_retry;
 	atomic_t	als_suspend;
-	atomic_t	als_debounce;	/*debounce time after enabling als*/
-	atomic_t	als_deb_on;	/*indicates if the debounce is on*/
-	atomic_t	als_deb_end;	/*the jiffies representing the end of debounce*/
+	atomic_t	als_debounce;
+	atomic_t	als_deb_on;
+	atomic_t	als_deb_end;
 	atomic_t	trace;
 
 #ifdef CONFIG_OF
@@ -84,9 +77,9 @@ struct ltr303_priv {
 	u16		als_value_num;
 	u32		als_level[C_CUST_ALS_LEVEL-1];
 	u32		als_value[C_CUST_ALS_LEVEL];
-	atomic_t	als_cmd_val;		/*the cmd value can't be read, stored in ram*/
-	atomic_t	als_thd_val_high;	/*the cmd value can't be read, stored in ram*/
-	atomic_t	als_thd_val_low;	/*the cmd value can't be read, stored in ram*/
+	atomic_t	als_cmd_val;
+	atomic_t	als_thd_val_high;
+	atomic_t	als_thd_val_low;
 	ulong		enable;	/*enable mask*/
 	ulong		pending_intr;	/*pending interrupt*/
 };
@@ -133,12 +126,6 @@ static struct i2c_driver ltr303_i2c_driver = {
 	},
 };
 
-/*
- * #########
- * ## I2C ##
- * #########
- */
-
 /* I2C Read */
 static int ltr303_i2c_read_reg(u8 regnum)
 {
@@ -183,7 +170,6 @@ static int ltr303_i2c_write_reg(u8 regnum, u8 value)
 		return 0;
 }
 
-/*----------------------------------------------------------------------------*/
 static void ltr303_power(struct alsps_hw *hw, unsigned int on)
 {
 #ifdef DEMO_BOARD
@@ -205,12 +191,6 @@ static void ltr303_power(struct alsps_hw *hw, unsigned int on)
 #endif
 }
 
-/********************************************************************/
-/*
- * ################
- * ## ALS CONFIG ##
- * ################
- */
 static int ltr303_als_enable(struct i2c_client *client, int enable)
 {
 	int err = 0;
@@ -260,22 +240,24 @@ static int ltr303_als_read(struct i2c_client *client, u16 *data)
 	ratio = (alsval_ch1 * 100) / (alsval_ch0 + alsval_ch1);
 	APS_DBG("ratio = %d  gainrange = %d\n", ratio, als_gainrange);
 	if (ratio < 45)
-		luxdata_int = (((17743 * alsval_ch0) + (11059 * alsval_ch1)) / als_gainrange) / 1000;
+		luxdata_int = (((17743 * alsval_ch0) + (11059 * alsval_ch1))
+			/ als_gainrange) / 1000;
 	else if ((ratio < 64) && (ratio >= 45))
-		luxdata_int = (((42785 * alsval_ch0) - (19548 * alsval_ch1)) / als_gainrange) / 1000;
+		luxdata_int = (((42785 * alsval_ch0) - (19548 * alsval_ch1))
+			/ als_gainrange) / 1000;
 	else if ((ratio < 85) && (ratio >= 64))
-		luxdata_int = (((5926 * alsval_ch0) + (1185 * alsval_ch1)) / als_gainrange) / 1000;
+		luxdata_int = (((5926 * alsval_ch0) + (1185 * alsval_ch1))
+			/ als_gainrange) / 1000;
 	else
 		luxdata_int = 0;
 
-	APS_DBG("ltr303_als_read: als_value_lux = %d\n", luxdata_int);
+	APS_DBG("%s: als_value_lux = %d\n", __func__, luxdata_int);
 out:
 	*data = luxdata_int;
 	final_lux_val = luxdata_int;
 	return luxdata_int;
 }
 
-/********************************************************************/
 static int ltr303_get_als_value(struct ltr303_priv *obj, u16 als)
 {
 	int idx;
@@ -309,11 +291,8 @@ static int ltr303_get_als_value(struct ltr303_priv *obj, u16 als)
 	APS_ERR("ALS: %05d => %05d (-1)\n", als, obj->hw->als_value[idx]);
 	return -1;
 }
-/*-------------------------------attribute file for debugging----------------------------------*/
 
-/******************************************************************************
- * Sysfs attributes
-*******************************************************************************/
+/*---------------------attribute file for debugging------------------------*/
 static ssize_t ltr303_show_config(struct device_driver *ddri, char *buf)
 {
 	ssize_t res;
@@ -328,8 +307,9 @@ static ssize_t ltr303_show_config(struct device_driver *ddri, char *buf)
 		atomic_read(&ltr303_obj->als_debounce));
 	return res;
 }
-/*----------------------------------------------------------------------------*/
-static ssize_t ltr303_store_config(struct device_driver *ddri, const char *buf, size_t count)
+
+static ssize_t ltr303_store_config(struct device_driver *ddri, const char *buf,
+	size_t count)
 {
 	int retry, als_deb;
 
@@ -346,7 +326,7 @@ static ssize_t ltr303_store_config(struct device_driver *ddri, const char *buf, 
 
 	return count;
 }
-/*----------------------------------------------------------------------------*/
+
 static ssize_t ltr303_show_trace(struct device_driver *ddri, char *buf)
 {
 	ssize_t res;
@@ -355,11 +335,13 @@ static ssize_t ltr303_show_trace(struct device_driver *ddri, char *buf)
 		APS_ERR("ltr303_obj is null!!\n");
 		return 0;
 	}
-	res = snprintf(buf, PAGE_SIZE, "0x%04x\n", atomic_read(&ltr303_obj->trace));
+	res = snprintf(buf, PAGE_SIZE, "0x%04x\n",
+				atomic_read(&ltr303_obj->trace));
 	return res;
 }
-/*----------------------------------------------------------------------------*/
-static ssize_t ltr303_store_trace(struct device_driver *ddri, const char *buf, size_t count)
+
+static ssize_t ltr303_store_trace(struct device_driver *ddri, const char *buf,
+	size_t count)
 {
 	int trace;
 
@@ -375,7 +357,7 @@ static ssize_t ltr303_store_trace(struct device_driver *ddri, const char *buf, s
 
 	return count;
 }
-/*----------------------------------------------------------------------------*/
+
 static ssize_t ltr303_show_als(struct device_driver *ddri, char *buf)
 {
 	int res;
@@ -388,25 +370,28 @@ static ssize_t ltr303_show_als(struct device_driver *ddri, char *buf)
 	res = ltr303_als_read(ltr303_obj->client, &ltr303_obj->als);
 	return snprintf(buf, PAGE_SIZE, "0x%04X(%d)\n", res, res);
 }
-/*----------------------------------------------------------------------------*/
+
 static ssize_t ltr303_show_reg(struct device_driver *ddri, char *buf)
 {
 	int i, len = 0;
-	int reg[] = {0x80, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8f, 0x97, 0x98, 0x99, 0x9a, 0x9e};
+	int reg[] = {0x80, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8f,
+					0x97, 0x98, 0x99, 0x9a, 0x9e};
 
 	for (i = 0; i < 15; i++)
-		len += snprintf(buf+len, PAGE_SIZE-len, "reg:0x%04x value: 0x%04x\n",
+		len += snprintf(buf+len, PAGE_SIZE-len,
+			"reg:0x%04x value: 0x%04x\n",
 			reg[i], ltr303_i2c_read_reg(reg[i]));
 
 	return len;
 }
-/*----------------------------------------------------------------------------*/
+
 static ssize_t ltr303_show_send(struct device_driver *ddri, char *buf)
 {
 	return 0;
 }
-/*----------------------------------------------------------------------------*/
-static ssize_t ltr303_store_send(struct device_driver *ddri, const char *buf, size_t count)
+
+static ssize_t ltr303_store_send(struct device_driver *ddri, const char *buf,
+	size_t count)
 {
 	int addr, cmd;
 	u8 dat;
@@ -423,13 +408,14 @@ static ssize_t ltr303_store_send(struct device_driver *ddri, const char *buf, si
 
 	return count;
 }
-/*----------------------------------------------------------------------------*/
+
 static ssize_t ltr303_show_recv(struct device_driver *ddri, char *buf)
 {
 	return 0;
 }
-/*----------------------------------------------------------------------------*/
-static ssize_t ltr303_store_recv(struct device_driver *ddri, const char *buf, size_t count)
+
+static ssize_t ltr303_store_recv(struct device_driver *ddri, const char *buf,
+	size_t count)
 {
 	int addr;
 
@@ -443,7 +429,7 @@ static ssize_t ltr303_store_recv(struct device_driver *ddri, const char *buf, si
 
 	return count;
 }
-/*----------------------------------------------------------------------------*/
+
 static ssize_t ltr303_show_status(struct device_driver *ddri, char *buf)
 {
 	ssize_t len = 0;
@@ -455,19 +441,20 @@ static ssize_t ltr303_show_status(struct device_driver *ddri, char *buf)
 
 	if (ltr303_obj->hw) {
 		len += snprintf(buf+len, PAGE_SIZE-len, "CUST: %d, (%d %d)\n",
-			ltr303_obj->hw->i2c_num, ltr303_obj->hw->power_id, ltr303_obj->hw->power_vol);
+			ltr303_obj->hw->i2c_num, ltr303_obj->hw->power_id,
+			ltr303_obj->hw->power_vol);
 	} else {
 		len += snprintf(buf+len, PAGE_SIZE-len, "CUST: NULL\n");
 	}
 
-	len += snprintf(buf+len, PAGE_SIZE-len, "MISC: %d\n", atomic_read(&ltr303_obj->als_suspend));
+	len += snprintf(buf+len, PAGE_SIZE-len, "MISC: %d\n",
+			atomic_read(&ltr303_obj->als_suspend));
 	return len;
 }
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
+
 #define IS_SPACE(CH) (((CH) == ' ') || ((CH) == '\n'))
-/*----------------------------------------------------------------------------*/
-static int read_int_from_buf(struct ltr303_priv *obj, const char *buf, size_t count, u32 data[], int len)
+static int read_int_from_buf(struct ltr303_priv *obj, const char *buf,
+	size_t count, u32 data[], int len)
 {
 	int idx = 0;
 	char *cur = (char *) buf, *end = (char *)(buf+count);
@@ -486,7 +473,7 @@ static int read_int_from_buf(struct ltr303_priv *obj, const char *buf, size_t co
 
 	return idx;
 }
-/*----------------------------------------------------------------------------*/
+
 static ssize_t ltr303_show_alslv(struct device_driver *ddri, char *buf)
 {
 	ssize_t len = 0;
@@ -498,26 +485,30 @@ static ssize_t ltr303_show_alslv(struct device_driver *ddri, char *buf)
 	}
 
 	for (idx = 0; idx < ltr303_obj->als_level_num; idx++)
-		len += snprintf(buf+len, PAGE_SIZE-len, "%d ", ltr303_obj->hw->als_level[idx]);
+		len += snprintf(buf+len, PAGE_SIZE-len, "%d ",
+				ltr303_obj->hw->als_level[idx]);
 
 	len += snprintf(buf+len, PAGE_SIZE-len, "\n");
 	return len;
 }
-/*----------------------------------------------------------------------------*/
-static ssize_t ltr303_store_alslv(struct device_driver *ddri, const char *buf, size_t count)
+
+static ssize_t ltr303_store_alslv(struct device_driver *ddri, const char *buf,
+	size_t count)
 {
 	if (!ltr303_obj) {
 		APS_ERR("ltr303_obj is null!!\n");
 		return 0;
 	} else if (!strcmp(buf, "def"))
-		memcpy(ltr303_obj->als_level, ltr303_obj->hw->als_level, sizeof(ltr303_obj->als_level));
-	else if (ltr303_obj->als_level_num != read_int_from_buf(ltr303_obj, buf, count,
-			ltr303_obj->hw->als_level, ltr303_obj->als_level_num))
+		memcpy(ltr303_obj->als_level, ltr303_obj->hw->als_level,
+				sizeof(ltr303_obj->als_level));
+	else if (ltr303_obj->als_level_num != read_int_from_buf(ltr303_obj,
+		buf, count, ltr303_obj->hw->als_level,
+		ltr303_obj->als_level_num))
 		APS_ERR("invalid format: '%s'\n", buf);
 
 	return count;
 }
-/*----------------------------------------------------------------------------*/
+
 static ssize_t ltr303_show_alsval(struct device_driver *ddri, char *buf)
 {
 	ssize_t len = 0;
@@ -529,37 +520,40 @@ static ssize_t ltr303_show_alsval(struct device_driver *ddri, char *buf)
 	}
 
 	for (idx = 0; idx < ltr303_obj->als_value_num; idx++)
-		len += snprintf(buf+len, PAGE_SIZE-len, "%d ", ltr303_obj->hw->als_value[idx]);
+		len += snprintf(buf+len, PAGE_SIZE-len, "%d ",
+			ltr303_obj->hw->als_value[idx]);
 
 	len += snprintf(buf+len, PAGE_SIZE-len, "\n");
 	return len;
 }
-/*----------------------------------------------------------------------------*/
-static ssize_t ltr303_store_alsval(struct device_driver *ddri, const char *buf, size_t count)
+
+static ssize_t ltr303_store_alsval(struct device_driver *ddri,
+	const char *buf, size_t count)
 {
 	if (!ltr303_obj) {
 		APS_ERR("ltr303_obj is null!!\n");
 		return 0;
 	} else if (!strcmp(buf, "def"))
-		memcpy(ltr303_obj->als_value, ltr303_obj->hw->als_value, sizeof(ltr303_obj->als_value));
-	else if (ltr303_obj->als_value_num != read_int_from_buf(ltr303_obj, buf, count,
-			ltr303_obj->hw->als_value, ltr303_obj->als_value_num))
+		memcpy(ltr303_obj->als_value, ltr303_obj->hw->als_value,
+			sizeof(ltr303_obj->als_value));
+	else if (ltr303_obj->als_value_num != read_int_from_buf(ltr303_obj,
+		buf, count, ltr303_obj->hw->als_value,
+		ltr303_obj->als_value_num))
 		APS_ERR("invalid format: '%s'\n", buf);
-
 
 	return count;
 }
-/*---------------------------------------------------------------------------------------*/
-static DRIVER_ATTR(als,     S_IWUSR | S_IRUGO, ltr303_show_als,		NULL);
-static DRIVER_ATTR(config,  S_IWUSR | S_IRUGO, ltr303_show_config,	ltr303_store_config);
-static DRIVER_ATTR(alslv,   S_IWUSR | S_IRUGO, ltr303_show_alslv,	ltr303_store_alslv);
-static DRIVER_ATTR(alsval,  S_IWUSR | S_IRUGO, ltr303_show_alsval,	ltr303_store_alsval);
-static DRIVER_ATTR(trace,   S_IWUSR | S_IRUGO, ltr303_show_trace,	ltr303_store_trace);
-static DRIVER_ATTR(status,  S_IWUSR | S_IRUGO, ltr303_show_status,	NULL);
-static DRIVER_ATTR(send,    S_IWUSR | S_IRUGO, ltr303_show_send,	ltr303_store_send);
-static DRIVER_ATTR(recv,    S_IWUSR | S_IRUGO, ltr303_show_recv,	ltr303_store_recv);
-static DRIVER_ATTR(reg,     S_IWUSR | S_IRUGO, ltr303_show_reg,		NULL);
-/*----------------------------------------------------------------------------*/
+
+static DRIVER_ATTR(als,     0444, ltr303_show_als,		NULL);
+static DRIVER_ATTR(config,  0644, ltr303_show_config,	ltr303_store_config);
+static DRIVER_ATTR(alslv,   0644, ltr303_show_alslv,	ltr303_store_alslv);
+static DRIVER_ATTR(alsval,  0644, ltr303_show_alsval,	ltr303_store_alsval);
+static DRIVER_ATTR(trace,   0644, ltr303_show_trace,	ltr303_store_trace);
+static DRIVER_ATTR(status,  0444, ltr303_show_status,	NULL);
+static DRIVER_ATTR(send,    0644, ltr303_show_send,	ltr303_store_send);
+static DRIVER_ATTR(recv,    0644, ltr303_show_recv,	ltr303_store_recv);
+static DRIVER_ATTR(reg,     0444, ltr303_show_reg,		NULL);
+
 static struct driver_attribute *ltr303_attr_list[] = {
 	&driver_attr_als,
 	&driver_attr_trace,        /*trace log*/
@@ -572,7 +566,6 @@ static struct driver_attribute *ltr303_attr_list[] = {
 	&driver_attr_reg,
 };
 
-/*----------------------------------------------------------------------------*/
 static int ltr303_create_attr(struct device_driver *driver)
 {
 	int idx, err = 0;
@@ -585,19 +578,19 @@ static int ltr303_create_attr(struct device_driver *driver)
 	for (idx = 0; idx < num; idx++) {
 		err = driver_create_file(driver, ltr303_attr_list[idx]);
 		if (err) {
-			APS_ERR("driver_create_file (%s) = %d\n", ltr303_attr_list[idx]->attr.name, err);
+			APS_ERR("driver_create_file (%s) = %d\n",
+					ltr303_attr_list[idx]->attr.name, err);
 			break;
 		}
 	}
 
 	return err;
 }
-/*----------------------------------------------------------------------------*/
+
 static int ltr303_delete_attr(struct device_driver *driver)
 {
 	int idx, err = 0;
 	int num = ARRAY_SIZE(ltr303_attr_list);
-/*	int num = (int)(sizeof(ltr303_attr_list)/sizeof(ltr303_attr_list[0])); */
 
 	if (!driver)
 		return -EINVAL;
@@ -608,8 +601,8 @@ static int ltr303_delete_attr(struct device_driver *driver)
 
 	return err;
 }
-/*----------------------------------------------------------------------------*/
-/*----------------------------------interrupt functions--------------------------------*/
+
+/*-------------------------------interrupt functions------------------------*/
 #ifndef CUSTOM_KERNEL_SENSORHUB
 static int ltr303_check_intr(struct i2c_client *client)
 {
@@ -638,15 +631,15 @@ static int ltr303_check_intr(struct i2c_client *client)
 	return res;
 
 EXIT_ERR:
-	APS_ERR("ltr303_check_intr fail\n");
+	APS_ERR("%s fail\n", __func__);
 	return 0;
 }
 #endif
 
-/*----------------------------------------------------------------------------*/
 static void ltr303_eint_work(struct work_struct *work)
 {
-	struct ltr303_priv *obj = (struct ltr303_priv *)container_of(work, struct ltr303_priv, eint_work);
+	struct ltr303_priv *obj = (struct ltr303_priv *)container_of(work,
+		struct ltr303_priv, eint_work);
 	int err;
 
 	err = ltr303_check_intr(obj->client);
@@ -658,9 +651,7 @@ EXIT_INTR:
 	enable_irq(obj->irq);
 #endif
 }
-/*----------------------------------------------------------------------------*/
 
-/*----------------------------------------------------------------------------*/
 static void ltr303_eint_func(void)
 {
 	struct ltr303_priv *obj = ltr303_obj;
@@ -683,9 +674,7 @@ static irqreturn_t ltr303_eint_handler(int irq, void *desc)
 	return IRQ_HANDLED;
 }
 #endif
-/*----------------------------------------------------------------------------*/
 
-/*----------------------------------------------------------------------------*/
 int ltr303_setup_eint(struct i2c_client *client)
 {
 	int ret;
@@ -699,6 +688,7 @@ int ltr303_setup_eint(struct i2c_client *client)
 	if (IS_ERR(pinctrl)) {
 		ret = PTR_ERR(pinctrl);
 		APS_ERR("Cannot find alsps pinctrl!\n");
+		return ret;
 	}
 	pins_cfg = pinctrl_lookup_state(pinctrl, "pin_cfg");
 	if (IS_ERR(pins_cfg)) {
@@ -707,7 +697,8 @@ int ltr303_setup_eint(struct i2c_client *client)
 	}
 	/* eint request */
 	if (ltr303_obj->irq_node) {
-		of_property_read_u32_array(ltr303_obj->irq_node, "debounce", ints, ARRAY_SIZE(ints));
+		of_property_read_u32_array(ltr303_obj->irq_node, "debounce",
+			ints, ARRAY_SIZE(ints));
 		gpio_request(ints[0], "p-sensor");
 		gpio_set_debounce(ints[0], ints[1]);
 		pinctrl_select_state(pinctrl, pins_cfg);
@@ -719,7 +710,8 @@ int ltr303_setup_eint(struct i2c_client *client)
 			return -EINVAL;
 		}
 		APS_ERR("irq to gpio = %d\n", irq_to_gpio(ltr303_obj->irq));
-		if (request_irq(ltr303_obj->irq, ltr303_eint_handler, IRQF_TRIGGER_NONE, "ALS-eint", NULL)) {
+		if (request_irq(ltr303_obj->irq, ltr303_eint_handler,
+				IRQF_TRIGGER_NONE, "ALS-eint", NULL)) {
 			APS_ERR("IRQ LINE NOT AVAILABLE!!\n");
 			return -EINVAL;
 		}
@@ -732,9 +724,8 @@ int ltr303_setup_eint(struct i2c_client *client)
 
 	return 0;
 }
-/**********************************************************************************************/
 
-/*-------------------------------MISC device related------------------------------------------*/
+/*-------------------------MISC device related------------------------------*/
 static int ltr303_open(struct inode *inode, struct file *file)
 {
 	file->private_data = ltr303_i2c_client;
@@ -745,14 +736,14 @@ static int ltr303_open(struct inode *inode, struct file *file)
 
 	return nonseekable_open(inode, file);
 }
-/************************************************************/
 static int ltr303_release(struct inode *inode, struct file *file)
 {
 	file->private_data = NULL;
 	return 0;
 }
-/************************************************************/
-static long ltr303_unlocked_ioctl(struct file *file, unsigned int cmd,       unsigned long arg)
+
+static long ltr303_unlocked_ioctl(struct file *file, unsigned int cmd,
+	unsigned long arg)
 {
 	struct i2c_client *client = (struct i2c_client *)file->private_data;
 	struct ltr303_priv *obj = i2c_get_clientdata(client);
@@ -804,7 +795,7 @@ static long ltr303_unlocked_ioctl(struct file *file, unsigned int cmd,       uns
 			goto err_out;
 		}
 		break;
-/*---------------------------------for factory mode test---------------------------------------*/
+/*--------------------------for factory mode test---------------------------*/
 	case ALSPS_GET_PS_TEST_RESULT:
 		dat = 0;
 		if (copy_to_user(ptr, &dat, sizeof(dat))) {
@@ -851,7 +842,7 @@ static long ltr303_unlocked_ioctl(struct file *file, unsigned int cmd,       uns
 			goto err_out;
 		}
 		break;
-/*-----------------------------------------------------------------------------------------*/
+
 	default:
 		err = -ENOIOCTLCMD;
 		break;
@@ -859,8 +850,8 @@ static long ltr303_unlocked_ioctl(struct file *file, unsigned int cmd,       uns
 err_out:
 	return err;
 }
-/********************************************************************/
-/*------------------------------misc device related operation functions------------------------------------*/
+
+/*------------------misc device related operation functions-----------------*/
 static const struct file_operations ltr303_fops = {
 	.owner = THIS_MODULE,
 	.open = ltr303_open,
@@ -874,7 +865,6 @@ static struct miscdevice ltr303_device = {
 	.fops = &ltr303_fops,
 };
 
-/*--------------------------------------------------------------------------------*/
 static int ltr303_init_client(void)
 {
 	int res;
@@ -923,16 +913,17 @@ EXIT_ERR:
 	APS_ERR("init dev: %d\n", res);
 	return 1;
 }
-/*--------------------------------------------------------------------------------*/
 
-/*--------------------------------------------------------------------------------*/
 static int als_open_report_data(int open)
 {
 	/*should queuq work to report event if  is_report_input_direct=true*/
 	return 0;
 }
 
-/* if use  this typ of enable , Gsensor only enabled but not report inputEvent to HAL*/
+/*************************************************************
+ * if use  this typ of enable ,
+ * Sensor only enabled but not report inputEvent to HAL
+ *************************************************************/
 static int als_enable_nodata(int en)
 {
 	int res = 0;
@@ -950,7 +941,7 @@ static int als_enable_nodata(int en)
 	mutex_unlock(&ltr303_mutex);
 	res = ltr303_als_enable(ltr303_obj->client, en);
 	if (res) {
-		APS_ERR("als_enable_nodata is failed!!\n");
+		APS_ERR("%s is failed!!\n", __func__);
 		return -1;
 	}
 	return 0;
@@ -961,7 +952,8 @@ static int als_set_delay(u64 ns)
 	return 0;
 }
 
-static int als_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
+static int als_batch(int flag, int64_t samplingPeriodNs,
+	int64_t maxBatchReportLatencyNs)
 {
 	return als_set_delay(samplingPeriodNs);
 }
@@ -992,14 +984,13 @@ static int als_get_data(int *value, int *status)
 	return err;
 }
 
-/* if use  this typ of enable , Gsensor should report inputEvent(x, y, z ,stats, div) to HAL*/
 static int ps_open_report_data(int open)
 {
 	/*should queuq work to report event if  is_report_input_direct=true*/
 	return 0;
 }
 
-/* if use  this typ of enable , Gsensor only enabled but not report inputEvent to HAL*/
+/* if  this typ of enable , sensor only enable but not report Event to HAL*/
 static int ps_enable_nodata(int en)
 {
 	APS_LOG("ltr559_obj ps enable value = %d\n", en);
@@ -1011,7 +1002,8 @@ static int ps_set_delay(u64 ns)
 	return 0;
 }
 
-static int ps_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
+static int ps_batch(int flag, int64_t samplingPeriodNs,
+		int64_t maxBatchReportLatencyNs)
 {
 	return 0;
 }
@@ -1029,10 +1021,10 @@ static int ps_get_data(int *value, int *status)
 	*status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	return err;
 }
-/*-----------------------------------------------------------------------------------*/
 
-/*-----------------------------------i2c operations----------------------------------*/
-static int ltr303_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+/*--------------------------------i2c operations--------------------------*/
+static int ltr303_i2c_probe(struct i2c_client *client,
+	const struct i2c_device_id *id)
 {
 	struct ltr303_priv *obj = NULL;
 	struct als_control_path als_ctl = {0};
@@ -1060,7 +1052,7 @@ static int ltr303_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	INIT_WORK(&obj->eint_work, ltr303_eint_work);
 	obj->client = client;
 	i2c_set_clientdata(client, obj);
-	/*-----------------------------value need to be confirmed-----------------------------------------*/
+	/*---------------value need to be confirmed--------------------*/
 	atomic_set(&obj->als_debounce, 300);
 	atomic_set(&obj->als_deb_on, 0);
 	atomic_set(&obj->als_deb_end, 0);
@@ -1070,14 +1062,10 @@ static int ltr303_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	obj->irq_node = client->dev.of_node;
 	obj->enable = 0;
 	obj->pending_intr = 0;
-/*	obj->als_level_num = sizeof(obj->hw->als_level)/sizeof(obj->hw->als_level[0]);*/
-/*	obj->als_value_num = sizeof(obj->hw->als_value)/sizeof(obj->hw->als_value[0]);*/
 	obj->als_level_num = ARRAY_SIZE(obj->hw->als_level);
 	obj->als_value_num = ARRAY_SIZE(obj->hw->als_value);
 	obj->als_modulus = (400*100)/(16*150);
-	/*(1/Gain)*(400/Tine), this value is fix after init ATIME and CONTROL register value*/
-	/*(400)/16*2.72 here is amplify *100*/
-	/*-----------------------------value need to be confirmed-----------------------------------------*/
+	/*----------------value need to be confirmed-------------------*/
 	WARN_ON(sizeof(obj->als_level) != sizeof(obj->hw->als_level));
 	memcpy(obj->als_level, obj->hw->als_level, sizeof(obj->als_level));
 	WARN_ON(sizeof(obj->als_value) != sizeof(obj->hw->als_value));
@@ -1099,14 +1087,11 @@ static int ltr303_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 	als_ctl.is_use_common_factory = false;
 	ps_ctl.is_use_common_factory = false;
-	/*------------------------ltr303 attribute file for debug--------------------------------------*/
-	/*err = ltr303_create_attr(&(ltr303_init_info.platform_diver_addr->driver));*/
 	err = ltr303_create_attr(&(ltr303_i2c_driver.driver));
 	if (err) {
 		APS_ERR("create attribute err = %d\n", err);
 		goto exit_create_attr_failed;
 	}
-	/*------------------------ltr303 attribute file for debug--------------------------------------*/
 	als_ctl.open_report_data = als_open_report_data;
 	als_ctl.enable_nodata = als_enable_nodata;
 	als_ctl.set_delay  = als_set_delay;
@@ -1179,7 +1164,8 @@ static int ltr303_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
-static int ltr303_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
+static int ltr303_i2c_detect(struct i2c_client *client,
+				struct i2c_board_info *info)
 {
 	strcpy(info->type, LTR303_DEV_NAME);
 	return 0;
@@ -1227,9 +1213,7 @@ static int ltr303_i2c_resume(struct device *dev)
 	}
 	return 0;
 }
-/*----------------------------------------------------------------------------*/
 
-/*----------------------------------------------------------------------------*/
 static int ltr303_remove(void)
 {
 	APS_FUN();
@@ -1237,7 +1221,7 @@ static int ltr303_remove(void)
 	i2c_del_driver(&ltr303_i2c_driver);
 	return 0;
 }
-/*----------------------------------------------------------------------------*/
+
 static int  ltr303_local_init(void)
 {
 	APS_FUN();
@@ -1252,25 +1236,21 @@ static int  ltr303_local_init(void)
 
 	return 0;
 }
-/*----------------------------------------------------------------------------*/
 
-/*----------------------------------------------------------------------------*/
 static int __init ltr303_init(void)
 {
 	alsps_driver_add(&ltr303_init_info);
 	return 0;
 }
-/*----------------------------------------------------------------------------*/
+
 static void __exit ltr303_exit(void)
 {
 	APS_FUN();
 }
-/*----------------------------------------------------------------------------*/
 
-/*----------------------------------------------------------------------------*/
 module_init(ltr303_init);
 module_exit(ltr303_exit);
-/*----------------------------------------------------------------------------*/
+
 MODULE_AUTHOR("Liteon");
 MODULE_DESCRIPTION("LTR-303ALS Driver");
 MODULE_LICENSE("GPL");

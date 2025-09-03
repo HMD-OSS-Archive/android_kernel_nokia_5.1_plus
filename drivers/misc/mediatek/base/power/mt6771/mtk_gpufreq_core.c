@@ -36,14 +36,16 @@
 #include "upmu_common.h"
 #include "sync_write.h"
 #include "mtk_pmic_wrap.h"
-#include "mtk_thermal_typedefs.h"
+
+/* #include "mtk_thermal_typedefs.h" */
 #include "mtk_thermal.h"
-#include "mtk_freqhopping.h"
+
+#include "mtk_freqhopping_drv.h"
 #include "mtk_fhreg.h"
 #include "upmu_sw.h"
 #include "upmu_hw.h"
 #include "mtk_pbm.h"
-#include "mt6771_clkmgr.h"
+//#include "mt6771_clkmgr.h"
 #include "mtk_dramc.h"
 #include "mtk_gpufreq.h"
 #include "mtk_gpu_log.h"
@@ -61,6 +63,10 @@
 #include "mtk_static_power.h"
 #include "mtk_static_power_mt6771.h"
 #endif /* ifdef MT_GPUFREQ_STATIC_PWR_READY2USE */
+
+//#undef CONFIG_THERMAL
+/* reference to "mt6771_clkmgr.h" */
+extern unsigned int mt_get_ckgen_freq(unsigned int ID);
 
 /**
  * ===============================================
@@ -283,7 +289,7 @@ extern char fih_skuid[8];
 /*
  * API : handle frequency change request
  */
-unsigned int mt_gpufreq_target(unsigned int idx)
+unsigned int mt_gpufreq_target(unsigned int idx, bool is_real_idx)
 {
 	unsigned int target_freq;
 	unsigned int target_volt;
@@ -575,7 +581,7 @@ void mt_gpufreq_disable_by_ptpod(void)
 		}
 	}
 	g_DVFS_off_by_ptpod_idx = (unsigned int)target_idx;
-	mt_gpufreq_target(target_idx);
+	mt_gpufreq_target(target_idx, true);
 
 	/* Set GPU Buck to enter PWM mode */
 	__mt_gpufreq_vgpu_set_mode(REGULATOR_MODE_FAST);
@@ -889,7 +895,7 @@ void mt_gpufreq_thermal_protect(unsigned int limited_power)
 				g_limited_idx_array[IDX_THERMAL_PROTECT_LIMITED] = i;
 				__mt_gpufreq_update_max_limited_idx();
 				if (g_cur_opp_freq > g_opp_table[i].gpufreq_khz)
-					mt_gpufreq_target(i);
+					mt_gpufreq_target(i, true);
 				break;
 			}
 		}
@@ -1443,7 +1449,7 @@ static ssize_t mt_gpufreq_opp_freq_proc_write(struct file *file,
 					g_keep_opp_freq_idx = i;
 					g_keep_opp_freq_state = true;
 					g_keep_opp_freq = value;
-					mt_gpufreq_target(i);
+					mt_gpufreq_target(i, true);
 					break;
 				}
 			}
@@ -2038,7 +2044,7 @@ static unsigned int __calculate_vsram_sfchg_rate(bool isRising)
  * - e.g: In Vinson, VCO range is 2.0GHz - 4.0GHz, required frequency is 900MHz, so post
  * divider could be 2(X), 4(3600/4), 8(X), 16(X).
  * - It may have special requiremt by DE in different efuse value
- * - e.g: In Olympus, efuse value(3'b001), VCO range is 1.5GHz - 3.8GHz, required frequency
+ * - e.g: In O_L_Y_M_P_U_S, efuse value(3'b001), VCO range is 1.5GHz - 3.8GHz, required frequency
  * range is 375MHz - 900MHz, It can only use post divider 4, no post divider 2.
  */
 static enum g_post_divider_power_enum __mt_gpufreq_get_post_divider_power(unsigned int freq, unsigned int efuse)

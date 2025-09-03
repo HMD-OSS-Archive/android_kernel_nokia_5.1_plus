@@ -36,27 +36,35 @@ struct nfc_handler {
 	u32 fdm_ecc_size;
 	/* ecc strength per sector_size */
 	u32 ecc_strength;
-	void (*send_command)(struct nfc_handler *, u8);
-	void (*send_address)(struct nfc_handler *, u32, u32, u32, u32);
-	int (*write_page)(struct nfc_handler *, u8 *, u8 *);
-	void (*write_byte)(struct nfc_handler *, u8);
-	int (*read_sectors)(struct nfc_handler *, int, u8 *, u8 *);
-	u8 (*read_byte)(struct nfc_handler *);
-	int (*change_interface)(struct nfc_handler *, enum INTERFACE_TYPE,
-				 struct nand_timing *, void *);
-	int (*change_mode)(struct nfc_handler *, enum OPS_MODE_TYPE, bool,
-			    void *);
-	bool (*get_mode)(struct nfc_handler *, enum OPS_MODE_TYPE);
-	void (*select_chip)(struct nfc_handler *, int);
-	void (*set_format)(struct nfc_handler *, struct nfc_format *);
-	void (*enable_randomizer)(struct nfc_handler *, u32, bool);
-	void (*disable_randomizer)(struct nfc_handler *);
-	int (*wait_busy)(struct nfc_handler *, int, enum WAIT_TYPE);
-	int (*calculate_ecc)(struct nfc_handler *, u8 *, u8 *, u32, u8);
-	int (*correct_ecc)(struct nfc_handler *, u8 *, u32, u8);
-	int (*calibration)(struct nfc_handler *);
-	int (*suspend)(struct nfc_handler *);
-	int (*resume)(struct nfc_handler *);
+	void (*send_command)(struct nfc_handler *handler, u8 cmd);
+	void (*send_address)(struct nfc_handler *handler, u32 col, u32 row,
+				u32 col_cycle, u32 row_cycle);
+	int (*write_page)(struct nfc_handler *handler, u8 *data, u8 *fdm);
+	void (*write_byte)(struct nfc_handler *handler, u8 data);
+	int (*read_sectors)(struct nfc_handler *handler, int num, u8 *data,
+				u8 *fdm);
+	u8 (*read_byte)(struct nfc_handler *handler);
+	int (*change_interface)(struct nfc_handler *handler,
+				enum INTERFACE_TYPE type,
+				struct nand_timing *timing, void *arg);
+	int (*change_mode)(struct nfc_handler *handler, enum OPS_MODE_TYPE mode,
+				bool enable, void *arg);
+	bool (*get_mode)(struct nfc_handler *handler, enum OPS_MODE_TYPE mode);
+	void (*select_chip)(struct nfc_handler *handler, int cs);
+	void (*set_format)(struct nfc_handler *handler,
+				struct nfc_format *format);
+	void (*enable_randomizer)(struct nfc_handler *handler, u32 page,
+					bool encode);
+	void (*disable_randomizer)(struct nfc_handler *handler);
+	int (*wait_busy)(struct nfc_handler *handler, int timeout,
+				enum WAIT_TYPE type);
+	int (*calculate_ecc)(struct nfc_handler *handler, u8 *data, u8 *ecc,
+				u32 len, u8 ecc_strength);
+	int (*correct_ecc)(struct nfc_handler *handler, u8 *data, u32 len,
+				u8 ecc_strength);
+	int (*calibration)(struct nfc_handler *handler);
+	int (*suspend)(struct nfc_handler *handler);
+	int (*resume)(struct nfc_handler *handler);
 };
 
 extern struct nfc_handler *nfc_init(struct nfc_resource *res);

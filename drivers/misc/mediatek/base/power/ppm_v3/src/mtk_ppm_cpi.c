@@ -116,7 +116,7 @@ static unsigned int ppm_cpi_get_cpu_cycle_count(int cpu)
 	unsigned int diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		new = perf_event_read_local(event);
+		perf_event_read_local(event, &new);
 		if (new > old)
 			diff = (unsigned int)(new - old);
 
@@ -124,7 +124,8 @@ static unsigned int ppm_cpi_get_cpu_cycle_count(int cpu)
 	}
 #endif
 
-	ppm_dbg(CPI, "%s: CPU%d -> new=%llu, old=%llu, diff=%d\n", __func__, cpu, new, old, diff);
+	ppm_dbg(CPI, "%s: CPU%d -> new=%llu, old=%llu, diff=%d\n",
+		__func__, cpu, new, old, diff);
 
 	return diff;
 }
@@ -137,14 +138,15 @@ static unsigned int ppm_cpi_get_inst_count(int cpu)
 	unsigned int diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		new = perf_event_read_local(event);
+		perf_event_read_local(event, &new);
 		if (new > old)
 			diff = (unsigned int)(new - old);
 
 		per_cpu(inst_count, cpu) = new;
 	}
 
-	ppm_dbg(CPI, "%s: CPU%d -> new=%llu, old=%llu, diff=%d\n", __func__, cpu, new, old, diff);
+	ppm_dbg(CPI, "%s: CPU%d -> new=%llu, old=%llu, diff=%d\n",
+		__func__, cpu, new, old, diff);
 
 	return diff;
 }
@@ -157,14 +159,15 @@ static unsigned long long ppm_cpi_get_pmu_e1_count(int cpu)
 	unsigned long long diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		new = perf_event_read_local(event);
+		perf_event_read_local(event, &new);
 		if (new > old)
 			diff = new - old;
 
 		per_cpu(pmu_e1_count, cpu) = new;
 	}
 
-	ppm_dbg(CPI, "%s: CPU%d -> new=%llu, old=%llu, diff=%llu\n", __func__, cpu, new, old, diff);
+	ppm_dbg(CPI, "%s: CPU%d -> new=%llu, old=%llu, diff=%llu\n",
+		__func__, cpu, new, old, diff);
 
 	return diff;
 }
@@ -177,14 +180,15 @@ static unsigned long long ppm_cpi_get_pmu_e7_count(int cpu)
 	unsigned long long diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		new = perf_event_read_local(event);
+		perf_event_read_local(event, &new);
 		if (new > old)
 			diff = new - old;
 
 		per_cpu(pmu_e7_count, cpu) = new;
 	}
 
-	ppm_dbg(CPI, "%s: CPU%d -> new=%llu, old=%llu, diff=%llu\n", __func__, cpu, new, old, diff);
+	ppm_dbg(CPI, "%s: CPU%d -> new=%llu, old=%llu, diff=%llu\n",
+		__func__, cpu, new, old, diff);
 
 	return diff;
 }
@@ -197,14 +201,15 @@ static unsigned long long ppm_cpi_get_pmu_e8_count(int cpu)
 	unsigned long long diff = 0;
 
 	if (event && event->state == PERF_EVENT_STATE_ACTIVE) {
-		new = perf_event_read_local(event);
+		perf_event_read_local(event, &new);
 		if (new > old)
 			diff = new - old;
 
 		per_cpu(pmu_e8_count, cpu) = new;
 	}
 
-	ppm_dbg(CPI, "%s: CPU%d -> new=%llu, old=%llu, diff=%llu\n", __func__, cpu, new, old, diff);
+	ppm_dbg(CPI, "%s: CPU%d -> new=%llu, old=%llu, diff=%llu\n",
+		__func__, cpu, new, old, diff);
 
 	return diff;
 }
@@ -273,7 +278,8 @@ static void ppm_cpi_pmu_enable_locked(int cpu, int enable)
 #if 0
 		if (c_event) {
 			perf_event_enable(c_event);
-			per_cpu(cpu_cycle_count, cpu) = perf_event_read_local(c_event);
+			perf_event_read_local(c_event,
+					      &per_cpu(cpu_cycle_count, cpu));
 		}
 #else
 		smp_call_function_single(cpu, ppm_cpi_enable_cycle_cnt,
@@ -281,7 +287,8 @@ static void ppm_cpi_pmu_enable_locked(int cpu, int enable)
 #endif
 		if (i_event) {
 			perf_event_enable(i_event);
-			per_cpu(inst_count, cpu) = perf_event_read_local(i_event);
+			perf_event_read_local(i_event,
+					      &per_cpu(inst_count, cpu));
 		}
 		if (p1_event)
 			perf_event_enable(p1_event);
@@ -336,27 +343,6 @@ static void ppm_cpi_pmu_enable(int cpu, int enable)
 		ppm_cpi_pmu_enable_locked(cpu, enable);
 
 	ppm_unlock(&cpi_lock);
-}
-
-static int ppm_cpi_notifier(struct notifier_block *self,
-			    unsigned long action, void *hcpu)
-{
-	int cpu = (long)hcpu;
-
-	switch (action) {
-	case CPU_DOWN_FAILED:
-	case CPU_DOWN_FAILED_FROZEN:
-	case CPU_ONLINE:
-	case CPU_ONLINE_FROZEN:
-		ppm_cpi_pmu_enable(cpu, 1);
-		break;
-	case CPU_DOWN_PREPARE:
-	case CPU_DOWN_PREPARE_FROZEN:
-		ppm_cpi_pmu_enable(cpu, 0);
-		break;
-	}
-
-	return NOTIFY_OK;
 }
 
 static void ppm_cpi_pmu_overflow_handler(struct perf_event *event,
@@ -464,10 +450,19 @@ error:
 	return -1;
 }
 
-static struct notifier_block ppm_cpi_nb = {
-	.notifier_call	= ppm_cpi_notifier,
-	.priority	= 0,
-};
+static int ppm_cpi_cpu_dead(unsigned int cpu)
+{
+	ppm_cpi_pmu_enable(cpu, 0);
+
+	return 0;
+}
+
+static int ppm_cpi_cpu_up(unsigned int cpu)
+{
+	ppm_cpi_pmu_enable(cpu, 1);
+
+	return 0;
+}
 
 #ifdef CONFIG_CPU_PM
 /* re-init CPU cycle counter when core on */
@@ -514,9 +509,9 @@ static int ppm_cpi_pmu_probe(void)
 	if (ret)
 		goto end;
 
-	ret = register_cpu_notifier(&ppm_cpi_nb);
-	if (ret)
-		goto end;
+	cpuhp_setup_state_nocalls(CPUHP_BP_PREPARE_DYN,
+				  "ppm_cpi/cpuhp", ppm_cpi_cpu_up,
+				  ppm_cpi_cpu_dead);
 
 #ifdef CONFIG_CPU_PM
 	ret = cpu_pm_register_notifier(&ppm_cpi_cpupm_nb);
@@ -578,8 +573,6 @@ static void ppm_cpi_pmu_remove(void)
 #ifdef CONFIG_CPU_PM
 	cpu_pm_unregister_notifier(&ppm_cpi_cpupm_nb);
 #endif
-
-	unregister_cpu_notifier(&ppm_cpi_nb);
 
 	for_each_online_cpu(cpu) {
 		if (cpu >= num_possible_cpus() || cpu >= TOTAL_CORE_NUM)
@@ -760,10 +753,10 @@ static int ppm_cpi_enable_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-static ssize_t ppm_cpi_enable_proc_write(struct file *file, const char __user *buffer, size_t count,
-					loff_t *pos)
+static ssize_t ppm_cpi_enable_proc_write(struct file *file,
+	const char __user *buffer, size_t count, loff_t *pos)
 {
-	unsigned int enable;
+	unsigned int enable = 0;
 
 	char *buf = ppm_copy_from_user_for_proc(buffer, count);
 
@@ -788,14 +781,17 @@ static int ppm_cpi_value_proc_show(struct seq_file *m, void *v)
 
 	ppm_lock(&cpi_lock);
 	for_each_possible_cpu(i) {
-		seq_printf(m, "Core %d CPI = %d", i, ppm_get_core_cpi_locked(i));
+		seq_printf(m, "Core %d CPI = %d",
+			i, ppm_get_core_cpi_locked(i));
 		if (stall_val_dbg) {
 #ifdef CONFIG_ARM64
-			seq_printf(m, ", e1/e7/e8 = 0x%llx/0x%llx/0x%llx, stall_ratio = %llu\n",
+			seq_printf(m,
+				", e1/7/8 = 0x%llx/0x%llx/0x%llx, r = %llu\n",
 				stall_val[0], stall_val[1], stall_val[2],
-				(stall_val[0] + stall_val[1] + stall_val[2]) * 100 / stall_val[3]);
+				(stall_val[0] + stall_val[1] + stall_val[2])
+				* 100 / stall_val[3]);
 #else
-			seq_printf(m, ", e1/e7/e8 = 0x%llx/0x%llx/0x%llx\n",
+			seq_printf(m, ", e1/7/8 = 0x%llx/0x%llx/0x%llx\n",
 				stall_val[0], stall_val[1], stall_val[2]);
 #endif
 		} else {
@@ -826,8 +822,10 @@ static int __init ppm_cpi_init(void)
 
 	/* create procfs */
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
-		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, cpi_dir, entries[i].fops)) {
-			ppm_err("%s(), create /proc/ppm/cpi/%s failed\n", __func__, entries[i].name);
+		if (!proc_create(entries[i].name, 0664, cpi_dir,
+				entries[i].fops)) {
+			ppm_err("%s(), create /proc/ppm/cpi/%s failed\n",
+				__func__, entries[i].name);
 			return -1;
 		}
 	}

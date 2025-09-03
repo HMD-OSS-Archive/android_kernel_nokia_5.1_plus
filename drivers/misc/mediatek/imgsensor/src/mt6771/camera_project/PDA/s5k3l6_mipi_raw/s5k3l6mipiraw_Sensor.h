@@ -73,9 +73,11 @@ typedef struct imgsensor_struct {
 	kal_uint16 current_fps;			//current max fps
 	kal_bool   autoflicker_en;		//record autoflicker enable or disable
 	kal_bool test_pattern;			//record test pattern mode or not
-	MSDK_SCENARIO_ID_ENUM current_scenario_id;//current scenario id
+	enum MSDK_SCENARIO_ID_ENUM current_scenario_id;//current scenario id
 	kal_bool  ihdr_en;				//ihdr enable or disable
 	kal_uint8 i2c_write_id;			//record current sensor's i2c write id
+	struct IMGSENSOR_AE_FRM_MODE ae_frm_mode;//fihtdc,derekcwwu
+	kal_uint8 current_ae_effective_frame;//fihtdc,derekcwwu
 } imgsensor_struct;
 
 //sensor基本信息，datasheet上的信息

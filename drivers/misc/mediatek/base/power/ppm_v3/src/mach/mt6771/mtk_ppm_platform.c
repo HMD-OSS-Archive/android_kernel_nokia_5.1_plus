@@ -34,7 +34,8 @@ unsigned int __attribute__((weak)) mt_cpufreq_get_cur_volt(unsigned int id)
 {
 	return 0;
 }
-int __attribute__((weak)) mt_spower_get_leakage(int dev, unsigned int voltage, int degree)
+int __attribute__((weak))
+	mt_spower_get_leakage(int dev, unsigned int voltage, int degree)
 {
 	return 0;
 }
@@ -54,7 +55,7 @@ static void ppm_get_cluster_status(struct ppm_cluster_status *cl_status)
 		cl_status[i].core_num = cpumask_weight(&online_cpu);
 		cl_status[i].volt = mt_cpufreq_get_cur_volt(i) / 100;
 		cl_status[i].freq_idx = ppm_main_freq_to_idx(i,
-				mt_cpufreq_get_cur_phy_freq_no_lock(i), CPUFREQ_RELATION_L);
+		mt_cpufreq_get_cur_phy_freq_no_lock(i), CPUFREQ_RELATION_L);
 	}
 }
 
@@ -98,35 +99,41 @@ static struct notifier_block ppm_cpu_freq_notifier = {
 };
 #endif
 
-static int ppm_cpu_hotplug_callback(struct notifier_block *nfb,
-			unsigned long action, void *hcpu)
+static int ppm_cpu_dead(unsigned int cpu)
 {
-	struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS];
+	struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS] = { {0} };
 #ifdef PPM_SSPM_SUPPORT
-	int i;
+	int i = 0;
 #endif
 
-	switch (action & ~CPU_TASKS_FROZEN) {
-	case CPU_ONLINE:
-	case CPU_DEAD:
-		ppm_dbg(DLPT, "%s: action = %lu\n", __func__, action);
-		ppm_get_cluster_status(cl_status);
+	ppm_dbg(DLPT, "action = %s\n", __func__);
+	ppm_get_cluster_status(cl_status);
 #ifdef PPM_SSPM_SUPPORT
-		for_each_ppm_clusters(i)
-			mt_reg_sync_writel(cl_status[i].core_num, online_core + 4 * i);
+	for_each_ppm_clusters(i)
+		mt_reg_sync_writel(cl_status[i].core_num, online_core + 4 * i);
 #endif
-		mt_ppm_dlpt_kick_PBM(cl_status, ppm_main_info.cluster_num);
-		break;
-	default:
-		break;
-	}
+	mt_ppm_dlpt_kick_PBM(cl_status, ppm_main_info.cluster_num);
 
-	return NOTIFY_OK;
+	return 0;
 }
 
-static struct notifier_block __refdata ppm_cpu_hotplug_notifier = {
-	.notifier_call = ppm_cpu_hotplug_callback,
-};
+static int ppm_cpu_up(unsigned int cpu)
+{
+	struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS] = { {0} };
+#ifdef PPM_SSPM_SUPPORT
+	int i = 0;
+#endif
+
+	ppm_dbg(DLPT, "action = %s\n", __func__);
+	ppm_get_cluster_status(cl_status);
+#ifdef PPM_SSPM_SUPPORT
+	for_each_ppm_clusters(i)
+		mt_reg_sync_writel(cl_status[i].core_num, online_core + 4 * i);
+#endif
+	mt_ppm_dlpt_kick_PBM(cl_status, ppm_main_info.cluster_num);
+
+	return 0;
+}
 
 #ifdef CONFIG_THERMAL
 static unsigned int ppm_get_cpu_temp(enum ppm_cluster cluster)
@@ -177,7 +184,8 @@ int ppm_platform_init(void)
 {
 #ifdef PPM_SSPM_SUPPORT
 	/* map sram to update online core */
-	online_core = ioremap_nocache(PPM_ONLINE_CORE_SRAM_ADDR, 4 * NR_PPM_CLUSTERS);
+	online_core = ioremap_nocache
+			(PPM_ONLINE_CORE_SRAM_ADDR, 4 * NR_PPM_CLUSTERS);
 	if (!online_core) {
 		ppm_err("remap online_core failed!\n");
 		WARN_ON(1);
@@ -185,9 +193,12 @@ int ppm_platform_init(void)
 	}
 #endif
 #ifdef CONFIG_CPU_FREQ
-	cpufreq_register_notifier(&ppm_cpu_freq_notifier, CPUFREQ_TRANSITION_NOTIFIER);
+	cpufreq_register_notifier
+		(&ppm_cpu_freq_notifier, CPUFREQ_TRANSITION_NOTIFIER);
 #endif
-	register_hotcpu_notifier(&ppm_cpu_hotplug_notifier);
+	cpuhp_setup_state_nocalls(CPUHP_BP_PREPARE_DYN,
+			"ppm/cpuhp", ppm_cpu_up,
+			ppm_cpu_dead);
 
 	return 0;
 }
@@ -213,14 +224,8 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 
 #ifdef CONFIG_MTK_UNIFY_POWER
 		if (core > 0 && opp >= 0 && opp < DVFS_OPP_NUM) {
-#if 1
-			pwr_idx += cobra_tbl->basic_pwr_tbl[4*i+core-1][opp].power_idx;
-#else
-			pwr_idx += ((upower_get_power(i, opp, UPOWER_DYN) +
-				upower_get_power(i, opp, UPOWER_LKG)) * core +
-				(upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_DYN) +
-				upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_LKG))) / 1000;
-#endif
+			pwr_idx +=
+			cobra_tbl->basic_pwr_tbl[4*i+core-1][opp].power_idx;
 		}
 #else
 		pwr_idx += 100;
@@ -267,7 +272,7 @@ int ppm_get_max_pwr_idx(void)
 }
 
 unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
-				unsigned int cluster_num, unsigned int percentage)
+			unsigned int cluster_num, unsigned int percentage)
 {
 	unsigned int dynamic, lkg, total, budget = 0;
 	int i;
@@ -282,9 +287,17 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 #ifdef CONFIG_MTK_UNIFY_POWER
 			dynamic = upower_get_power(i, opp, UPOWER_DYN) / 1000;
 			lkg = mt_ppm_get_leakage_mw((enum ppm_cluster_lkg)i);
-			total = ((((dynamic * 100 + (percentage - 1)) / percentage) + lkg) * core)
-				+ ((upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_DYN) +
-				upower_get_power(i + NR_PPM_CLUSTERS, opp, UPOWER_LKG)) / 1000);
+			total =
+				((((dynamic * 100 + (percentage - 1)) /
+					percentage) + lkg) * core)
+				+ ((upower_get_power(
+					i + NR_PPM_CLUSTERS,
+					opp,
+					UPOWER_DYN) +
+				upower_get_power(
+					i + NR_PPM_CLUSTERS,
+					opp,
+					UPOWER_LKG)) / 1000);
 #else
 			dynamic = 100;
 			lkg = 50;
@@ -293,8 +306,10 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 			budget += total;
 			delta = ktime_sub(ktime_get(), now);
 
-			ppm_dbg(DLPT, "(%d):OPP/V/core/Lkg/total = %d/%d/%d/%d/%d(time = %lldus)\n",
-				i, opp, cluster_status[i].volt, cluster_status[i].core_num,
+			ppm_dbg(DLPT,
+				"(%d):OPP/V/core/Lkg/total = %d/%d/%d/%d/%d(time = %lldus)\n",
+				i, opp, cluster_status[i].volt,
+				cluster_status[i].core_num,
 				lkg, total, ktime_to_us(delta));
 		}
 	}
@@ -339,8 +354,8 @@ unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 
 	/* read total leakage */
 	if (cluster >= TOTAL_CLUSTER_LKG) {
-		struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS];
-		int i;
+		struct ppm_cluster_status cl_status[NR_PPM_CLUSTERS] = { {0} };
+		int i = 0;
 
 		ppm_get_cluster_status(cl_status);
 

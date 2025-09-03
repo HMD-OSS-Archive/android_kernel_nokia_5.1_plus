@@ -490,12 +490,12 @@
 
 /* for DVFS OPP table B */
 #define CPU_DVFS_FREQ0_L_FY5T		2106000		/* KHz */
-#define CPU_DVFS_FREQ1_L_FY5T		1989000		/* KHz */
-#define CPU_DVFS_FREQ2_L_FY5T		1924000		/* KHz */
-#define CPU_DVFS_FREQ3_L_FY5T		1846000		/* KHz */
-#define CPU_DVFS_FREQ4_L_FY5T		1781000		/* KHz */
-#define CPU_DVFS_FREQ5_L_FY5T		1716000		/* KHz */
-#define CPU_DVFS_FREQ6_L_FY5T		1651000		/* KHz */
+#define CPU_DVFS_FREQ1_L_FY5T		1924000		/* KHz */
+#define CPU_DVFS_FREQ2_L_FY5T		1846000		/* KHz */
+#define CPU_DVFS_FREQ3_L_FY5T		1781000		/* KHz */
+#define CPU_DVFS_FREQ4_L_FY5T		1716000		/* KHz */
+#define CPU_DVFS_FREQ5_L_FY5T		1677000		/* KHz */
+#define CPU_DVFS_FREQ6_L_FY5T		1625000		/* KHz */
 #define CPU_DVFS_FREQ7_L_FY5T		1586000		/* KHz */
 #define CPU_DVFS_FREQ8_L_FY5T		1508000		/* KHz */
 #define CPU_DVFS_FREQ9_L_FY5T		1417000		/* KHz */
@@ -544,12 +544,12 @@
 
 /* for DVFS OPP table B */
 #define CPU_DVFS_VOLT0_VPROC2_FY5T	 105000		/* 10uV */
-#define CPU_DVFS_VOLT1_VPROC2_FY5T	 102500		/* 10uV */
-#define CPU_DVFS_VOLT2_VPROC2_FY5T	 100000		/* 10uV */
-#define CPU_DVFS_VOLT3_VPROC2_FY5T	 97500		/* 10uV */
-#define CPU_DVFS_VOLT4_VPROC2_FY5T	 95000		/* 10uV */
-#define CPU_DVFS_VOLT5_VPROC2_FY5T	 92500		/* 10uV */
-#define CPU_DVFS_VOLT6_VPROC2_FY5T	 90000		/* 10uV */
+#define CPU_DVFS_VOLT1_VPROC2_FY5T	 100000		/* 10uV */
+#define CPU_DVFS_VOLT2_VPROC2_FY5T	 97500		/* 10uV */
+#define CPU_DVFS_VOLT3_VPROC2_FY5T	 95000		/* 10uV */
+#define CPU_DVFS_VOLT4_VPROC2_FY5T	 92500		/* 10uV */
+#define CPU_DVFS_VOLT5_VPROC2_FY5T	 90625		/* 10uV */
+#define CPU_DVFS_VOLT6_VPROC2_FY5T	 88750		/* 10uV */
 #define CPU_DVFS_VOLT7_VPROC2_FY5T	 87500		/* 10uV */
 #define CPU_DVFS_VOLT8_VPROC2_FY5T	 85000		/* 10uV */
 #define CPU_DVFS_VOLT9_VPROC2_FY5T	 82500		/* 10uV */
@@ -654,22 +654,38 @@
 /* DVFS OPP table */
 #define OPP_TBL(cluster, seg, lv, vol)	\
 static struct mt_cpu_freq_info opp_tbl_##cluster##_e##lv##_0[] = {	\
-	OP(CPU_DVFS_FREQ0_##cluster##_##seg, CPU_DVFS_VOLT0_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ1_##cluster##_##seg, CPU_DVFS_VOLT1_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ2_##cluster##_##seg, CPU_DVFS_VOLT2_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ3_##cluster##_##seg, CPU_DVFS_VOLT3_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ4_##cluster##_##seg, CPU_DVFS_VOLT4_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ5_##cluster##_##seg, CPU_DVFS_VOLT5_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ6_##cluster##_##seg, CPU_DVFS_VOLT6_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ7_##cluster##_##seg, CPU_DVFS_VOLT7_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ8_##cluster##_##seg, CPU_DVFS_VOLT8_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ9_##cluster##_##seg, CPU_DVFS_VOLT9_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ10_##cluster##_##seg, CPU_DVFS_VOLT10_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ11_##cluster##_##seg, CPU_DVFS_VOLT11_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ12_##cluster##_##seg, CPU_DVFS_VOLT12_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ13_##cluster##_##seg, CPU_DVFS_VOLT13_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ14_##cluster##_##seg, CPU_DVFS_VOLT14_VPROC##vol##_##seg),	\
-	OP(CPU_DVFS_FREQ15_##cluster##_##seg, CPU_DVFS_VOLT15_VPROC##vol##_##seg),	\
+	OP                                                              \
+(CPU_DVFS_FREQ0_##cluster##_##seg, CPU_DVFS_VOLT0_VPROC##vol##_##seg),	\
+	OP                                                              \
+(CPU_DVFS_FREQ1_##cluster##_##seg, CPU_DVFS_VOLT1_VPROC##vol##_##seg),	\
+	OP                                                               \
+(CPU_DVFS_FREQ2_##cluster##_##seg, CPU_DVFS_VOLT2_VPROC##vol##_##seg),	\
+	OP                                                               \
+(CPU_DVFS_FREQ3_##cluster##_##seg, CPU_DVFS_VOLT3_VPROC##vol##_##seg),	\
+	OP                                                               \
+(CPU_DVFS_FREQ4_##cluster##_##seg, CPU_DVFS_VOLT4_VPROC##vol##_##seg),	\
+	OP                                                               \
+(CPU_DVFS_FREQ5_##cluster##_##seg, CPU_DVFS_VOLT5_VPROC##vol##_##seg),	\
+	OP                                                               \
+(CPU_DVFS_FREQ6_##cluster##_##seg, CPU_DVFS_VOLT6_VPROC##vol##_##seg),	\
+	OP                                                               \
+(CPU_DVFS_FREQ7_##cluster##_##seg, CPU_DVFS_VOLT7_VPROC##vol##_##seg),	\
+	OP                                                               \
+(CPU_DVFS_FREQ8_##cluster##_##seg, CPU_DVFS_VOLT8_VPROC##vol##_##seg),	\
+	OP                                                               \
+(CPU_DVFS_FREQ9_##cluster##_##seg, CPU_DVFS_VOLT9_VPROC##vol##_##seg),	\
+	OP                                                                \
+(CPU_DVFS_FREQ10_##cluster##_##seg, CPU_DVFS_VOLT10_VPROC##vol##_##seg), \
+	OP                                                               \
+(CPU_DVFS_FREQ11_##cluster##_##seg, CPU_DVFS_VOLT11_VPROC##vol##_##seg), \
+	OP                                                               \
+(CPU_DVFS_FREQ12_##cluster##_##seg, CPU_DVFS_VOLT12_VPROC##vol##_##seg), \
+	OP                                                               \
+(CPU_DVFS_FREQ13_##cluster##_##seg, CPU_DVFS_VOLT13_VPROC##vol##_##seg), \
+	OP                                                               \
+(CPU_DVFS_FREQ14_##cluster##_##seg, CPU_DVFS_VOLT14_VPROC##vol##_##seg), \
+	OP                                                               \
+(CPU_DVFS_FREQ15_##cluster##_##seg, CPU_DVFS_VOLT15_VPROC##vol##_##seg), \
 }
 /* V3 */
 OPP_TBL(LL, FY, 0, 1);
@@ -704,39 +720,63 @@ OPP_TBL(LL, FY54, 7, 1);
 OPP_TBL(L, FY54, 7, 2);
 OPP_TBL(CCI, FY54, 7, 1);
 
-struct opp_tbl_info opp_tbls[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {		/* v1.1 */
+struct opp_tbl_info opp_tbls[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {
 	/* LL */
 	{
-		[CPU_LEVEL_0] = { opp_tbl_LL_e0_0, ARRAY_SIZE(opp_tbl_LL_e0_0) },
-		[CPU_LEVEL_1] = { opp_tbl_LL_e1_0, ARRAY_SIZE(opp_tbl_LL_e1_0) },
-		[CPU_LEVEL_2] = { opp_tbl_LL_e2_0, ARRAY_SIZE(opp_tbl_LL_e2_0) },
-		[CPU_LEVEL_3] = { opp_tbl_LL_e3_0, ARRAY_SIZE(opp_tbl_LL_e3_0) },
-		[CPU_LEVEL_4] = { opp_tbl_LL_e4_0, ARRAY_SIZE(opp_tbl_LL_e4_0) },
-		[CPU_LEVEL_5] = { opp_tbl_LL_e5_0, ARRAY_SIZE(opp_tbl_LL_e5_0) },
-		[CPU_LEVEL_6] = { opp_tbl_LL_e6_0, ARRAY_SIZE(opp_tbl_LL_e6_0) },
-		[CPU_LEVEL_7] = { opp_tbl_LL_e7_0, ARRAY_SIZE(opp_tbl_LL_e7_0) },
+		[CPU_LEVEL_0] = { opp_tbl_LL_e0_0,
+				ARRAY_SIZE(opp_tbl_LL_e0_0) },
+		[CPU_LEVEL_1] = { opp_tbl_LL_e1_0,
+				ARRAY_SIZE(opp_tbl_LL_e1_0) },
+		[CPU_LEVEL_2] = { opp_tbl_LL_e2_0,
+				ARRAY_SIZE(opp_tbl_LL_e2_0) },
+		[CPU_LEVEL_3] = { opp_tbl_LL_e3_0,
+				ARRAY_SIZE(opp_tbl_LL_e3_0) },
+		[CPU_LEVEL_4] = { opp_tbl_LL_e4_0,
+				ARRAY_SIZE(opp_tbl_LL_e4_0) },
+		[CPU_LEVEL_5] = { opp_tbl_LL_e5_0,
+				ARRAY_SIZE(opp_tbl_LL_e5_0) },
+		[CPU_LEVEL_6] = { opp_tbl_LL_e6_0,
+				ARRAY_SIZE(opp_tbl_LL_e6_0) },
+		[CPU_LEVEL_7] = { opp_tbl_LL_e7_0,
+				ARRAY_SIZE(opp_tbl_LL_e7_0) },
 	},
 	/* L */
 	{
-		[CPU_LEVEL_0] = { opp_tbl_L_e0_0, ARRAY_SIZE(opp_tbl_L_e0_0) },
-		[CPU_LEVEL_1] = { opp_tbl_L_e1_0, ARRAY_SIZE(opp_tbl_L_e1_0) },
-		[CPU_LEVEL_2] = { opp_tbl_L_e2_0, ARRAY_SIZE(opp_tbl_L_e2_0) },
-		[CPU_LEVEL_3] = { opp_tbl_L_e3_0, ARRAY_SIZE(opp_tbl_L_e3_0) },
-		[CPU_LEVEL_4] = { opp_tbl_L_e4_0, ARRAY_SIZE(opp_tbl_L_e4_0) },
-		[CPU_LEVEL_5] = { opp_tbl_L_e5_0, ARRAY_SIZE(opp_tbl_L_e5_0) },
-		[CPU_LEVEL_6] = { opp_tbl_L_e6_0, ARRAY_SIZE(opp_tbl_L_e6_0) },
-		[CPU_LEVEL_7] = { opp_tbl_L_e7_0, ARRAY_SIZE(opp_tbl_L_e7_0) },
+		[CPU_LEVEL_0] = { opp_tbl_L_e0_0,
+				ARRAY_SIZE(opp_tbl_L_e0_0) },
+		[CPU_LEVEL_1] = { opp_tbl_L_e1_0,
+				ARRAY_SIZE(opp_tbl_L_e1_0) },
+		[CPU_LEVEL_2] = { opp_tbl_L_e2_0,
+				ARRAY_SIZE(opp_tbl_L_e2_0) },
+		[CPU_LEVEL_3] = { opp_tbl_L_e3_0,
+				ARRAY_SIZE(opp_tbl_L_e3_0) },
+		[CPU_LEVEL_4] = { opp_tbl_L_e4_0,
+				ARRAY_SIZE(opp_tbl_L_e4_0) },
+		[CPU_LEVEL_5] = { opp_tbl_L_e5_0,
+				ARRAY_SIZE(opp_tbl_L_e5_0) },
+		[CPU_LEVEL_6] = { opp_tbl_L_e6_0,
+				ARRAY_SIZE(opp_tbl_L_e6_0) },
+		[CPU_LEVEL_7] = { opp_tbl_L_e7_0,
+				ARRAY_SIZE(opp_tbl_L_e7_0) },
 	},
 	/* CCI */
 	{
-		[CPU_LEVEL_0] = { opp_tbl_CCI_e0_0, ARRAY_SIZE(opp_tbl_CCI_e0_0) },
-		[CPU_LEVEL_1] = { opp_tbl_CCI_e1_0, ARRAY_SIZE(opp_tbl_CCI_e1_0) },
-		[CPU_LEVEL_2] = { opp_tbl_CCI_e2_0, ARRAY_SIZE(opp_tbl_CCI_e2_0) },
-		[CPU_LEVEL_3] = { opp_tbl_CCI_e3_0, ARRAY_SIZE(opp_tbl_CCI_e3_0) },
-		[CPU_LEVEL_4] = { opp_tbl_CCI_e4_0, ARRAY_SIZE(opp_tbl_CCI_e4_0) },
-		[CPU_LEVEL_5] = { opp_tbl_CCI_e5_0, ARRAY_SIZE(opp_tbl_CCI_e5_0) },
-		[CPU_LEVEL_6] = { opp_tbl_CCI_e6_0, ARRAY_SIZE(opp_tbl_CCI_e6_0) },
-		[CPU_LEVEL_7] = { opp_tbl_CCI_e7_0, ARRAY_SIZE(opp_tbl_CCI_e7_0) },
+		[CPU_LEVEL_0] = { opp_tbl_CCI_e0_0,
+				ARRAY_SIZE(opp_tbl_CCI_e0_0) },
+		[CPU_LEVEL_1] = { opp_tbl_CCI_e1_0,
+				ARRAY_SIZE(opp_tbl_CCI_e1_0) },
+		[CPU_LEVEL_2] = { opp_tbl_CCI_e2_0,
+				ARRAY_SIZE(opp_tbl_CCI_e2_0) },
+		[CPU_LEVEL_3] = { opp_tbl_CCI_e3_0,
+				ARRAY_SIZE(opp_tbl_CCI_e3_0) },
+		[CPU_LEVEL_4] = { opp_tbl_CCI_e4_0,
+				ARRAY_SIZE(opp_tbl_CCI_e4_0) },
+		[CPU_LEVEL_5] = { opp_tbl_CCI_e5_0,
+				ARRAY_SIZE(opp_tbl_CCI_e5_0) },
+		[CPU_LEVEL_6] = { opp_tbl_CCI_e6_0,
+				ARRAY_SIZE(opp_tbl_CCI_e6_0) },
+		[CPU_LEVEL_7] = { opp_tbl_CCI_e7_0,
+				ARRAY_SIZE(opp_tbl_CCI_e7_0) },
 	},
 };
 
@@ -864,7 +904,7 @@ static struct mt_cpu_freq_method opp_tbl_method_CCI_e1[] = {
 	FP(4,	2),
 };
 
-struct opp_tbl_m_info opp_tbls_m[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {	/* v1.1 */
+struct opp_tbl_m_info opp_tbls_m[NR_MT_CPU_DVFS][NUM_CPU_LEVEL] = {
 	/* LL */
 	{
 		[CPU_LEVEL_0] = { opp_tbl_method_LL_e0 },

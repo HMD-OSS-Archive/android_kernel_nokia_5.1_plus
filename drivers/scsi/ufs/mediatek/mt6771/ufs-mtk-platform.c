@@ -14,6 +14,7 @@
 #include <linux/pinctrl/pinctrl.h>
 #include "ufs.h"
 #include "ufshcd.h"
+#include "ufs_quirks.h"
 #include "unipro.h"
 #include "ufs-mtk.h"
 #include "ufs-mtk-platform.h"
@@ -45,7 +46,8 @@ static struct regulator *reg_va09;
 /**
  * ufs_mtk_pltfrm_pwr_change_final_gear - change pwr mode fianl gear value.
  */
-void ufs_mtk_pltfrm_pwr_change_final_gear(struct ufs_hba *hba, struct ufs_pa_layer_attr *final)
+void ufs_mtk_pltfrm_pwr_change_final_gear(struct ufs_hba *hba,
+	struct ufs_pa_layer_attr *final)
 {
 	/* Change final gear if necessary */
 }
@@ -66,14 +68,17 @@ void random_delay(struct ufs_hba *hba)
 void wdt_pmic_full_reset(struct ufs_hba *hba)
 {
 	/*
-	 * Cmd issue to PMIC on MT6771 will take around 20us ~ 30us, in order to speed up VEMC disable time,
-	 * we disable VEMC first coz PMIC cold reset may take longer to disable VEMC in it's reset flow.
-	 * Can not use regulator_disable() here because it can not use in  preemption disabled context.
-	 * Use pmic raw API without nlock instead.
+	 * Cmd issue to PMIC on MT6771 will take around 20us ~ 30us, in order
+	 * to speed up VEMC disable time, we disable VEMC first coz PMIC cold
+	 * reset may take longer to disable VEMC in it's reset flow. Can not
+	 * use regulator_disable() here because it can not use in  preemption
+	 * disabled context. Use pmic raw API without nlock instead.
 	 */
 	pmic_set_register_value_nolock(PMIC_RG_LDO_VEMC_EN, 0);
 
-	/* Need reset external LDO for VUFS18, UFS needs VEMC&VUFS18 reset at the same time */
+	/* Need reset external LDO for VUFS18, UFS needs VEMC&VUFS18 reset at
+	 * the same time
+	 */
 	pmic_set_register_value_nolock(PMIC_RG_STRUP_EXT_PMIC_SEL, 0x1);
 
 	/* VA09 off, may not require */
@@ -97,8 +102,9 @@ void ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(struct ufs_hba *hba)
 	vccq2_enabled = pmic_get_register_value(PMIC_DA_EXT_PMIC_EN1);
 	va09_enabled = pmic_get_register_value(PMIC_DA_EXT_PMIC_EN1);
 	/* dump vcc, vccq2 and va09 info */
-	dev_info(hba->dev, "vcc_enabled:%d, vcc_value:%d, vccq2_enabled:%d, va09:%d!!!\n",
-				vcc_enabled, vcc_value, vccq2_enabled, va09_enabled);
+	dev_info(hba->dev,
+		"vcc_enabled:%d, vcc_value:%d, vccq2_enabled:%d, va09:%d!!!\n",
+		vcc_enabled, vcc_value, vccq2_enabled, va09_enabled);
 	/* dump clock buffer */
 	clk_buf_dump_clkbuf_log();
 }
@@ -117,8 +123,31 @@ void ufs_mtk_pltfrm_gpio_trigger_init(struct ufs_hba *hba)
 }
 #endif
 
+int ufs_mtk_pltfrm_ufs_device_reset(struct ufs_hba *hba)
+{
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 2, 0, 0, 0);
+
+	/*
+	 * The reset signal is active low.
+	 * The UFS device shall detect more than or equal to 1us of positive
+	 * or negative RST_n pulse width.
+	 * To be on safe side, keep the reset low for at least 10us.
+	 */
+	usleep_range(10, 15);
+
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 2, 1, 0, 0);
+
+	/* same as assert, wait for at least 10us after deassert */
+	usleep_range(10, 15);
+
+	dev_info(hba->dev, "%s: UFS device reset done\n", __func__);
+
+	return 0;
+}
+
 /*
- * In early-porting stage, because of no bootrom, something finished by bootrom shall be finished here instead.
+ * In early-porting stage, because of no bootrom,
+ * something finished by bootrom shall be finished here instead.
  * Returns:
  *  0: Successful.
  *  Non-zero: Failed.
@@ -126,16 +155,7 @@ void ufs_mtk_pltfrm_gpio_trigger_init(struct ufs_hba *hba)
 int ufs_mtk_pltfrm_bootrom_deputy(struct ufs_hba *hba)
 {
 #ifdef CONFIG_FPGA_EARLY_PORTING
-
-	u32 reg;
-
-	if (!ufs_mtk_mmio_base_pericfg)
-		return 1;
-
-	reg = readl(ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
-	reg = reg | (1 << REG_UFS_PERICFG_RST_N_BIT);
-	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
-
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 2, 1, 0, 0);
 #endif
 #ifdef CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER
 	ufs_mtk_pltfrm_gpio_trigger_init(hba);
@@ -146,7 +166,8 @@ int ufs_mtk_pltfrm_bootrom_deputy(struct ufs_hba *hba)
 
 /**
  * ufs_mtk_deepidle_hibern8_check - callback function for Deepidle & SODI.
- * Release all resources: DRAM/26M clk/Main PLL and dsiable 26M ref clk if in H8.
+ * Release all resources: DRAM/26M clk/Main PLL and dsiable 26M ref clk if
+ * in H8.
  *
  * @return: 0 for success, negative/postive error code otherwise
  */
@@ -154,38 +175,62 @@ int ufs_mtk_pltfrm_deepidle_check_h8(void)
 {
 #ifdef SPM_READY
 	int ret = 0;
-	u32 tmp;
+	u32 tmp = 0;
 
 	/**
-	 * If current device is not active, it means it is after ufshcd_suspend() through
+	 * If current device is not active or link is h8, it means it is after
+	 * ufshcd_suspend() through
 	 * a. runtime or system pm b. ufshcd_shutdown
-	 * Plus deepidle/SODI can not enter in ufs suspend/resume callback by idle_lock_by_ufs()
-	 * Therefore, it's guranteed that UFS is in H8 now and 26MHz ref clk is disabled by suspend callback
-	 * deepidle/SODI do not need to disable 26MHz ref clk here.
-	 * Not use hba->uic_link_state to judge it's after ufshcd_suspend() is because
-	 * hba->uic_link_state also used by ufshcd_gate_work()
+	 * Both a. and b. will disable 26MHz ref clk(XO_UFS),
+	 * so that deepidle/SODI do not need to disable 26MHz ref clk here.
 	 */
-	if (ufs_mtk_hba->curr_dev_pwr_mode != UFS_ACTIVE_PWR_MODE) {
+	if (ufs_mtk_hba->curr_dev_pwr_mode != UFS_ACTIVE_PWR_MODE ||
+		ufshcd_is_link_hibern8(ufs_mtk_hba)) {
 		spm_resource_req(SPM_RESOURCE_USER_UFS, SPM_RESOURCE_RELEASE);
 		return UFS_H8_SUSPEND;
 	}
 
 	/* Release all resources if entering H8 mode */
-	ret = ufs_mtk_generic_read_dme(UIC_CMD_DME_GET, VENDOR_POWERSTATE, 0, &tmp, 100);
+	ret = ufs_mtk_generic_read_dme(UIC_CMD_DME_GET,
+		VENDOR_POWERSTATE, 0, &tmp, 100);
 
 	if (ret) {
-		/* ret == -1 means there is outstanding req/task/uic/pm ongoing, not an error */
+		/* ret == -1 means there is outstanding
+		 * req/task/uic/pm ongoing, not an error
+		 */
 		if (ret != -1)
-			dev_err(ufs_mtk_hba->dev, "ufshcd_dme_get 0x%x fail, ret = %d!\n", VENDOR_POWERSTATE, ret);
+			dev_err(ufs_mtk_hba->dev,
+				"ufshcd_dme_get 0x%x fail, ret = %d!\n",
+				VENDOR_POWERSTATE, ret);
 		return ret;
 	}
 
 	if (tmp == VENDOR_POWERSTATE_HIBERNATE) {
-		/* delay 100us before DeepIdle/SODI disable XO_UFS for Toshiba device */
-		if (ufs_mtk_hba->dev_quirks & UFS_DEVICE_QUIRK_DELAY_BEFORE_DISABLE_REF_CLK)
+		/*
+		 * Delay before disable XO_UFS: H8 -> delay A -> disable XO_UFS
+		 *		delayA
+		 * Hynix	30us
+		 * Samsung	1us
+		 * Toshiba	100us
+		 */
+		switch (ufs_mtk_hba->card->wmanufacturerid) {
+		case UFS_VENDOR_TOSHIBA:
 			udelay(100);
-		/* Disable MPHY 26MHz ref clock in H8 mode */
-		/* SSPM project will disable MPHY 26MHz ref clock in SSPM deepidle/SODI IPI handler*/
+			break;
+		case UFS_VENDOR_SKHYNIX:
+			udelay(30);
+			break;
+		case UFS_VENDOR_SAMSUNG:
+			udelay(1);
+			break;
+		default:
+			break;
+		}
+		/*
+		 * Disable MPHY 26MHz ref clock in H8 mode
+		 * SSPM project will disable MPHY 26MHz ref clock
+		 * in SSPM deepidle/SODI IPI handler
+		 */
 	#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	#ifdef CLKBUF_READY
 		clk_buf_ctrl(CLK_BUF_UFS, false);
@@ -209,32 +254,32 @@ void ufs_mtk_pltfrm_deepidle_leave(void)
 {
 #ifdef CLKBUF_READY
 	/* Enable MPHY 26MHz ref clock after leaving deepidle */
-	/* SSPM project will enable MPHY 26MHz ref clock in SSPM deepidle/SODI IPI handler*/
+	/* SSPM project will enable MPHY 26MHz ref clock in SSPM
+	 * deepidle/SODI IPI handler
+	 */
 
 #if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
-	/* If current device is not active, it means it is after ufshcd_suspend() through */
-	/* a. runtime or system pm b. ufshcd_shutdown */
-	/* And deepidle/SODI can not enter in ufs suspend/resume callback by idle_lock_by_ufs() */
-	/* Therefore, it's guranteed that UFS is in H8 now and 26MHz ref clk is disabled by suspend callback */
-	/* deepidle/SODI do not need to enable 26MHz ref clk here */
+	/* If current device is not active, it means it is after
+	 * ufshcd_suspend() through a. runtime or system pm b. ufshcd_shutdown
+	 * And deepidle/SODI can not enter in ufs suspend/resume
+	 * callback by idle_lock_by_ufs()
+	 * Therefore, it's guranteed that UFS is in H8 now
+	 * and 26MHz ref clk is disabled by suspend callback
+	 * deepidle/SODI do not need to enable 26MHz ref clk here
+	 */
 	if (ufs_mtk_hba->curr_dev_pwr_mode != UFS_ACTIVE_PWR_MODE)
 		return;
 
 	clk_buf_ctrl(CLK_BUF_UFS, true);
 #endif
 #endif
-}
-
-/**
- * ufs_mtk_deepidle_resource_req - Deepidle & SODI resource request.
- * @hba: per-adapter instance
- * @resource: DRAM/26M clk/MainPLL resources to be claimed. New claim will substitute old claim.
- */
-void ufs_mtk_pltfrm_deepidle_resource_req(struct ufs_hba *hba, unsigned int resource)
-{
-#ifdef SPM_READY
-	spm_resource_req(SPM_RESOURCE_USER_UFS, resource);
-#endif
+	/* Delay after enable XO_UFS: enable XO_UFS -> delay B -> leave H8
+	 *		delayB
+	 * Hynix	30us
+	 * Samsung	max(1us,32us)
+	 * Toshiba	32us
+	 */
+	udelay(32);
 }
 
 /**
@@ -257,7 +302,8 @@ int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)
 	u32 reg;
 
 	if (!ufs_mtk_mmio_base_infracfg_ao) {
-		dev_info(hba->dev, "ufs_mtk_host_sw_rst: failed, null ufs_mtk_mmio_base_infracfg_ao.\n");
+		dev_info(hba->dev,
+			"ufs_mtk_host_sw_rst: failed, null ufs_mtk_mmio_base_infracfg_ao.\n");
 		return 1;
 	}
 
@@ -265,23 +311,29 @@ int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)
 
 	if (target & SW_RST_TARGET_UFSHCI) {
 		/* reset HCI */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UFSHCI_SW_RST_SET);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao +
+			REG_UFSHCI_SW_RST_SET);
 		reg = reg | (1 << REG_UFSHCI_SW_RST_SET_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UFSHCI_SW_RST_SET);
+		writel(reg,
+			ufs_mtk_mmio_base_infracfg_ao + REG_UFSHCI_SW_RST_SET);
 	}
 
 	if (target & SW_RST_TARGET_UFSCPT) {
 		/* reset AES */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UFSCPT_SW_RST_SET);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao +
+			REG_UFSCPT_SW_RST_SET);
 		reg = reg | (1 << REG_UFSCPT_SW_RST_SET_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UFSCPT_SW_RST_SET);
+		writel(reg,
+			ufs_mtk_mmio_base_infracfg_ao + REG_UFSCPT_SW_RST_SET);
 	}
 
 	if (target & SW_RST_TARGET_UNIPRO) {
 		/* reset UniPro */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UNIPRO_SW_RST_SET);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao +
+			REG_UNIPRO_SW_RST_SET);
 		reg = reg | (1 << REG_UNIPRO_SW_RST_SET_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UNIPRO_SW_RST_SET);
+		writel(reg,
+			ufs_mtk_mmio_base_infracfg_ao + REG_UNIPRO_SW_RST_SET);
 	}
 
 	if (target & SW_RST_TARGET_MPHY) {
@@ -295,23 +347,29 @@ int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)
 
 	if (target & SW_RST_TARGET_UFSHCI) {
 		/* clear HCI reset */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UFSHCI_SW_RST_CLR);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao +
+			REG_UFSHCI_SW_RST_CLR);
 		reg = reg | (1 << REG_UFSHCI_SW_RST_CLR_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UFSHCI_SW_RST_CLR);
+		writel(reg,
+			ufs_mtk_mmio_base_infracfg_ao + REG_UFSHCI_SW_RST_CLR);
 	}
 
 	if (target & SW_RST_TARGET_UFSCPT) {
 		/* clear AES reset */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UFSCPT_SW_RST_CLR);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao +
+			REG_UFSCPT_SW_RST_CLR);
 		reg = reg | (1 << REG_UFSCPT_SW_RST_CLR_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UFSCPT_SW_RST_CLR);
+		writel(reg,
+			ufs_mtk_mmio_base_infracfg_ao + REG_UFSCPT_SW_RST_CLR);
 	}
 
 	if (target & SW_RST_TARGET_UNIPRO) {
 		/* clear UniPro reset */
-		reg = readl(ufs_mtk_mmio_base_infracfg_ao + REG_UNIPRO_SW_RST_CLR);
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao +
+			REG_UNIPRO_SW_RST_CLR);
 		reg = reg | (1 << REG_UNIPRO_SW_RST_CLR_BIT);
-		writel(reg, ufs_mtk_mmio_base_infracfg_ao + REG_UNIPRO_SW_RST_CLR);
+		writel(reg,
+			ufs_mtk_mmio_base_infracfg_ao + REG_UNIPRO_SW_RST_CLR);
 	}
 
 	if (target & SW_RST_TARGET_MPHY) {
@@ -370,7 +428,8 @@ int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 
 	/* get ufs_mtk_mmio_base_ufs_mphy */
 
-	node_ufs_mphy = of_find_compatible_node(NULL, NULL, "mediatek,ufs_mphy");
+	node_ufs_mphy =
+		of_find_compatible_node(NULL, NULL, "mediatek,ufs_mphy");
 
 	if (node_ufs_mphy) {
 		ufs_mtk_mmio_base_ufs_mphy = of_iomap(node_ufs_mphy, 0);
@@ -391,32 +450,12 @@ int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 	}
 	err = regulator_enable(reg_va09);
 	if (err < 0) {
-		dev_info(hba->dev, "%s: enalbe va09 fail, err = %d\n", __func__, err);
+		dev_info(hba->dev, "%s: enalbe va09 fail, err = %d\n",
+			__func__, err);
 		return err;
 	}
 
 	return err;
-}
-
-int ufs_mtk_pltfrm_res_req(struct ufs_hba *hba, u32 option)
-{
-#ifdef SPM_READY
-	if (option == UFS_MTK_RESREQ_DMA_OP) {
-
-		/* request resource for DMA operations, e.g., DRAM */
-
-		ufshcd_vops_deepidle_resource_req(hba,
-		  SPM_RESOURCE_MAINPLL | SPM_RESOURCE_DRAM | SPM_RESOURCE_CK_26M);
-
-	} else if (option == UFS_MTK_RESREQ_MPHY_NON_H8) {
-
-		/* request resource for mphy not in H8, e.g., main PLL, 26 mhz clock */
-
-		ufshcd_vops_deepidle_resource_req(hba,
-		  SPM_RESOURCE_MAINPLL | SPM_RESOURCE_CK_26M);
-	}
-#endif
-	return 0;
 }
 
 int ufs_mtk_pltfrm_resume(struct ufs_hba *hba)
@@ -431,7 +470,8 @@ int ufs_mtk_pltfrm_resume(struct ufs_hba *hba)
 	/* Set regulator to turn on VA09 LDO */
 	ret = regulator_enable(reg_va09);
 	if (ret < 0) {
-		dev_info(hba->dev, "%s: enalbe va09 fail, err = %d\n", __func__, ret);
+		dev_info(hba->dev,
+			"%s: enalbe va09 fail, err = %d\n", __func__, ret);
 		return ret;
 	}
 
@@ -439,7 +479,7 @@ int ufs_mtk_pltfrm_resume(struct ufs_hba *hba)
 	udelay(200);
 
 	/* Step 1: Set RG_VA09_ON to 1 */
-	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 1, 1, 0);
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 1, 1, 0, 0);
 
 	/* Step 2: release DA_MP_PLL_PWR_ON */
 	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
@@ -543,7 +583,7 @@ int ufs_mtk_pltfrm_suspend(struct ufs_hba *hba)
 	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
 
 	/* Step 7: Set RG_VA09_ON to 0 */
-	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 1, 0, 0);
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 1, 0, 0, 0);
 
 	/* delay awhile to satisfy T_HIBERNATE */
 	mdelay(15);
@@ -552,10 +592,14 @@ int ufs_mtk_pltfrm_suspend(struct ufs_hba *hba)
 	/* Disable MPHY 26MHz ref clock in H8 mode */
 	clk_buf_ctrl(CLK_BUF_UFS, false);
 #endif
+	if (ufs_mtk_hba->curr_dev_pwr_mode != UFS_ACTIVE_PWR_MODE)
+		spm_resource_req(SPM_RESOURCE_USER_UFS, SPM_RESOURCE_RELEASE);
+
 	/* Set regulator to turn off VA09 LDO */
 	ret = regulator_disable(reg_va09);
 	if (ret < 0) {
-		dev_info(hba->dev, "%s: disalbe va09 fail, err = %d\n", __func__, ret);
+		dev_info(hba->dev, "%s: disalbe va09 fail, err = %d\n",
+			 __func__, ret);
 		return ret;
 	}
 #if 0

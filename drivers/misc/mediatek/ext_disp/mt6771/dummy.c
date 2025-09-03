@@ -26,7 +26,8 @@ void external_display_control_init(void)
 {
 }
 
-int external_display_switch_mode(enum DISP_MODE mode, unsigned int *session_created, unsigned int session)
+int external_display_switch_mode(enum DISP_MODE mode,
+		unsigned int *session_created, unsigned int session)
 {
 	return 0;
 }

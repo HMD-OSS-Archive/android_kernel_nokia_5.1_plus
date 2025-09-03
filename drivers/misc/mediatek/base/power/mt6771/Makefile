@@ -15,6 +15,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/leakage_table_v2/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/thermal/$(MTK_PLATFORM)/inc/mach/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/
@@ -28,6 +29,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/gpu/ged/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/eem_v2/$(MTK_PLATFORM)/inc/
 ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include/
 ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/wdt/common/wdt_v2/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/$(CONFIG_MTK_PLATFORM)
 ccflags-y += -Wno-unused-variable
 ccflags-y += -Wno-unused-function
 

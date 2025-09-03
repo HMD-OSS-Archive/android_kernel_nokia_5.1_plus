@@ -211,9 +211,9 @@ static int ecc_wait_done(struct nfc_info *info)
 			ret =
 			    readw_poll_timeout_atomic(ecc_regs + ECC_DECDONE,
 						      reg,
-						      reg & info->ecccfg.
-						      sectors, 2,
-						      ECC_TIMEOUT);
+						      info->ecccfg.sectors
+						      & reg,
+						      2, ECC_TIMEOUT);
 			if (ret)
 				goto timeout;
 		}

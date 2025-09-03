@@ -19,8 +19,12 @@
 #include <linux/io.h>
 #include <linux/gpio.h>
 #include <linux/fb.h>
-#include <linux/wakelock.h>
+//new added
+#include <linux/interrupt.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
 
+#include <linux/pm_wakeup.h>
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #else
@@ -52,7 +56,6 @@
 #include "mtk_spi.h"
 #include "mtk_spi_hal.h"
 #endif
-#include "mtk_gpio.h"
 
 /* there is no this file on standardized GPIO platform */
 #ifdef CONFIG_MTK_GPIO
@@ -94,6 +97,7 @@ u32 gf_spi_speed = 1*1000000;
 static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
 
+static struct wakeup_source fp_wakeup_source;
 static unsigned int bufsiz = (25 * 1024);
 module_param(bufsiz, uint, S_IRUGO);
 MODULE_PARM_DESC(bufsiz, "maximum data bytes for SPI message");
@@ -644,7 +648,8 @@ static irqreturn_t gf_irq(int irq, void *handle)
 	struct gf_device *gf_dev = (struct gf_device *)handle;
 	FUNC_ENTRY();
 
-	wake_lock_timeout(&gf_dev->fp_wakelock, msecs_to_jiffies(WAKELOCK_HOLD_TIME));
+	__pm_wakeup_event(&fp_wakeup_source, WAKELOCK_HOLD_TIME);
+
 	gf_netlink_send(gf_dev, GF_NETLINK_IRQ);
 	gf_dev->sig_count++;
 
@@ -1849,6 +1854,9 @@ static int gf_probe(struct spi_device *spi)
 		goto err_input_2;
 	}
 
+	/* wakeup source init */
+	wakeup_source_init(&fp_wakeup_source, "fingerprint wakelock");
+
 	/* netlink interface init */
 	status = gf_netlink_init(gf_dev);
 	if (status == -1) {
@@ -1858,7 +1866,6 @@ static int gf_probe(struct spi_device *spi)
 		mutex_unlock(&gf_dev->release_lock);
 		goto err_input;
 	}
-	wake_lock_init(&gf_dev->fp_wakelock, WAKE_LOCK_SUSPEND, "fp_wakelock");
 
 	gf_dev->probe_finish = 1;
 	gf_dev->is_sleep_mode = 0;
@@ -1919,7 +1926,6 @@ static int gf_remove(struct spi_device *spi)
 
 	FUNC_ENTRY();
 
-	wake_lock_destroy(&gf_dev->fp_wakelock);
 	/* make sure ops on existing fds can abort cleanly */
 	if (gf_dev->irq) {
 		free_irq(gf_dev->irq, gf_dev);

@@ -21,6 +21,7 @@
 #include "dvfs_v2.h"
 
 #define DEFAULT_MHZ 99999
+#define MAX_SUBMIT (33*1000)
 /* #define DEBUG_ALGO */
 #ifdef DEBUG_ALGO
 #define AL_INFO pr_info
@@ -30,12 +31,18 @@
 
 long long div_64(long long a, long long b)
 {
-#if IS_ENABLED(64BIT)
+#if IS_ENABLED(CONFIG_64BIT)
 	return (a/b);
 #else
-	long long rem = 0;
+	uint32_t rem = 0;
+	uint64_t dividend, divisor;
 
-	rem = do_div(a, b);
+	dividend = (a >= 0) ? a : (-a);
+	divisor = (b >= 0) ? b : (-b);
+	rem = do_div(dividend, divisor);
+	a = ((a < 0) ^ (b < 0)) ?
+		(0LL - (long long)dividend) :
+		(long long)dividend;
 	return a;
 #endif
 }
@@ -280,20 +287,21 @@ int est_next_job(long long now_us, long long *t_us, int *kcy, int *min_mhz,
 {
 	struct codec_history *hist;
 	long long deadline;
+	long long exec_dur;
 	long long new_mhz;
 
 	if (t_us == 0 || kcy == 0 || min_mhz == 0 || job == 0)
 		return -1;
 
 	hist = find_hist(job->handle, head);
-	AL_INFO("est_next_job find_hist %p handle %p\n", hist,
+	AL_INFO("%s find_hist %p handle %p\n", __func__, hist,
 		(hist == 0) ? 0 : hist->handle);
 
 	/* This is a new instance - no history yet */
 	if (hist == 0) {
 		/* Set *t_us = now_us to signal full speed */
 		*t_us = now_us;
-		AL_INFO("est_next_job not history yet, full speed\n");
+		AL_INFO("%s not history yet, full speed\n", __func__);
 	} else {
 		*kcy += est_new_kcy(hist);
 		deadline = est_next_submit(hist);
@@ -301,14 +309,19 @@ int est_next_job(long long now_us, long long *t_us, int *kcy, int *min_mhz,
 			*t_us = now_us;
 		else {
 			if (deadline > now_us) {
-				new_mhz = div_64((*kcy) * 1000LL,
-						 (deadline - now_us));
+				exec_dur = deadline - now_us;
+				exec_dur = (exec_dur > (MAX_SUBMIT * 2)) ?
+						(MAX_SUBMIT * 2) : exec_dur;
+				new_mhz = div_64((*kcy) * 1000LL, exec_dur);
 				if (new_mhz > *min_mhz)
 					*min_mhz = (int)new_mhz;
 
+				if (*min_mhz == 0)
+					*min_mhz = 1;
+
 				*t_us = now_us + div_64((*kcy) * 1000LL,
 							(*min_mhz));
-		} else {
+			} else {
 				/**
 				 * Overdue, set *t_us = now_us to signal full
 				 * speed
@@ -318,10 +331,10 @@ int est_next_job(long long now_us, long long *t_us, int *kcy, int *min_mhz,
 		}
 		if (hist->cur_cnt < MAX_HISTORY)
 			*t_us = now_us;
-		AL_INFO("est_next_job deadline %llu, kcy %d\n", deadline, *kcy);
+		AL_INFO("%s deadline %llu, kcy %d\n", __func__, deadline, *kcy);
 	}
 
-	AL_INFO("est_next_job now_us %lld, target_us %lld, min_mhz %d\n",
+	AL_INFO("%s now_us %lld, target_us %lld, min_mhz %d\n", __func__,
 		now_us, *t_us, *min_mhz);
 
 	/* Stop estimating if no more job or worst time constraint is reached */
@@ -353,7 +366,7 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 	/* Previous history is too far away, restart */
 	if (hist->cur_cnt > 1 &&
 		(job->submit - hist->submit[prev_idx]) > MAX_SUBMIT_GAP) {
-		AL_INFO("update_hist_item %p, gap (%lld), reset hist\n",
+		AL_INFO("%s %p, gap (%lld), reset hist\n", __func__,
 			hist->handle, (job->submit-hist->submit[prev_idx]));
 		memset(hist->kcy, 0, sizeof(int)*MAX_HISTORY);
 		memset(hist->submit, 0, sizeof(long long)*MAX_HISTORY);
@@ -380,14 +393,14 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 		hist->tot_time = hist->tot_time -
 				(hist->end[hist_idx] - hist->start[hist_idx]) +
 				(job->end - job->start);
-		AL_INFO("update_hist_item 1 kcy %d, time %llu\n",
+		AL_INFO("%s 1 kcy %d, time %llu\n", __func__,
 			hist->tot_kcy, hist->tot_time);
 	} else {
 		hist->cur_cnt++;
 		hist->tot_kcy = hist->tot_kcy +
 			(int)div_64(job->mhz * (job->end - job->start), 1000);
 		hist->tot_time = hist->tot_time + (job->end - job->start);
-		AL_INFO("update_hist_item 2 kcy %d, time %llu, cnt %d\n",
+		AL_INFO("%s 2 kcy %d, time %llu, cnt %d\n", __func__,
 			hist->tot_kcy, hist->tot_time, hist->cur_cnt);
 	}
 
@@ -397,7 +410,7 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 	hist->start[hist_idx] = job->start;
 	hist->end[hist_idx] = job->end;
 
-	AL_INFO("update_hist_item %p, mhz %d, sub %lld, start %lld, end %lld\n",
+	AL_INFO("%s %p, mhz %d, sub %lld, start %lld, end %lld\n", __func__,
 		hist->handle, job->mhz, job->submit, job->start, job->end);
 	hist->cur_idx = (hist_idx + 1) % MAX_HISTORY;
 
@@ -424,7 +437,7 @@ int update_hist(struct codec_job *job, struct codec_history **head)
 			return -1;
 
 		target->handle = job->handle;
-		AL_INFO("update_hist new history %p head %p\n", target, *head);
+		AL_INFO("%s new history %p head %p\n", __func__, target, *head);
 	}
 
 	ret = update_hist_item(job, target);
@@ -565,17 +578,17 @@ int est_freq(void *handle, struct codec_job **job, struct codec_history *head)
 
 	/* Error case, just run at max freq */
 	if (target_job == 0) {
-		pr_info("est_freq job not found!\n");
+		pr_info("%s job not found!\n", __func__);
 		return DEFAULT_MHZ;
 	}
 
 	if (target_job != *job)
-		pr_info("est_freq target_job != job queue head\n");
+		pr_info("%s target_job != job queue head\n", __func__);
 
 	est_res = est_next_job(cur_time, &end_time, &kcy, &min_mhz, target_job,
 				head);
 
-	AL_INFO("est_freq res %d, min_mhz %d\n", est_res, min_mhz);
+	AL_INFO("%s res %d, min_mhz %d\n", __func__, est_res, min_mhz);
 
 	/* Error case or do it ASAP */
 	if (est_res == -1 || (cur_time == end_time))
@@ -609,7 +622,7 @@ u64 match_freq(int target_mhz, u64 *freq_list, u32 freq_cnt)
 	if (res_mhz == DEFAULT_MHZ)
 		res_mhz = freq_list[0];
 
-	AL_INFO("match_freq %d -> %llu\n", target_mhz, res_mhz);
+	AL_INFO("%s %d -> %llu\n", __func__, target_mhz, res_mhz);
 
 	return res_mhz;
 }

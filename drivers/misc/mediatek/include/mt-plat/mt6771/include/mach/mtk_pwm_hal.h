@@ -1,7 +1,7 @@
-/*******************************************************************************
- * mt6771 mtk_pwm_hal.h PWM Drvier
+/******************************************************************************
+ * mtk_pwm_hal.h PWM Drvier
  *
- * Copyright (c) 2017, Media Teck.inc
+ * Copyright (c) 2018, Media Teck.inc
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public Licence,
@@ -13,7 +13,7 @@
  * more details.
  *
  *
- ********************************************************************************
+ ******************************************************************************
  */
 
 #ifndef __MT_PWM_HAL_H__
@@ -21,12 +21,12 @@
 #include <linux/types.h>
 #include <mt-plat/sync_write.h>
 /**********************************
-* Global enum data
-***********************************/
+ * Global enum data
+ */
 /******************* Register Manipulations*****************/
 #define INREG32(reg)          __raw_readl((void *)reg)
 #define OUTREG32(reg, val)      mt_reg_sync_writel(val, (void *)reg)
-#define OUTREG32_DMA(reg, val)   ((*(long *)(reg)) = (long)(val))
+#define OUTREG32_DMA(reg, val)	((*(long *)(reg)) = (long)(val))
 #define SETREG32(reg, val)      OUTREG32(reg, INREG32(reg)|(val))
 #define CLRREG32(reg, val)      OUTREG32(reg, INREG32(reg)&~(val))
 #define MASKREG32(x, y, z)  OUTREG32(x, (INREG32(x)&~(y))|(z))
@@ -38,7 +38,7 @@ enum PWN_NO {
 	PWM3,
 	PWM4,
 	PWM_NUM,
-	PWM_MAX = PWM_NUM
+	PWM_MAX = PWM_NUM - 1 /* HW have PWM4, but no pad out */
 };
 
 enum TEST_SEL_BIT {
@@ -108,8 +108,6 @@ enum PWM_INT_ENABLE_BITS {
 	PWM3_INT_UNDERFLOW_EN,
 	PWM4_INT_FINISH_EN,
 	PWM4_INT_UNDERFLOW_EN,
-	PWM5_INT_FINISH_EN,
-	PWM5_INT_UNDERFLOW_EN,
 	PWM_INT_ENABLE_BITS_MAX,
 };
 
@@ -122,8 +120,6 @@ enum PWM_INT_STATUS_BITS {
 	PWM3_INT_UNDERFLOW_ST,
 	PWM4_INT_FINISH_ST,
 	PWM4_INT_UNDERFLOW_ST,
-	PWM5_INT_FINISH_ST,
-	PWM5_INT_UNDERFLOW_ST,
 	PWM_INT_STATUS_BITS_MAX,
 };
 
@@ -136,8 +132,6 @@ enum PWM_INT_ACK_BITS {
 	PWM3_INT_UNDERFLOW_ACK,
 	PWM4_INT_FINISH_ACK,
 	PWM4_INT_UNDERFLOW_ACK,
-	PWM5_INT_FINISH_ACK,
-	PWM5_INT_UNDERFLOW_ACK,
 	PWM_INT_ACK_BITS_MAX,
 };
 

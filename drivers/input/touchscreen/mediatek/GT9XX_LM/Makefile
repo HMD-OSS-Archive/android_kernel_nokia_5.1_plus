@@ -11,4 +11,3 @@ obj-y	+=  gt9xx_driver.o
 obj-y	+=  gt9xx_extents.o
 obj-y	+=  gt9xx_update.o
 obj-y	+=  goodix_tool.o
-

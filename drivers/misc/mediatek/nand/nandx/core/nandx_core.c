@@ -465,7 +465,7 @@ int nandx_core_erase(u32 *rows, int count, u32 mode)
 {
 	u32 *row;
 	bool do_multi = false;
-	int plane_num, erase_count, ret;
+	int plane_num, erase_count, ret = 0;
 	struct nandx_chip_dev *chip;
 	struct nandx_chip_info *info;
 

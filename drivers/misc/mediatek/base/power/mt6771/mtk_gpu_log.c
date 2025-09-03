@@ -26,7 +26,9 @@ static void aee_Handle(struct work_struct *_psWork)
 {
 	GPULOG2("trigger aee, call aee_kernel_exception");
 
-	aee_kernel_exception("gpulog", "aee dump gpulog");
+	/* MTK: Due to Kernel API dump, and the ddk had been */
+	/* migration 2 gens. Assume the DDK is stable enough. */
+	/* aee_kernel_exception("gpulog", "aee dump gpulog"); */
 
 	aee_dumping = 0;
 }
@@ -51,7 +53,8 @@ void mtk_gpu_log_init(void)
 {
 	int ret;
 
-	g_aee_workqueue = alloc_ordered_workqueue("gpu_aee_wq", WQ_FREEZABLE | WQ_MEM_RECLAIM);
+	g_aee_workqueue = alloc_ordered_workqueue("gpu_aee_wq",
+		WQ_FREEZABLE | WQ_MEM_RECLAIM);
 	INIT_WORK(&g_aee_work, aee_Handle);
 
 	/* init log hnd */

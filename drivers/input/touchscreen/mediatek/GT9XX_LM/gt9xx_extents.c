@@ -16,30 +16,30 @@
  * Version: V2.6.0.3
  */
 
-#include <linux/interrupt.h>
-#include <linux/i2c.h>
-#include <linux/sched.h>
-#include <linux/kthread.h>
-#include <linux/wait.h>
-#include <linux/time.h>
+#include "include/tpd_gt9xx_common.h"
+#include <asm/ioctl.h>
 #include <linux/delay.h>
 #include <linux/device.h>
-#include <linux/miscdevice.h>
+#include <linux/i2c.h>
 #include <linux/input.h>
-#include <linux/uaccess.h>
+#include <linux/interrupt.h>
+#include <linux/kthread.h>
+#include <linux/miscdevice.h>
 #include <linux/proc_fs.h>
-#include <asm/ioctl.h>
-#include "include/tpd_gt9xx_common.h"
+#include <linux/sched.h>
+#include <linux/time.h>
+#include <linux/uaccess.h>
+#include <linux/wait.h>
 
 #ifdef CONFIG_GTP_GESTURE_WAKEUP
 
 #define GESTURE_NODE "goodix_gesture"
-#define GTP_REG_WAKEUP_GESTURE	0x814B
-#define GTP_REG_WAKEUP_GESTURE_DETAIL	0x9420
+#define GTP_REG_WAKEUP_GESTURE 0x814B
+#define GTP_REG_WAKEUP_GESTURE_DETAIL 0x9420
 
-#define SETBIT(longlong, bit)   (longlong[bit/8] |=  (1 << bit%8))
-#define CLEARBIT(longlong, bit) (longlong[bit/8] &= (~(1 << bit%8)))
-#define QUERYBIT(longlong, bit) (!!(longlong[bit/8] & (1 << bit%8)))
+#define SETBIT(longlong, bit) (longlong[bit / 8] |= (1 << bit % 8))
+#define CLEARBIT(longlong, bit) (longlong[bit / 8] &= (~(1 << bit % 8)))
+#define QUERYBIT(longlong, bit) (!!(longlong[bit / 8] & (1 << bit % 8)))
 
 static u8 gestures_flag[32];
 struct gesture_data gesture_data;
@@ -60,17 +60,16 @@ static ssize_t gtp_gesture_data_read(struct file *file, char __user *page,
 {
 	s32 ret = -1;
 
-	GTP_DEBUG("visit gtp_gesture_data_read. ppos:%d", (int)*ppos);
+	GTP_DEBUG("visit gtp gesture_data_read. ppos:%d", (int)*ppos);
 	if (*ppos)
 		return 0;
 
 	if (size == 4) {
-		ret = copy_to_user(((u8 __user *) page), "GT1X", 4);
+		ret = copy_to_user(((u8 __user *)page), "GT1X", 4);
 		return 4;
 	}
-	ret =
-	    simple_read_from_buffer(page, size, ppos, &gesture_data,
-				    sizeof(gesture_data));
+	ret = simple_read_from_buffer(page, size, ppos, &gesture_data,
+				      sizeof(gesture_data));
 
 	GTP_DEBUG("Got the gesture data.");
 	return ret;
@@ -97,7 +96,7 @@ s8 gtp_enter_doze(void)
 {
 	int ret = -1;
 	s8 retry = 0;
-	u8 i2c_control_buf[1] = { 8 };
+	u8 i2c_control_buf[1] = {8};
 
 	GTP_DEBUG("Entering doze mode.");
 	while (retry++ < 5) {
@@ -122,7 +121,7 @@ s8 gtp_enter_doze(void)
 
 s32 gesture_event_handler(struct input_dev *dev)
 {
-	u8 doze_buf[4] = { 0 };
+	u8 doze_buf[4] = {0};
 	unsigned int key_code;
 	s32 ret = 0;
 	int len, extra_len;
@@ -132,11 +131,12 @@ s32 gesture_event_handler(struct input_dev *dev)
 		GTP_DEBUG("0x%x = 0x%02X,0x%02X,0x%02X,0x%02X",
 			  GTP_REG_WAKEUP_GESTURE, doze_buf[0], doze_buf[1],
 			  doze_buf[2], doze_buf[3]);
-		/*GTP_DEBUG("0x%x = 0x%02X,0x%02X", GTP_REG_WAKEUP_GESTURE, doze_buf[0], doze_buf[1]); */
+		/*GTP_DEBUG("0x%x = 0x%02X,0x%02X", GTP_REG_WAKEUP_GESTURE, */
+		/* doze_buf[0], doze_buf[1]); */
 		if (ret == 0 && doze_buf[0] != 0) {
 			if (!QUERYBIT(gestures_flag, doze_buf[0])) {
-				GTP_INFO
-				    ("Sorry, this gesture has been disabled.");
+				GTP_INFO(
+					"Sorry, this gesture has been disabled.");
 				doze_buf[0] = 0x00;
 				ges_i2c_write_bytes(GTP_REG_WAKEUP_GESTURE,
 						    doze_buf, 1);
@@ -147,16 +147,15 @@ s32 gesture_event_handler(struct input_dev *dev)
 			mutex_lock(&gesture_data_mutex);
 			len = doze_buf[1] & 0x7F;
 			if (len > GESTURE_MAX_POINT_COUNT) {
-				GTP_ERROR
-				    ("Gesture contain too many points!(%d)",
-				     len);
+				GTP_ERROR(
+					"Gesture contain too many points!(%d)",
+					len);
 				len = GESTURE_MAX_POINT_COUNT;
 			}
 			if (len > 0) {
-				ret =
-				    ges_i2c_read_bytes
-				    (GTP_REG_WAKEUP_GESTURE_DETAIL,
-				     &gesture_data.data[4], len * 4);
+				ret = ges_i2c_read_bytes(
+					GTP_REG_WAKEUP_GESTURE_DETAIL,
+					&gesture_data.data[4], len * 4);
 				if (ret < 0) {
 					GTP_DEBUG("Read gesture data failed.");
 					mutex_unlock(&gesture_data_mutex);
@@ -166,22 +165,19 @@ s32 gesture_event_handler(struct input_dev *dev)
 
 			extra_len = doze_buf[1] & 0x80 ? doze_buf[3] : 0;
 			if (extra_len > 80) {
-				GTP_ERROR
-				    ("Gesture contain too many extra data!(%d)",
-				     extra_len);
+				GTP_ERROR(
+					"Gesture contain too many extra data!(%d)",
+					extra_len);
 				extra_len = 80;
 			}
 			if (extra_len > 0) {
-				ret =
-				    ges_i2c_read_bytes(GTP_REG_WAKEUP_GESTURE +
-						       4,
-						       &gesture_data.data[4 +
-									  len *
-									  4],
-						       extra_len);
+				ret = ges_i2c_read_bytes(
+					GTP_REG_WAKEUP_GESTURE + 4,
+					&gesture_data.data[4 + len * 4],
+					extra_len);
 				if (ret < 0) {
-					GTP_DEBUG
-					    ("Read extra gesture data failed.");
+					GTP_DEBUG(
+						"Read extra gesture data failed.");
 					mutex_unlock(&gesture_data_mutex);
 					return 0;
 				}
@@ -190,8 +186,8 @@ s32 gesture_event_handler(struct input_dev *dev)
 			doze_buf[2] &= ~0x30;
 			doze_buf[2] |= extra_len > 0 ? 0x20 : 0x10;
 
-			gesture_data.data[0] = doze_buf[0];	/* gesture type */
-			gesture_data.data[1] = len;	/* gesture points number */
+			gesture_data.data[0] = doze_buf[0]; /* gesture type */
+			gesture_data.data[1] = len; /* gesture points number */
 			gesture_data.data[2] = doze_buf[2];
 			gesture_data.data[3] = extra_len;
 			mutex_unlock(&gesture_data_mutex);
@@ -208,11 +204,11 @@ s32 gesture_event_handler(struct input_dev *dev)
 			input_sync(dev);
 			input_report_key(dev, key_code, 0);
 			input_sync(dev);
-			return 2;	/* doze enabled and get valid gesture data */
+			return 2; /* doze enabled and get valid gesture data */
 		}
-		return 1;	/* doze enabled, but no invalid gesutre data */
+		return 1; /* doze enabled, but no invalid gesutre data */
 	}
-	return 0;		/* doze not enabled */
+	return 0; /* doze not enabled */
 }
 
 void gesture_clear_wakeup_data(void)
@@ -222,26 +218,27 @@ void gesture_clear_wakeup_data(void)
 	mutex_unlock(&gesture_data_mutex);
 }
 
-#define GOODIX_MAGIC_NUMBER        'G'
-#define NEGLECT_SIZE_MASK           (~(_IOC_SIZEMASK << _IOC_SIZESHIFT))
+#define GOODIX_MAGIC_NUMBER 'G'
+#define NEGLECT_SIZE_MASK (~(_IOC_SIZEMASK << _IOC_SIZESHIFT))
 
-#define GESTURE_ENABLE_TOTALLY      _IO(GOODIX_MAGIC_NUMBER, 1)
-#define GESTURE_DISABLE_TOTALLY     _IO(GOODIX_MAGIC_NUMBER, 2)
-#define GESTURE_ENABLE_PARTLY       _IO(GOODIX_MAGIC_NUMBER, 3)
-#define GESTURE_DISABLE_PARTLY      _IO(GOODIX_MAGIC_NUMBER, 4)
-#define GESTURE_DATA_OBTAIN         (_IOR(GOODIX_MAGIC_NUMBER, 6, u8) & NEGLECT_SIZE_MASK)
-#define GESTURE_DATA_ERASE          _IO(GOODIX_MAGIC_NUMBER, 7)
+#define GESTURE_ENABLE_TOTALLY _IO(GOODIX_MAGIC_NUMBER, 1)
+#define GESTURE_DISABLE_TOTALLY _IO(GOODIX_MAGIC_NUMBER, 2)
+#define GESTURE_ENABLE_PARTLY _IO(GOODIX_MAGIC_NUMBER, 3)
+#define GESTURE_DISABLE_PARTLY _IO(GOODIX_MAGIC_NUMBER, 4)
+#define GESTURE_DATA_OBTAIN                                                    \
+	(_IOR(GOODIX_MAGIC_NUMBER, 6, u8) & NEGLECT_SIZE_MASK)
+#define GESTURE_DATA_ERASE _IO(GOODIX_MAGIC_NUMBER, 7)
 
-#define IO_IIC_READ                  (_IOR(GOODIX_MAGIC_NUMBER, 100, u8) & NEGLECT_SIZE_MASK)
-#define IO_IIC_WRITE                 (_IOW(GOODIX_MAGIC_NUMBER, 101, u8) & NEGLECT_SIZE_MASK)
-#define IO_RESET_GUITAR              _IO(GOODIX_MAGIC_NUMBER, 102)
-#define IO_DISABLE_IRQ               _IO(GOODIX_MAGIC_NUMBER, 103)
-#define IO_ENABLE_IRQ                _IO(GOODIX_MAGIC_NUMBER, 104)
-#define IO_GET_VERSION               (_IOR(GOODIX_MAGIC_NUMBER, 110, u8) & NEGLECT_SIZE_MASK)
-#define IO_PRINT                     (_IOW(GOODIX_MAGIC_NUMBER, 111, u8) & NEGLECT_SIZE_MASK)
-#define IO_VERSION                   "V1.0-20141015"
+#define IO_IIC_READ (_IOR(GOODIX_MAGIC_NUMBER, 100, u8) & NEGLECT_SIZE_MASK)
+#define IO_IIC_WRITE (_IOW(GOODIX_MAGIC_NUMBER, 101, u8) & NEGLECT_SIZE_MASK)
+#define IO_RESET_GUITAR _IO(GOODIX_MAGIC_NUMBER, 102)
+#define IO_DISABLE_IRQ _IO(GOODIX_MAGIC_NUMBER, 103)
+#define IO_ENABLE_IRQ _IO(GOODIX_MAGIC_NUMBER, 104)
+#define IO_GET_VERSION (_IOR(GOODIX_MAGIC_NUMBER, 110, u8) & NEGLECT_SIZE_MASK)
+#define IO_PRINT (_IOW(GOODIX_MAGIC_NUMBER, 111, u8) & NEGLECT_SIZE_MASK)
+#define IO_VERSION "V1.0-20141015"
 
-#define CMD_HEAD_LENGTH             20
+#define CMD_HEAD_LENGTH 20
 
 static s32 io_iic_read(u8 *data, void __user *arg)
 {
@@ -260,13 +257,12 @@ static s32 io_iic_read(u8 *data, void __user *arg)
 
 	err = ges_i2c_read_bytes(addr, &data[CMD_HEAD_LENGTH], data_length);
 	if (!err) {
-		err =
-		    copy_to_user(&((u8 __user *) arg)[CMD_HEAD_LENGTH],
-				 &data[CMD_HEAD_LENGTH], data_length);
+		err = copy_to_user(&((u8 __user *)arg)[CMD_HEAD_LENGTH],
+				   &data[CMD_HEAD_LENGTH], data_length);
 		if (err) {
-			GTP_ERROR
-			    ("ERROR when copy to user.[addr: %04x], [read length:%d]",
-			     addr, data_length);
+			GTP_ERROR(
+				"ERROR when copy to user.[addr: %04x], [read length:%d]",
+				addr, data_length);
 			return err;
 		}
 		err = CMD_HEAD_LENGTH + data_length;
@@ -311,9 +307,8 @@ static long gtp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		memset(data, 0, data_length);
 
 		if (_IOC_DIR(cmd) & _IOC_WRITE) {
-			err =
-			    copy_from_user(data, (void __user *)arg,
-					   data_length);
+			err = copy_from_user(data, (void __user *)arg,
+					     data_length);
 			if (err) {
 				GTP_DEBUG("Can't access the memory.");
 				kfree(data);
@@ -321,15 +316,14 @@ static long gtp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			}
 		}
 	} else {
-		value = (u32) arg;
+		value = (u32)arg;
 	}
 
 	switch (cmd & NEGLECT_SIZE_MASK) {
 	case IO_GET_VERSION:
-		if ((u8 __user *) arg) {
-			ret =
-			    copy_to_user(((u8 __user *) arg), IO_VERSION,
-					 sizeof(IO_VERSION));
+		if ((u8 __user *)arg) {
+			ret = copy_to_user(((u8 __user *)arg), IO_VERSION,
+					   sizeof(IO_VERSION));
 			if (!ret)
 				ret = sizeof(IO_VERSION);
 
@@ -348,19 +342,19 @@ static long gtp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		gtp_reset_guitar(i2c_client_point, 10);
 		break;
 
-	case IO_DISABLE_IRQ:{
-			gtp_irq_disable();
+	case IO_DISABLE_IRQ: {
+		gtp_irq_disable();
 #ifdef CONFIG_GTP_ESD_PROTECT
-			gtp_esd_switch(i2c_client_point, SWITCH_OFF);
+		gtp_esd_switch(i2c_client_point, SWITCH_OFF);
 #endif
 #ifdef CONFIG_GTP_CHARGER_DETECT
-			gtp_charger_switch(1);
+		gtp_charger_switch(1);
 #endif
-			break;
-		}
-	case IO_ENABLE_IRQ:{
-			gtp_irq_enable();
-		}
+		break;
+	}
+	case IO_ENABLE_IRQ: {
+		gtp_irq_enable();
+	}
 #ifdef CONFIG_GTP_ESD_PROTECT
 		gtp_esd_switch(i2c_client_point, SWITCH_ON);
 #endif
@@ -385,18 +379,18 @@ static long gtp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 
 	case GESTURE_ENABLE_PARTLY:
-		SETBIT(gestures_flag, (u8) value);
+		SETBIT(gestures_flag, (u8)value);
 		gesture_data.enabled = 1;
-		GTP_DEBUG
-		    ("ENABLE_GESTURE_PARTLY, gesture = 0x%02X, gesture_data.enabled = %d",
-		     value, gesture_data.enabled);
+		GTP_DEBUG(
+			"ENABLE_GESTURE_PARTLY, gesture = 0x%02X, gesture_data.enabled = %d",
+			value, gesture_data.enabled);
 		break;
 
 	case GESTURE_DISABLE_PARTLY:
-		CLEARBIT(gestures_flag, (u8) value);
-		GTP_DEBUG
-		    ("DISABLE_GESTURE_PARTLY, gesture = 0x%02X, gesture_data.enabled = %d",
-		     value, gesture_data.enabled);
+		CLEARBIT(gestures_flag, (u8)value);
+		GTP_DEBUG(
+			"DISABLE_GESTURE_PARTLY, gesture = 0x%02X, gesture_data.enabled = %d",
+			value, gesture_data.enabled);
 		break;
 
 	case GESTURE_DATA_OBTAIN:
@@ -409,15 +403,15 @@ static long gtp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		if (gesture_data.data[3] > 80)
 			gesture_data.data[3] = 80;
 
-		ret =
-		    copy_to_user(((u8 __user *) arg), &gesture_data.data,
-				 4 + gesture_data.data[1] * 4 +
-				 gesture_data.data[3]);
+		ret = copy_to_user(((u8 __user *)arg), &gesture_data.data,
+				   4 + gesture_data.data[1] * 4 +
+					   gesture_data.data[3]);
 		mutex_unlock(&gesture_data_mutex);
 		if (ret)
 			GTP_ERROR("ERROR when copy gesture data to user.");
 		else
-			ret = 4 + gesture_data.data[1] * 4 + gesture_data.data[3];
+			ret = 4 + gesture_data.data[1] * 4 +
+			      gesture_data.data[3];
 
 		break;
 

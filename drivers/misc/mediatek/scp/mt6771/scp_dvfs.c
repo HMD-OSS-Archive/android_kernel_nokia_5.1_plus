@@ -28,7 +28,7 @@
 #include <linux/fs.h>
 #include <linux/seq_file.h>
 #include <linux/input.h>
-#include <linux/wakelock.h>
+#include <linux/pm_wakeup.h>
 #include <linux/io.h>
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_secure_api.h>
@@ -36,6 +36,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #endif
+#include <linux/pm_qos.h>
 
 #include <linux/uaccess.h>
 #include "scp_ipi.h"
@@ -51,9 +52,8 @@
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include "mtk_pmic_info.h"
-#endif
-
 #include "mtk_spm_vcore_dvfs.h"
+#endif
 
 #ifdef pr_fmt
 #undef pr_fmt
@@ -64,6 +64,8 @@
 #define DRV_WriteReg32(addr, val) writel(val, addr)
 #define DRV_SetReg32(addr, val)	DRV_WriteReg32(addr, DRV_Reg32(addr) | (val))
 #define DRV_ClrReg32(addr, val)	DRV_WriteReg32(addr, DRV_Reg32(addr) & ~(val))
+
+void __attribute__((weak)) dvfsrc_set_scp_vcore_request(unsigned int level);
 
 /***************************
  * Operate Point Definition
@@ -102,7 +104,7 @@ static int mt_scp_dvfs_debug = -1;
 static int scp_cur_volt = -1;
 static int pre_pll_sel = -1;
 static struct mt_scp_pll_t *mt_scp_pll;
-static struct wake_lock scp_suspend_lock;
+static struct wakeup_source scp_suspend_lock;
 static int g_scp_dvfs_init_flag = -1;
 
 static unsigned int pre_feature_req = 0xff;
@@ -136,8 +138,9 @@ int scp_set_pmic_vcore(unsigned int cur_freq)
 		ret_vs = pmic_scp_set_vsram_vcore(900000);
 		scp_cur_volt = 0;
 	} else {
-	    ret = -2;
-	    pr_err("ERROR: %s: cur_freq=%d is not supported\n", __func__, cur_freq);
+		ret = -2;
+		pr_err("ERROR: %s: cur_freq=%d is not supported\n",
+		__func__, cur_freq);
 		WARN_ON(1);
 	}
 
@@ -231,7 +234,7 @@ int scp_request_freq(void)
 	/* because we are waiting for scp to update register:scp_current_freq
 	 * use wake lock to prevent AP from entering suspend state
 	 */
-	wake_lock(&scp_suspend_lock);
+	__pm_stay_awake(&scp_suspend_lock);
 
 	if (scp_current_freq != scp_expected_freq) {
 
@@ -258,9 +261,10 @@ int scp_request_freq(void)
 			mdelay(2);
 			timeout -= 1; /*try 50 times, total about 100ms*/
 			if (timeout <= 0) {
-				pr_err("%s: set freq fail, current(%d) != expect(%d)\n", __func__,
-					scp_current_freq, scp_expected_freq);
-				wake_unlock(&scp_suspend_lock);
+				pr_err(
+				"%s: set freq fail, current(%d)!= expect(%d)\n",
+				__func__, scp_current_freq, scp_expected_freq);
+				__pm_relax(&scp_suspend_lock);
 				WARN_ON(1);
 				return -1;
 			}
@@ -282,7 +286,7 @@ int scp_request_freq(void)
 			scp_vcore_request(scp_expected_freq);
 	}
 
-	wake_unlock(&scp_suspend_lock);
+	__pm_relax(&scp_suspend_lock);
 	pr_debug("[SCP] set freq OK, %d == %d\n",
 			scp_expected_freq, scp_current_freq);
 	return 0;
@@ -296,7 +300,8 @@ void wait_scp_dvfs_init_done(void)
 		mdelay(1);
 		count++;
 		if (count > 3000) {
-			pr_err("ERROR: %s: SCP dvfs driver init fail\n", __func__);
+			pr_err("ERROR: %s: SCP dvfs driver init fail\n",
+			__func__);
 			WARN_ON(1);
 		}
 	}
@@ -311,7 +316,8 @@ void scp_pll_mux_set(unsigned int pll_ctrl_flag)
 	if (pll_ctrl_flag == PLL_ENABLE) {
 		ret = clk_prepare_enable(mt_scp_pll->clk_mux);
 		if (ret) {
-			pr_err("EEROR: %s: scp dvfs cannot enable clk mux, %d\n", __func__, ret);
+			pr_err("EEROR: %s: scp dvfs cannot enable clk mux, %d\n",
+			__func__, ret);
 			WARN_ON(1);
 		}
 	} else
@@ -358,7 +364,8 @@ int scp_pll_ctrl_set(unsigned int pll_ctrl_flag, unsigned int pll_sel)
 					mt_scp_pll->clk_pll6);
 			break;
 		default:
-			pr_err("ERROR: %s: not support opp freq %d\n", __func__, pll_sel);
+			pr_err("ERROR: %s: not support opp freq %d\n",
+			__func__, pll_sel);
 			WARN_ON(1);
 			break;
 		}
@@ -862,7 +869,8 @@ static int mt_scp_dvfs_pdrv_probe(struct platform_device *pdev)
 	if (gpio_mode == 1)
 		pr_debug("v_req muxpin setting is correct\n");
 	else {
-		pr_err("error: V_REQ muxpin setting is wrong - %d\n", gpio_mode);
+		pr_err("error: V_REQ muxpin setting is wrong - %d\n"
+		, gpio_mode);
 	    WARN_ON(1);
 	}
 
@@ -909,36 +917,58 @@ void mt_pmic_sshub_init(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	unsigned int val[8];
 
-	val[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN);
-	val[1] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
-	val[2] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN);
-	val[3] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL_SLEEP);
-	val[4] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN);
-	val[5] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
-	val[6] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN);
-	val[7] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP);
-	pr_debug("Before: vcore=(0x%x,0x%x,0x%x,0x%x), vsram=(0x%x,0x%x,0x%x,0x%x)\n",
-			val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);
+	val[0] = pmic_get_register_value(
+		PMIC_RG_BUCK_VCORE_SSHUB_EN);
+	val[1] = pmic_get_register_value(
+		PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
+	val[2] = pmic_get_register_value(
+		PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN);
+	val[3] = pmic_get_register_value(
+		PMIC_RG_BUCK_VCORE_SSHUB_VOSEL_SLEEP);
+	val[4] = pmic_get_register_value(
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN);
+	val[5] = pmic_get_register_value(
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
+	val[6] = pmic_get_register_value(
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN);
+	val[7] = pmic_get_register_value(
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP);
+	pr_debug(
+	"Before: vcore=(0x%x,0x%x,0x%x,0x%x), vsram=(0x%x,0x%x,0x%x,0x%x)\n",
+	val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);
 
 	pmic_scp_set_vcore(600000);
 	pmic_scp_set_vcore_sleep(600000);
-	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN, 1);
-	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN, 0);
+	pmic_set_register_value(
+		PMIC_RG_BUCK_VCORE_SSHUB_EN, 1);
+	pmic_set_register_value(
+		PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN, 0);
 	pmic_scp_set_vsram_vcore(850000);
 	pmic_scp_set_vsram_vcore_sleep(850000);
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN, 1);
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN, 0);
+	pmic_set_register_value(
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN, 1);
+	pmic_set_register_value(
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN, 0);
 
-	val[0] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN);
-	val[1] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
-	val[2] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN);
-	val[3] = pmic_get_register_value(PMIC_RG_BUCK_VCORE_SSHUB_VOSEL_SLEEP);
-	val[4] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN);
-	val[5] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
-	val[6] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN);
-	val[7] = pmic_get_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP);
-	pr_debug("After: vcore=(0x%x,0x%x,0x%x,0x%x), vsram=(0x%x,0x%x,0x%x,0x%x)\n",
-			val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);
+	val[0] = pmic_get_register_value(
+		PMIC_RG_BUCK_VCORE_SSHUB_EN);
+	val[1] = pmic_get_register_value(
+		PMIC_RG_BUCK_VCORE_SSHUB_VOSEL);
+	val[2] = pmic_get_register_value(
+		PMIC_RG_BUCK_VCORE_SSHUB_SLEEP_VOSEL_EN);
+	val[3] = pmic_get_register_value(
+		PMIC_RG_BUCK_VCORE_SSHUB_VOSEL_SLEEP);
+	val[4] = pmic_get_register_value(
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN);
+	val[5] = pmic_get_register_value(
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL);
+	val[6] = pmic_get_register_value(
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_SLEEP_VOSEL_EN);
+	val[7] = pmic_get_register_value(
+		PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_VOSEL_SLEEP);
+	pr_debug(
+	"After: vcore=(0x%x,0x%x,0x%x,0x%x), vsram=(0x%x,0x%x,0x%x,0x%x)\n",
+	val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]);
 
 	/*  Workaround once force BUCK in NML mode */
 	pmic_set_register_value(PMIC_RG_SRCVOLTEN_LP_EN, 1);
@@ -983,7 +1013,7 @@ int __init scp_dvfs_init(void)
 		return -1;
 	}
 
-	wake_lock_init(&scp_suspend_lock, WAKE_LOCK_SUSPEND, "scp wakelock");
+	wakeup_source_init(&scp_suspend_lock, "scp wakelock");
 
 	mt_scp_dvfs_ipi_init();
 	mt_pmic_sshub_init();

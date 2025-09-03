@@ -24,14 +24,14 @@
 #include <linux/sched_clock.h>
 #include <linux/vmalloc.h>
 #include <linux/dma-mapping.h>
-#include "mach/mtk_freqhopping.h"
-#include "mach/mtk_fhreg.h"
+#include "mtk_freqhopping.h"
+#include "mtk_fhreg.h"
 #include "sync_write.h"
 #include "mtk_freqhopping_drv.h"
 #ifdef HP_EN_REG_SEMAPHORE_PROTECT
 #include "mtk_cpufreq_hybrid.h"
 #endif
-#include "sspm_ipi.h"
+#include "v1/sspm_ipi.h"
 #include <linux/seq_file.h>
 #include <linux/of_address.h>
 
@@ -62,14 +62,16 @@ static void __iomem *g_apmixed_base;
 /*********************************/
 /* FHCTL PLL Setting ID */
 /*********************************/
-#define PLL_SETTING_IDX__USER	(0x9)	/* Magic number, no any special indication */
-#define PLL_SETTING_IDX__DEF    (0x1)	/* Default Setting, Magic number, indicate table position 1. */
-
+/* Magic number, no any special indication */
+#define PLL_SETTING_IDX__USER	(0x9)
+/* Default Setting, Magic number, indicate table position 1. */
+#define PLL_SETTING_IDX__DEF    (0x1)
 
 /*********************************/
 /* Track the status of all FHCTL PLL */
 /*********************************/
 static struct fh_pll_t g_fh_pll[FH_PLL_NUM] = { };	/* fake_pll_status. */
+
 unsigned int g_is_suspend;
 
 /*********************************/
@@ -78,15 +80,18 @@ unsigned int g_is_suspend;
 static const char *g_pll_name[FH_PLL_NUM] = {
 	"ARMPLL1",
 	"ARMPLL2",
-	"NOTSUPPORT", /* ARMPLL3 cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	/* ARMPLL3 cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	"NOTSUPPORT",
 	"CCIPLL",
 	"GPUPLL",
 	"MPLL",
-	"NOTSUPPORT", /* MEMPLL cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	/* MEMPLL cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	"NOTSUPPORT",
 	"MAINPLL",
 	"MSDCPLL",
 	"MMPLL",
-	"NOTSUPPORT", /* VDECPLL cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	/* VDECPLL cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	"NOTSUPPORT",
 	"TVDPLL"
 };
 
@@ -117,87 +122,84 @@ static const int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
 };
 
 static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
-	/* FH PLL0 ARMPLL1*/
+	/* FH PLL0 ARMPLL1 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	/* FH PLL1 ARMPLL2*/
+	/* FH PLL1 ARMPLL2 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	/* FH PLL2 ARMPLL3*/
+	/* FH PLL2 ARMPLL3 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	/* FH PLL3 CCIPLL*/
+	/* FH PLL3 CCIPLL */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	/* FH PLL4 GPUPLL*/
+	/* FH PLL4 GPUPLL */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	/* FH PLL5 MPLL*/
+	/* FH PLL5 MPLL */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 1, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 1, UNINIT_DDS},
 	 },
 
-	/* FH PLL6 MEMPLL*/
+	/* FH PLL6 MEMPLL */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	/* FH PLL7 MAINPLL*/
+	/* FH PLL7 MAINPLL */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	/* FH PLL8 MSDCLL*/
+	/* FH PLL8 MSDCLL */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	 /* FH PLL9 MMPLL*/
+	/* FH PLL9 MMPLL */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	 /* FH PLL10 VDECPLL*/
+	/* FH PLL10 VDECPLL */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	 /* FH PLL11 TVDPLL*/
+	/* FH PLL11 TVDPLL */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
-	 }
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
+	}
 };
 
 
 /***********************************/
 /*FHCTL HP CON Register */
 /***********************************/
-/* [MT6763] not used */
-/*static const int pllid_to_hp_con[] = { 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 6, 7, 8 };*/
 
-/*fake userdefine setting*/	/* freq, dt, df, upbnd, lowbnd, dds */
 static struct freqhopping_ssc mt_ssc_fhpll_userdefined[FH_PLL_NUM];
 
 /*************************************/
@@ -213,14 +215,20 @@ static unsigned long g_reg_dvfs[FH_PLL_NUM];
 static unsigned long g_reg_pll_con0[FH_PLL_NUM];
 static unsigned long g_reg_pll_con1[FH_PLL_NUM];
 
+/*********************************/
+/* MISC Macro                    */
+/*********************************/
+#define FH_BUG_ON(x) /* remove from kernel-4.9 */
+
 
 /*****************************************************************************/
 /* Function */
 /*****************************************************************************/
 
-static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_data)
+static int fhctl_to_sspm_command(unsigned int cmd,
+struct fhctl_ipi_data *ipi_data)
 {
-	#define FHCTL_D_LEN    (9)
+#define FHCTL_D_LEN    (9)
 
 	int ret = 0;
 	unsigned int ack_data = 0;
@@ -230,132 +238,96 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 	switch (cmd) {
 	case FH_DCTL_CMD_DVFS:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_DVFS) ret:%d - %d\n", ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_DVFS) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_DVFS_SSC_ENABLE:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_DVFS_SSC_ENABLE) ret:%d - %d\n",
-												ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_DVFS_SSC_ENABLE) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL,
+					     IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_DVFS_SSC_DISABLE:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_DVFS_SSC_DISABLE) ret:%d - %d\n",
-												ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_DVFS_SSC_DISABLE) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_SSC_ENABLE:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_SSC_ENABLE) ret:%d - %d\n",
-												ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_SSC_ENABLE) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_SSC_DISABLE:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_SSC_DISABLE) ret:%d - %d\n",
-												ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_SSC_DISABLE) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_GENERAL_DFS:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_GENERAL_DFS) ret:%d - %d\n",
-												 ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_GENERAL_DFS) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_ARM_DFS:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_ARM_DFS) ret:%d - %d\n",
-												 ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_ARM_DFS) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_MM_DFS:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_MM_DFS) ret:%d - %d\n",
-												ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_MM_DFS) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_FH_CONFIG:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_FH_CONFIG) ret:%d - %d\n",
-												ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_FH_CONFIG) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_SSC_TBL_CONFIG:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_SSC_TBL_CONFIG) ret:%d - %d\n",
-												ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_SSC_TBL_CONFIG) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_SET_PLL_STRUCT:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_SET_PLL_STRUCT) ret:%d - %d\n",
-												ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_SET_PLL_STRUCT) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_GET_PLL_STRUCT:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_GET_PLL_STRUCT) ret:%d - %d\n",
-												ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_GET_PLL_STRUCT) return error(%d)\n", ack_data);
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL,
+					     IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	case FH_DCTL_CMD_PLL_PAUSE:
 		ipi_data->cmd = cmd;
-		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL, IPI_OPT_POLLING, ipi_data, FHCTL_D_LEN, &ack_data, 1);
-		if (ret != 0)
-			FH_MSG("[Error]sspm_ipi_send_sync_new error(FH_DCTL_CMD_PLL_PAUSE) ret:%d - %d\n",
-												ret, ack_data);
-		else if (ack_data < 0)
-			FH_MSG("[Error]cmd(FH_DCTL_CMD_PLL_PAUSE return error(%d)\n", ack_data);
-
+		ret = sspm_ipi_send_sync_new(IPI_ID_FHCTL,
+					     IPI_OPT_POLLING,
+					     ipi_data, FHCTL_D_LEN,
+					     &ack_data, 1);
 		break;
 
 	default:
@@ -363,7 +335,20 @@ static int fhctl_to_sspm_command(unsigned int cmd, struct fhctl_ipi_data *ipi_da
 		break;
 	}
 
-	FH_MSG_DEBUG("send ipi command %x, response: ack_data: %d", cmd, ack_data);
+	/* Check sspm_ipi_send_sync_new result */
+	if (ret != 0) {
+		FH_MSG("[Error]sspm_ipi_send_sync_new");
+		FH_MSG("error(cmd:%x) ret:%d - %d\n",
+			cmd, ret, ack_data);
+	} else if (ack_data < 0) {
+		FH_MSG("[Error]cmd(%x)", cmd);
+		FH_MSG("return error(%d)\n", ack_data);
+	}
+
+
+
+	FH_MSG_DEBUG("send ipi command %x, response: ack_data: %d",
+		cmd, ack_data);
 	return ack_data;
 }
 
@@ -388,15 +373,16 @@ static int mt_fh_pll_struct_get(int pll_id, int field)
 }
 
 /* Just to use special index pattern to find right setting. */
-static noinline int __freq_to_index(enum FH_PLL_ID pll_id, int setting_idx_pattern)
+static noinline int __freq_to_index(enum FH_PLL_ID pll_id,
+int setting_idx_pattern)
 {
 	unsigned int retVal = 0;
 	unsigned int i = PLL_SETTING_IDX__DEF;	/* start from 1 */
-	const unsigned int size =
-	    ARRAY_SIZE(g_pll_ssc_setting_tbl[pll_id]);
+	const unsigned int size = ARRAY_SIZE(g_pll_ssc_setting_tbl[pll_id]);
 
 	while (i < size) {
-		if (setting_idx_pattern == g_pll_ssc_setting_tbl[pll_id][i].idx_pattern) {
+		if (setting_idx_pattern ==
+			g_pll_ssc_setting_tbl[pll_id][i].idx_pattern) {
 			retVal = i;
 			break;
 		}
@@ -417,7 +403,8 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl *fh_ctl, bool enable)
 	struct fhctl_ipi_data ipi_data;
 	struct fh_pll_t fh_pll;
 
-	if ((fh_ctl->pll_id == 2) || (fh_ctl->pll_id == 6) || (fh_ctl->pll_id == 10)) {
+	if ((fh_ctl->pll_id == 2) ||
+		(fh_ctl->pll_id == 6) || (fh_ctl->pll_id == 10)) {
 		/* FHCTL not support  */
 		return retVal;
 	}
@@ -428,29 +415,35 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl *fh_ctl, bool enable)
 	VALIDATE_PLLID(fh_ctl->pll_id);
 
 	if (enable == true) {
-		fh_pll.user_defined = mt_fh_pll_struct_get(fh_ctl->pll_id, USER_DEFINED);
+		fh_pll.user_defined =
+			mt_fh_pll_struct_get(fh_ctl->pll_id, USER_DEFINED);
 		if (fh_pll.user_defined == true) {
 			FH_MSG("Apply user defined setting");
 
-			pSSC_setting = &mt_ssc_fhpll_userdefined[fh_ctl->pll_id];
+			pSSC_setting =
+				&mt_ssc_fhpll_userdefined[fh_ctl->pll_id];
 			ssc_setting_id = PLL_SETTING_IDX__USER;
 		} else {
 
-			fh_pll.setting_idx_pattern = mt_fh_pll_struct_get(fh_ctl->pll_id, SETTING_IDX_PATTERN);
+			fh_pll.setting_idx_pattern =
+			    mt_fh_pll_struct_get(fh_ctl->pll_id,
+			    SETTING_IDX_PATTERN);
 
 			if (fh_pll.setting_idx_pattern != 0) {
-				ssc_setting_id = __freq_to_index(fh_ctl->pll_id,
-								fh_pll.setting_idx_pattern);
+				ssc_setting_id =
+				    __freq_to_index(fh_ctl->pll_id,
+				    fh_pll.setting_idx_pattern);
 			} else {
 				ssc_setting_id = 0;
 			}
 			if (ssc_setting_id == 0) {
-				FH_MSG("!!! No corresponding setting found !!!");
+				FH_MSG(
+				"!!! No corresponding setting found !!!");
 				/* just disable FH & exit */
 				goto Exit;
 			}
-			pSSC_setting =
-					&g_pll_ssc_setting_tbl[fh_ctl->pll_id][ssc_setting_id];
+			pSSC_setting = &g_pll_ssc_setting_tbl[fh_ctl->pll_id]
+			    [ssc_setting_id];
 		}
 		if (pSSC_setting == NULL) {
 			FH_MSG("SSC_setting is NULL!");
@@ -458,11 +451,14 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl *fh_ctl, bool enable)
 			/* disable FH & exit */
 			goto Exit;
 		}
-		mt_fh_pll_struct_set(fh_ctl->pll_id, SETTING_ID, ssc_setting_id);
+		mt_fh_pll_struct_set(fh_ctl->pll_id,
+			SETTING_ID, ssc_setting_id);
 
 		memset(&ipi_data, 0, sizeof(struct fhctl_ipi_data));
-		memcpy(&ipi_data.u.fh_ctl, fh_ctl, sizeof(struct freqhopping_ioctl));
-		memcpy(&ipi_data.u.fh_ctl.ssc_setting, pSSC_setting, sizeof(struct freqhopping_ssc));
+		memcpy(&ipi_data.u.fh_ctl, fh_ctl,
+			sizeof(struct freqhopping_ioctl));
+		memcpy(&ipi_data.u.fh_ctl.ssc_setting,
+		       pSSC_setting, sizeof(struct freqhopping_ssc));
 		fhctl_to_sspm_command(FH_DCTL_CMD_SSC_TBL_CONFIG, &ipi_data);
 	}
 
@@ -484,7 +480,7 @@ static void mt_fh_hal_default_conf(void)
 
 	/* According to setting to enable PLL SSC during init FHCTL. */
 	for (id = 0; id < FH_PLL_NUM; id++) {
-		/*TODO implement SSPM control*/
+		/*TODO implement SSPM control */
 		if (g_pll_ssc_init_tbl[id] == FH_SSC_DEF_ENABLE_SSC) {
 			FH_MSG("[Default ENABLE SSC] PLL_ID:%d", id);
 			mt_fh_pll_struct_set(id, FH_STATUS, FH_FH_ENABLE_SSC);
@@ -497,11 +493,12 @@ static void mt_fh_hal_default_conf(void)
 }
 
 /* General purpose PLL hopping and SSC enable API. */
-static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_dds)
+static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id,
+unsigned int target_dds)
 {
 	struct fhctl_ipi_data ipi_data;
 
-    /* mt6771 only */
+	/* mt6771 only */
 	if ((pll_id == 2) || (pll_id == 6) || (pll_id == 10)) {
 		/* FHCTL not support  */
 		return 0;
@@ -515,17 +512,12 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 	}
 
 	if (target_dds > MAX_DDS) {
-		FH_MSG("[ERROR] Overflow! [%s] [pll_id]:%d [dds]:0x%x", __func__, pll_id,
-		       target_dds);
+		FH_MSG("[ERROR] Overflow! [%s] [pll_id]:%d [dds]:0x%x",
+			__func__, pll_id, target_dds);
 		/* Check dds overflow (22 bit) */
 		WARN_ON(1);
 	}
 
-#if 0
-    /* log too much. */
-	FH_MSG("%s, [Pll_ID]:%d [current dds(CON1)]:0x%x, [target dds]:0x%x",
-	    __func__, pll_id, (fh_read32(g_reg_pll_con1[pll_id]) & MASK22b), target_dds);
-#endif
 
 	memset(&ipi_data, 0, sizeof(struct fhctl_ipi_data));
 	ipi_data.u.args[0] = pll_id;
@@ -537,8 +529,8 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 }
 
 /*
-*   armpll dfs mdoe
-*/
+ *   armpll dfs mdoe
+ */
 static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 {
 	struct fhctl_ipi_data ipi_data;
@@ -550,54 +542,8 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	return 0;
 }
 
-static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
-{
-	return mt_fh_hal_general_pll_dfs(FH_MM_PLLID, target_dds);
-}
 
-static int mt_fh_hal_dfs_vencpll(unsigned int target_freq)
-{
-	FH_BUG_ON(1);
-	return 0;
-}
-
-static int mt_fh_hal_l2h_dvfs_mempll(void)
-{
-	FH_BUG_ON(1);
-	return 0;
-}
-
-static int mt_fh_hal_h2l_dvfs_mempll(void)
-{
-	FH_BUG_ON(1);
-	return 0;
-}
-
-static int mt_fh_hal_dram_overclock(int clk)
-{
-	FH_BUG_ON(1);
-	return 0;
-}
-
-static int mt_fh_hal_get_dramc(void)
-{
-	FH_BUG_ON(1);
-	return 0;
-}
-
-static void mt_fh_hal_popod_save(void)
-{
-	FH_MSG_DEBUG("EN: %s", __func__);
-}
-
-
-static void mt_fh_hal_popod_restore(void)
-{
-
-	FH_MSG_DEBUG("EN: %s", __func__);
-
-}
-
+#if 0
 static int fh_dvfs_proc_read(struct seq_file *m, void *v)
 {
 	int i = 0;
@@ -608,16 +554,50 @@ static int fh_dvfs_proc_read(struct seq_file *m, void *v)
 	seq_puts(m, "CFG: 0x3 is SSC mode;  0x5 is DVFS mode \r\n");
 	for (i = 0; i < FH_PLL_NUM; ++i) {
 		seq_printf(m, "FHCTL%d:   CFG:0x%08x    DVFS:0x%08x\r\n",
-			   i, fh_read32(g_reg_cfg[i]), fh_read32(g_reg_dvfs[i]));
+			   i, fh_read32(g_reg_cfg[i]),
+			   fh_read32(g_reg_dvfs[i]));
 	}
 	return 0;
 }
 
-static int fh_dvfs_proc_write(struct file *file, const char *buffer, unsigned long count,
-			      void *data)
+
+static int fh_dvfs_proc_write(struct file *file,
+			      const char *buffer,
+			      unsigned long count, void *data)
 {
+	unsigned int p1, p2, p3, p4, p5;
+
+	p1 = p2 = p3 = p4 = p5 = 0;
+
+	FH_MSG("EN: %s", __func__);
+
+	if (count == 0)
+		return -1;
+
+	FH_MSG("EN: p1=%d p2=%d p3=%d", p1, p2, p3);
+
+	switch (p1) {
+	case FH_PLL0:
+	case FH_PLL1:
+	case FH_PLL2:
+		mt_fh_hal_dfs_armpll(p2, p3);
+		FH_MSG("ARMPLL%d DVFS completed\n", p1 + 1);
+		break;
+	case FH_GPU_PLLID:
+	case FH_MEM_PLLID:
+		mt_fh_hal_general_pll_dfs(p1, p3);
+		FH_MSG("FH_PLL%d DVFS completed\n", p1);
+		break;
+	case FH_VENC_PLLID:
+		mt_fh_hal_dfs_vencpll(p3);
+		FH_MSG("VENCPLL DVFS completed\n");
+		break;
+	}
+
 	return count;
 }
+#endif
+
 
 /* #define UINT_MAX (unsigned int)(-1) */
 static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
@@ -627,17 +607,23 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 	static unsigned int dds_min[FH_PLL_NUM] = { 0 };
 
 	if (g_initialize != 1) {
-		FH_MSG("[ERROR] %s fhctl didn't init. Please check!!!", __func__);
+		FH_MSG(
+		"[ERROR] %s fhctl didn't init. Please check!!!", __func__);
 		return -1;
 	}
 
 	FH_MSG("EN: %s .", __func__);
 
 	for (i = 0; i < FH_PLL_NUM; ++i) {
-		FH_MSG_DEBUG("REG ADDR (%d) : 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx",
-			i, g_reg_mon[i], g_reg_cfg[i], g_reg_updnlmt[i],
-			g_reg_dvfs[i], g_reg_dds[i], g_reg_pll_con0[i], g_reg_pll_con1[i]);
+		FH_MSG_DEBUG(
+		"REG ADDR (%d) : 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx",
+		i, g_reg_mon[i],
+		g_reg_cfg[i], g_reg_updnlmt[i],
+		g_reg_dvfs[i], g_reg_dds[i],
+		g_reg_pll_con0[i],
+		g_reg_pll_con1[i]);
 	}
+
 
 	for (i = 0; i < FH_PLL_NUM; ++i) {
 		unsigned int mon;
@@ -650,8 +636,10 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 
 		seq_printf(m, "FHCTL%d CFG, UPDNLMT, DVFS, DDS, MON\r\n", i);
 		seq_printf(m, "0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\r\n",
-			   fh_read32(g_reg_cfg[i]), fh_read32(g_reg_updnlmt[i]),
-			   fh_read32(g_reg_dvfs[i]), fh_read32(g_reg_dds[i]), mon);
+			   fh_read32(g_reg_cfg[i]),
+			   fh_read32(g_reg_updnlmt[i]),
+			   fh_read32(g_reg_dvfs[i]),
+			   fh_read32(g_reg_dds[i]), mon);
 
 		if (dds > dds_max[i])
 			dds_max[i] = dds;
@@ -660,8 +648,10 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 	}
 
 	FH_MSG_DEBUG("Dumping flags");
-	seq_printf(m, "\r\nFHCTL_HP_EN:\r\n0x%08x\r\n", fh_read32(REG_FHCTL_HP_EN));
-	seq_printf(m, "\r\nFHCTL_CLK_CON:\r\n0x%08x\r\n", fh_read32(REG_FHCTL_CLK_CON));
+	seq_printf(m, "\r\nFHCTL_HP_EN:\r\n0x%08x\r\n",
+		fh_read32(REG_FHCTL_HP_EN));
+	seq_printf(m, "\r\nFHCTL_CLK_CON:\r\n0x%08x\r\n",
+		fh_read32(REG_FHCTL_CLK_CON));
 
 	FH_MSG_DEBUG("Dumping CON0");
 	seq_puts(m, "\r\nPLL_CON0 :\r\n");
@@ -670,7 +660,8 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 		if (g_reg_pll_con0[i] == REG_PLL_NOT_SUPPORT)
 			seq_printf(m, "PLL%d;not support", i);
 		else
-			seq_printf(m, "PLL%d;0x%08x ", i, fh_read32(g_reg_pll_con0[i]));
+			seq_printf(m, "PLL%d;0x%08x ",
+			i, fh_read32(g_reg_pll_con0[i]));
 	}
 
 	FH_MSG_DEBUG("Dumping CON1");
@@ -680,7 +671,8 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 		if (g_reg_pll_con1[i] == REG_PLL_NOT_SUPPORT)
 			seq_printf(m, "PLL%d;not support", i);
 		else
-			seq_printf(m, "PLL%d;0x%08x ", i, fh_read32(g_reg_pll_con1[i]));
+			seq_printf(m, "PLL%d;0x%08x ", i,
+			fh_read32(g_reg_pll_con1[i]));
 	}
 
 
@@ -688,7 +680,8 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 	seq_puts(m, "\r\nRecorded dds range\r\n");
 
 	for (i = 0; i < FH_PLL_NUM; ++i)
-		seq_printf(m, "Pll%d dds max 0x%06x, min 0x%06x\r\n", i, dds_max[i], dds_min[i]);
+		seq_printf(m, "Pll%d dds max 0x%06x, min 0x%06x\r\n",
+		i, dds_max[i], dds_min[i]);
 
 	return 0;
 }
@@ -714,33 +707,48 @@ static void __reg_tbl_init(void)
 	};
 
 	const unsigned long reg_updnlmt[] = {
-		REG_FHCTL0_UPDNLMT, REG_FHCTL1_UPDNLMT, REG_FHCTL2_UPDNLMT, REG_FHCTL3_UPDNLMT,
-		REG_FHCTL4_UPDNLMT, REG_FHCTL5_UPDNLMT, REG_FHCTL6_UPDNLMT, REG_FHCTL7_UPDNLMT,
-		REG_FHCTL8_UPDNLMT, REG_FHCTL9_UPDNLMT, REG_FHCTL10_UPDNLMT, REG_FHCTL11_UPDNLMT
+		REG_FHCTL0_UPDNLMT, REG_FHCTL1_UPDNLMT, REG_FHCTL2_UPDNLMT,
+		REG_FHCTL3_UPDNLMT,
+		REG_FHCTL4_UPDNLMT, REG_FHCTL5_UPDNLMT, REG_FHCTL6_UPDNLMT,
+		REG_FHCTL7_UPDNLMT,
+		REG_FHCTL8_UPDNLMT, REG_FHCTL9_UPDNLMT, REG_FHCTL10_UPDNLMT,
+		REG_FHCTL11_UPDNLMT
 	};
 
 	const unsigned long reg_mon[] = {
-		REG_FHCTL0_MON, REG_FHCTL1_MON, REG_FHCTL2_MON, REG_FHCTL3_MON,
-		REG_FHCTL4_MON, REG_FHCTL5_MON, REG_FHCTL6_MON, REG_FHCTL7_MON,
-		REG_FHCTL8_MON, REG_FHCTL9_MON, REG_FHCTL10_MON, REG_FHCTL11_MON
+		REG_FHCTL0_MON, REG_FHCTL1_MON, REG_FHCTL2_MON,
+			REG_FHCTL3_MON,
+		REG_FHCTL4_MON, REG_FHCTL5_MON, REG_FHCTL6_MON,
+		REG_FHCTL7_MON,
+		REG_FHCTL8_MON, REG_FHCTL9_MON, REG_FHCTL10_MON,
+		REG_FHCTL11_MON
 	};
 
 	const unsigned long reg_dvfs[] = {
-		REG_FHCTL0_DVFS, REG_FHCTL1_DVFS, REG_FHCTL2_DVFS, REG_FHCTL3_DVFS,
-		REG_FHCTL4_DVFS, REG_FHCTL5_DVFS, REG_FHCTL6_DVFS, REG_FHCTL7_DVFS,
-		REG_FHCTL8_DVFS, REG_FHCTL9_DVFS, REG_FHCTL10_DVFS, REG_FHCTL11_DVFS
+		REG_FHCTL0_DVFS, REG_FHCTL1_DVFS, REG_FHCTL2_DVFS,
+		REG_FHCTL3_DVFS,
+		REG_FHCTL4_DVFS, REG_FHCTL5_DVFS, REG_FHCTL6_DVFS,
+		REG_FHCTL7_DVFS,
+		REG_FHCTL8_DVFS, REG_FHCTL9_DVFS, REG_FHCTL10_DVFS,
+		REG_FHCTL11_DVFS
 	};
 
 	const unsigned long reg_pll_con0[] = {
-		REG_FH_PLL0_CON0, REG_FH_PLL1_CON0, REG_FH_PLL2_CON0, REG_FH_PLL3_CON0,
-		REG_FH_PLL4_CON0, REG_FH_PLL5_CON0, REG_FH_PLL6_CON0, REG_FH_PLL7_CON0,
-		REG_FH_PLL8_CON0, REG_FH_PLL9_CON0, REG_FH_PLL10_CON0, REG_FH_PLL11_CON0
+		REG_FH_PLL0_CON0, REG_FH_PLL1_CON0, REG_FH_PLL2_CON0,
+		REG_FH_PLL3_CON0,
+		REG_FH_PLL4_CON0, REG_FH_PLL5_CON0, REG_FH_PLL6_CON0,
+		REG_FH_PLL7_CON0,
+		REG_FH_PLL8_CON0, REG_FH_PLL9_CON0, REG_FH_PLL10_CON0,
+		REG_FH_PLL11_CON0
 	};
 
 	const unsigned long reg_pll_con1[] = {
-		REG_FH_PLL0_CON1, REG_FH_PLL1_CON1, REG_FH_PLL2_CON1, REG_FH_PLL3_CON1,
-		REG_FH_PLL4_CON1, REG_FH_PLL5_CON1, REG_FH_PLL6_CON1, REG_FH_PLL7_CON1,
-		REG_FH_PLL8_CON1, REG_FH_PLL9_CON1, REG_FH_PLL10_CON1, REG_FH_PLL11_CON1
+		REG_FH_PLL0_CON1, REG_FH_PLL1_CON1, REG_FH_PLL2_CON1,
+		REG_FH_PLL3_CON1,
+		REG_FH_PLL4_CON1, REG_FH_PLL5_CON1, REG_FH_PLL6_CON1,
+		REG_FH_PLL7_CON1,
+		REG_FH_PLL8_CON1, REG_FH_PLL9_CON1, REG_FH_PLL10_CON1,
+		REG_FH_PLL11_CON1
 	};
 
     /****************************************/
@@ -797,34 +805,39 @@ static void __global_var_init(void)
 }
 
 /* TODO: __init void mt_freqhopping_init(void) */
-static void mt_fh_hal_init(void)
+static int mt_fh_hal_init(void)
 {
+	int of_init_result = 0;
 
 	FH_MSG_DEBUG("EN: %s", __func__);
 
 	if (g_initialize == 1)
-		return;
+		return 0;
 
 	/* Init relevant register base address by device tree */
-	__reg_base_addr_init();
+	of_init_result = __reg_base_addr_init();
+	if (of_init_result != 0)
+		return of_init_result;
 
 	/* Global Variable Init */
 	__global_var_init();
 
 	g_initialize = 1;
 
-	FH_MSG("mt_fh_hal_init done");
+	FH_MSG("mt_fh_hal_ init done");
+
+	return 0;
 }
 
 static void mt_fh_hal_lock(unsigned long *flags)
 {
-	/*spin_lock(&g_fh_lock);*/
+	/*spin_lock(&g_fh_lock); */
 	spin_lock_irqsave(&g_fh_lock, *flags);
 }
 
 static void mt_fh_hal_unlock(unsigned long *flags)
 {
-	/*spin_unlock(&g_fh_lock);*/
+	/*spin_unlock(&g_fh_lock); */
 	spin_unlock_irqrestore(&g_fh_lock, *flags);
 }
 
@@ -833,16 +846,19 @@ static int mt_fh_hal_get_init(void)
 	return g_initialize;
 }
 
+#if 0
 static int mt_fh_hal_is_support_DFS_mode(void)
 {
 	return true;
 }
+#endif
 
 /* TODO: module_init(mt_freqhopping_init); */
 /* TODO: module_exit(cpufreq_exit); */
 
 /* Engineer mode will use the proc msg to create UI!!! */
-static int __fh_debug_proc_read(struct seq_file *m, void *v, struct fh_pll_t *pll)
+static int __fh_debug_proc_read(struct seq_file *m,
+void *v, struct fh_pll_t *pll)
 {
 	int id;
 
@@ -872,7 +888,7 @@ static int __fh_debug_proc_read(struct seq_file *m, void *v, struct fh_pll_t *pl
 		else
 			seq_puts(m, "==");
 
-		/*seq_printf(m, "%04d", pll[id].fh_status);*/
+		/*seq_printf(m, "%04d", pll[id].fh_status); */
 		seq_printf(m, "%04d", mt_fh_pll_struct_get(id, FH_STATUS));
 
 		if (id == (FH_PLL_NUM - 1))
@@ -888,7 +904,7 @@ static int __fh_debug_proc_read(struct seq_file *m, void *v, struct fh_pll_t *pl
 		else
 			seq_puts(m, "==");
 
-		/*seq_printf(m, "%04d", pll[id].setting_id);*/
+		/*seq_printf(m, "%04d", pll[id].setting_id); */
 		seq_printf(m, "%04d", mt_fh_pll_struct_get(id, SETTING_ID));
 
 		if (id == (FH_PLL_NUM - 1))
@@ -906,14 +922,16 @@ static void __ioctl(unsigned int ctlid, void *arg)
 	struct freqhopping_ioctl *fh_ctl = arg;
 	struct fhctl_ipi_data ipi_data;
 
-	if ((fh_ctl->pll_id == 2) || (fh_ctl->pll_id == 6) || (fh_ctl->pll_id == 10)) {
+	if ((fh_ctl->pll_id == 2) ||
+		(fh_ctl->pll_id == 6) || (fh_ctl->pll_id == 10)) {
 		return;
 	}
 
 	switch (ctlid) {
 	case FH_IO_PROC_READ:
 		{
-			struct FH_IO_PROC_READ_T *tmp = (struct FH_IO_PROC_READ_T *)(arg);
+			struct FH_IO_PROC_READ_T *tmp =
+				(struct FH_IO_PROC_READ_T *)(arg);
 
 			__fh_debug_proc_read(tmp->m, tmp->v, tmp->pll);
 		}
@@ -924,11 +942,13 @@ static void __ioctl(unsigned int ctlid, void *arg)
 	case FH_DCTL_CMD_SSC_ENABLE:	/* SSC enable */
 	case FH_DCTL_CMD_SSC_DISABLE:	/* SSC disable */
 		memset(&ipi_data, 0, sizeof(struct fhctl_ipi_data));
-		memcpy(&ipi_data.u.fh_ctl, fh_ctl, sizeof(struct freqhopping_ioctl));
+		memcpy(&ipi_data.u.fh_ctl, fh_ctl,
+			sizeof(struct freqhopping_ioctl));
 		fhctl_to_sspm_command(ctlid, &ipi_data);
 		break;
 	case FH_DCTL_CMD_GENERAL_DFS:
-		mt_fh_hal_general_pll_dfs(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+		mt_fh_hal_general_pll_dfs(fh_ctl->pll_id,
+			fh_ctl->ssc_setting.dds);
 		break;
 
 	default:
@@ -939,32 +959,32 @@ static void __ioctl(unsigned int ctlid, void *arg)
 
 static struct mt_fh_hal_driver g_fh_hal_drv = {
 	.fh_pll = g_fh_pll,
-	.fh_usrdef = mt_ssc_fhpll_userdefined,
+	//.fh_usrdef = mt_ssc_fhpll_userdefined,
 	.fh_pll_set = mt_fh_pll_struct_set,
 	.fh_pll_get = mt_fh_pll_struct_get,
-	/*.fh_usrdef = mt_fh_usrdef_set,*/
+	//.fh_usrdef = mt_fh_usrdef_set,
 	.pll_cnt = FH_PLL_NUM,
-	.proc.dumpregs_read = fh_dumpregs_proc_read,
-	.proc.dvfs_read = fh_dvfs_proc_read,
-	.proc.dvfs_write = fh_dvfs_proc_write,
+	.mt_fh_hal_dumpregs_read = fh_dumpregs_proc_read,
+	//.proc.dvfs_read = fh_dvfs_proc_read,
+	//.proc.dvfs_write = fh_dvfs_proc_write,
 	.mt_fh_hal_init = mt_fh_hal_init,
 	.mt_fh_hal_ctrl = __freqhopping_ctrl,
 	.mt_fh_lock = mt_fh_hal_lock,
 	.mt_fh_unlock = mt_fh_hal_unlock,
 	.mt_fh_get_init = mt_fh_hal_get_init,
-	.mt_fh_popod_restore = mt_fh_hal_popod_restore,
-	.mt_fh_popod_save = mt_fh_hal_popod_save,
-	.mt_l2h_mempll = NULL,
-	.mt_h2l_mempll = NULL,
+	//.mt_fh_popod_restore = mt_fh_hal_popod_restore,
+	//.mt_fh_popod_save = mt_fh_hal_popod_save,
+	//.mt_l2h_mempll = NULL,
+	//.mt_h2l_mempll = NULL,
 	.mt_dfs_armpll = mt_fh_hal_dfs_armpll,
-	.mt_dfs_mmpll = mt_fh_hal_dfs_mmpll,
-	.mt_dfs_vencpll = mt_fh_hal_dfs_vencpll,	/* TODO: should set to NULL */
-	.mt_is_support_DFS_mode = mt_fh_hal_is_support_DFS_mode,
-	.mt_l2h_dvfs_mempll = mt_fh_hal_l2h_dvfs_mempll,	/* TODO: should set to NULL */
-	.mt_h2l_dvfs_mempll = mt_fh_hal_h2l_dvfs_mempll,	/* TODO: should set to NULL */
-	.mt_dram_overclock = mt_fh_hal_dram_overclock,
-	.mt_get_dramc = mt_fh_hal_get_dramc,
-	.mt_fh_default_conf = mt_fh_hal_default_conf,
+	//.mt_dfs_mmpll = mt_fh_hal_dfs_mmpll,
+	//.mt_dfs_vencpll = mt_fh_hal_dfs_vencpll,
+	//.mt_is_support_DFS_mode = mt_fh_hal_is_support_DFS_mode,
+	//.mt_l2h_dvfs_mempll = mt_fh_hal_l2h_dvfs_mempll,
+	//.mt_h2l_dvfs_mempll = mt_fh_hal_h2l_dvfs_mempll,
+	//.mt_dram_overclock = mt_fh_hal_dram_overclock,
+	//.mt_get_dramc = mt_fh_hal_get_dramc,
+	.mt_fh_hal_default_conf = mt_fh_hal_default_conf,
 	.mt_dfs_general_pll = mt_fh_hal_general_pll_dfs,
 	.ioctl = __ioctl
 };
@@ -1008,11 +1028,12 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 }
 
 /*TODO init freqhopping in hal. Should find a proper place to init*/
+#if 0 /* From kernel-4.14, this init procedure was moved to common driver. */
 static int __init mt_fh_driver_init(void)
 {
 	mt_freqhopping_init();
 	return 0;
 }
-
 subsys_initcall(mt_fh_driver_init);
+#endif
 /* TODO: module_exit(cpufreq_exit); */

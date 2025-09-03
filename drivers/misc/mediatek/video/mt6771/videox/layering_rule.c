@@ -32,7 +32,7 @@
 #include "primary_display.h"
 #include "disp_lowpower.h"
 #include "mtk_disp_mgr.h"
-#include "mmdvfs_mgr.h"
+//#include "mmdvfs_mgr.h"
 #include "disp_rect.h"
 
 static struct layering_rule_ops l_rule_ops;
@@ -56,6 +56,8 @@ int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	{900, 900, 900, 1350},
 	/* HRT_BOUND_TYPE_LP4_FHD_19 */
 	{400, 500, 500, 500},
+	/* HRT_BOUND_TYPE_LP4_FHD_19_CMD */
+	{300, 400, 400, 400},
 };
 
 int emi_bound_t[HRT_LEVEL_NUM] = {0};
@@ -75,6 +77,8 @@ int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	{1200, 1200, 1200, 1200},
 	/* HRT_BOUND_TYPE_LP4_FHD_19 */
 	{1200, 1200, 1200, 1200},
+	/* HRT_BOUND_TYPE_LP4_FHD_19_CMD */
+	{1200, 1200, 1200, 1200},
 };
 
 int mm_freq_table[HRT_DRAMC_TYPE_NUM][HRT_OPP_LEVEL_NUM] = {
@@ -84,6 +88,15 @@ int mm_freq_table[HRT_DRAMC_TYPE_NUM][HRT_OPP_LEVEL_NUM] = {
 	{450, 312, 312, 312},
 	/* HRT_DRAMC_TYPE_LP3 */
 	{450, 312, 312, 312},
+};
+
+int emi_freq_table[HRT_DRAMC_TYPE_NUM][HRT_OPP_LEVEL_NUM] = {
+	/* HRT_DRAMC_TYPE_LP4_3733 */
+	{0, 1, 1, 2},
+	/* HRT_DRAMC_TYPE_LP4_3200 */
+	{0, 0, 1, 2},
+	/* HRT_DRAMC_TYPE_LP3 */
+	{0, 1, 1, 2},
 };
 
 static enum HRT_LEVEL max_hrt_level = HRT_LEVEL_NUM - 1;
@@ -145,7 +158,37 @@ static int ovl_mapping_table[HRT_TB_NUM] = {
 	0x00020012, 0x00020012, 0x00020012, 0x00020012,
 };
 #endif
-#define GET_SYS_STATE(sys_state) ((l_rule_info.hrt_sys_state >> sys_state) & 0x1)
+#define GET_SYS_STATE(sys_state) \
+		((l_rule_info.hrt_sys_state >> sys_state) & 0x1)
+
+static inline bool support_color_format(enum DISP_FORMAT src_fmt)
+{
+	switch (src_fmt) {
+	case DISP_FORMAT_RGB565:
+	case DISP_FORMAT_RGB888:
+	case DISP_FORMAT_BGR888:
+	case DISP_FORMAT_ARGB8888:
+	case DISP_FORMAT_ABGR8888:
+	case DISP_FORMAT_RGBA8888:
+	case DISP_FORMAT_BGRA8888:
+	case DISP_FORMAT_YUV422:
+	case DISP_FORMAT_XRGB8888:
+	case DISP_FORMAT_XBGR8888:
+	case DISP_FORMAT_RGBX8888:
+	case DISP_FORMAT_BGRX8888:
+	case DISP_FORMAT_UYVY:
+	case DISP_FORMAT_PARGB8888:
+	case DISP_FORMAT_PABGR8888:
+	case DISP_FORMAT_PRGBA8888:
+	case DISP_FORMAT_PBGRA8888:
+	case DISP_FORMAT_DIM:
+		return true;
+	default:
+		return false;
+	}
+
+	return false;
+}
 
 static bool has_rsz_layer(struct disp_layer_info *disp_info, int disp_idx)
 {
@@ -168,14 +211,13 @@ static bool has_rsz_layer(struct disp_layer_info *disp_info, int disp_idx)
 
 static bool same_ratio(struct layer_config *basic, struct layer_config *tgt)
 {
-	int diff_w = (tgt->dst_width * basic->src_width +
-				(basic->dst_width - 1)) / basic->dst_width
-				- tgt->src_width;
-	int diff_h = (tgt->dst_height * basic->src_height +
-				(basic->dst_height - 1)) / basic->dst_height
-				- tgt->src_height;
+	int diff_w = DIV_ROUND_UP(tgt->dst_width * basic->src_width,
+				  basic->dst_width) - tgt->src_width;
+	int diff_h = DIV_ROUND_UP(tgt->dst_height * basic->src_height,
+				  basic->dst_height) - tgt->src_height;
 
-	if (diff_w > 1 || diff_w < -1 || diff_h > 1 || diff_h < -1)
+	if (diff_w > 1 || diff_w < -1 ||
+		diff_h > 1 || diff_h < -1)
 		return false;
 
 	return true;
@@ -225,21 +267,22 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 		 * TODO: If HWC adjusts MDP layer alignment before
 		 * query_valid_layer, we could remove this if statement.
 		 */
-		if ((has_layer_cap(c, MDP_RSZ_LAYER) || has_layer_cap(c, MDP_ROT_LAYER)) &&
+		if ((has_layer_cap(c, MDP_RSZ_LAYER) ||
+		    has_layer_cap(c, MDP_ROT_LAYER)) &&
 		    (c->dst_width - c->src_width <= MDP_ALIGNMENT_MARGIN ||
 		     c->dst_height - c->src_height <= MDP_ALIGNMENT_MARGIN))
 			break;
 
 		/* if greater than one layer need check ratio is same */
-		if ((i == 0 && !*has_dim_layer) || (i == 1 && *has_dim_layer)) {
+		if ((i == 0 && !*has_dim_layer) || (i == 1 && *has_dim_layer))
 			basic_layer = c;
-		} else if (!same_ratio(basic_layer, c))
+		else if (!same_ratio(basic_layer, c))
 			break;
 
 		rect_make(&src_layer_roi,
-				(c->dst_offset_x * c->src_width) / c->dst_width,
-				(c->dst_offset_y * c->src_height) / c->dst_height,
-				c->src_width, c->src_height);
+			(c->dst_offset_x * c->src_width) / c->dst_width,
+			(c->dst_offset_y * c->src_height) / c->dst_height,
+			c->src_width, c->src_height);
 
 		rect_make(&dst_layer_roi, c->dst_offset_x, c->dst_offset_y,
 				c->dst_width, c->dst_height);
@@ -250,14 +293,15 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 		if (src_total_roi.width > dst_total_roi.width ||
 			src_total_roi.height > dst_total_roi.height) {
 			DISPERR("layer%d leads RSZ scale-down(%d,%d,%d,%d)->(%d,%d,%d,%d)\n",
-					i, src_total_roi.x, src_total_roi.y,
-					src_total_roi.width, src_total_roi.height,
-					dst_total_roi.x, dst_total_roi.y,
-					dst_total_roi.width, dst_total_roi.height);
+				i, src_total_roi.x, src_total_roi.y,
+				src_total_roi.width, src_total_roi.height,
+				dst_total_roi.x, dst_total_roi.y,
+				dst_total_roi.width, dst_total_roi.height);
 			break;
 		}
 
-		if (src_total_roi.width > RSZ_TILE_LENGTH - RSZ_ALIGNMENT_MARGIN ||
+		if (src_total_roi.width >
+			RSZ_TILE_LENGTH - RSZ_ALIGNMENT_MARGIN ||
 			src_total_roi.height > RSZ_IN_MAX_HEIGHT)
 			break;
 
@@ -308,7 +352,8 @@ static bool lr_rsz_layout(struct disp_layer_info *disp_info)
 		if (!has_rsz_layer(disp_info, disp_idx)) {
 			l_rule_info.scale_rate = HRT_SCALE_NONE;
 			l_rule_info.disp_path = HRT_PATH_UNKNOWN;
-		} else if (is_RPO(disp_info, disp_idx, &rsz_idx, &has_dim_layer)) {
+		} else if (is_RPO(disp_info, disp_idx, &rsz_idx,
+					&has_dim_layer)) {
 			if (rsz_idx == 0)
 				l_rule_info.disp_path = HRT_PATH_RPO_L0;
 			else if (rsz_idx == 1 && has_dim_layer)
@@ -348,8 +393,9 @@ static void lr_gpu_change_rsz_info(void)
 
 static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 {
-	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_START, l_rule_info.disp_path,
-		l_rule_info.layer_tb_idx | (l_rule_info.bound_tb_idx << 16));
+	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_START,
+			l_rule_info.disp_path, l_rule_info.layer_tb_idx |
+			(l_rule_info.bound_tb_idx << 16));
 
 	if (GET_SYS_STATE(DISP_HRT_MULTI_TUI_ON)) {
 		l_rule_info.disp_path = HRT_PATH_GENERAL;
@@ -382,24 +428,35 @@ static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 		/* LPDDR4, LPDDR4X */
 		if (primary_display_get_width() < 800) {
 			if (get_emi_ch_num() == 2)
-				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4_HD;
+				l_rule_info.bound_tb_idx =
+					HRT_BOUND_TYPE_LP4_HD;
 			else
-				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP3_HD;
+				l_rule_info.bound_tb_idx =
+					HRT_BOUND_TYPE_LP3_HD;
 		} else {
 			if (primary_display_get_width() != 0 &&
-				 primary_display_get_height() * 10 /
-					primary_display_get_width() > 20)
-				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4_FHD_19;
+					primary_display_get_height() * 10 /
+					primary_display_get_width() > 20) {
+				if (primary_display_is_video_mode())
+					l_rule_info.bound_tb_idx =
+						HRT_BOUND_TYPE_LP4_FHD_19;
+				else
+					l_rule_info.bound_tb_idx =
+						HRT_BOUND_TYPE_LP4_FHD_19_CMD;
+			}
 			else
-				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4;
+				l_rule_info.bound_tb_idx =
+					HRT_BOUND_TYPE_LP4;
 
 			if (get_emi_ch_num() != 2)
-				l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4_1CH;
+				l_rule_info.bound_tb_idx =
+					HRT_BOUND_TYPE_LP4_1CH;
 		}
 	}
 #endif
-	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_END, l_rule_info.disp_path,
-		l_rule_info.layer_tb_idx | (l_rule_info.bound_tb_idx << 16));
+	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_END,
+			 l_rule_info.disp_path, l_rule_info.layer_tb_idx |
+			 (l_rule_info.bound_tb_idx << 16));
 }
 
 static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
@@ -418,16 +475,26 @@ static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
 			info = &(disp_info->input_config[disp_idx][i]);
 			if (is_gles_layer(disp_info, disp_idx, i))
 				continue;
-			if (is_yuv(info->src_fmt)) {
-				yuv_cnt++;
-				if (yuv_cnt > 2) {
-					/* push to GPU */
-					if (disp_info->gles_head[disp_idx] == -1 || i < disp_info->gles_head[disp_idx])
-						disp_info->gles_head[disp_idx] = i;
-					if (disp_info->gles_tail[disp_idx] == -1 || i > disp_info->gles_tail[disp_idx])
-						disp_info->gles_tail[disp_idx] = i;
-				}
+			if (is_yuv(info->src_fmt) && ++yuv_cnt > 2) {
+				/* push to GPU */
+				if (disp_info->gles_head[disp_idx] == -1 ||
+				    i < disp_info->gles_head[disp_idx])
+					disp_info->gles_head[disp_idx] = i;
+				if (disp_info->gles_tail[disp_idx] == -1 ||
+				    i > disp_info->gles_tail[disp_idx])
+					disp_info->gles_tail[disp_idx] = i;
 			}
+
+			if (support_color_format(info->src_fmt))
+				continue;
+
+			/* push to GPU */
+			if (disp_info->gles_head[disp_idx] == -1 ||
+			    i < disp_info->gles_head[disp_idx])
+				disp_info->gles_head[disp_idx] = i;
+			if (disp_info->gles_tail[disp_idx] == -1 ||
+			    i > disp_info->gles_tail[disp_idx])
+				disp_info->gles_tail[disp_idx] = i;
 		}
 	}
 
@@ -440,9 +507,11 @@ static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
 		layer_cnt++;
 		if (layer_cnt > SECONDARY_OVL_LAYER_NUM) {
 			/* push to GPU */
-			if (disp_info->gles_head[disp_idx] == -1 || i < disp_info->gles_head[disp_idx])
+			if (disp_info->gles_head[disp_idx] == -1 ||
+			    i < disp_info->gles_head[disp_idx])
 				disp_info->gles_head[disp_idx] = i;
-			if (disp_info->gles_tail[disp_idx] == -1 || i > disp_info->gles_tail[disp_idx])
+			if (disp_info->gles_tail[disp_idx] == -1 ||
+			    i > disp_info->gles_tail[disp_idx])
 				disp_info->gles_tail[disp_idx] = i;
 
 			flag = false;
@@ -475,8 +544,8 @@ static bool post_hw_limitation(struct disp_layer_info *disp_info)
 				yuv_tb = (yuv_tb < 2) ? 0 : yuv_tb - 2;
 				yuv_bb = yuv_tb + info->dst_height + 1;
 			} else {
-				unsigned firs_tb, firs_bb, seco_tb, seco_bb;
-				unsigned tmp_tb, tmp_bb;
+				unsigned int firs_tb, firs_bb, seco_tb, seco_bb;
+				unsigned int tmp_tb, tmp_bb;
 				bool sort_res;
 
 				tmp_tb = info->dst_offset_y;
@@ -491,9 +560,13 @@ static bool post_hw_limitation(struct disp_layer_info *disp_info)
 				seco_bb = sort_res ? tmp_bb : yuv_bb;
 
 				if (seco_tb <= firs_bb) {
-					/* yuv overlap, mmclk should be 450MHZ */
+					/*
+					 * yuv overlap,
+					 * mmclk should be 450MHZ
+					 */
 					disp_info->hrt_num = max_hrt_level;
-					DISPINFO("set HRT to max level %d due to yuv overlap\n", disp_info->hrt_num);
+					DISPINFO("set HRT to max level %d due to yuv overlap\n",
+						disp_info->hrt_num);
 				}
 			}
 		}
@@ -502,21 +575,19 @@ static bool post_hw_limitation(struct disp_layer_info *disp_info)
 	return flag;
 }
 
-
 int get_hrt_bound(int is_larb, int hrt_level)
 {
+	int value;
+	unsigned long flags = 0;
+
 	if (is_larb)
 		return larb_bound_table[l_rule_info.bound_tb_idx][hrt_level];
-	else {
-		int value;
-		unsigned long flags = 0;
 
-		spin_lock_irqsave(&hrt_table_lock, flags);
-		value = emi_bound_table[l_rule_info.bound_tb_idx][hrt_level];
-		spin_unlock_irqrestore(&hrt_table_lock, flags);
+	spin_lock_irqsave(&hrt_table_lock, flags);
+	value = emi_bound_table[l_rule_info.bound_tb_idx][hrt_level];
+	spin_unlock_irqrestore(&hrt_table_lock, flags);
 
-		return value;
-	}
+	return value;
 }
 
 static int *get_bound_table(enum DISP_HW_MAPPING_TB_TYPE tb_type)
@@ -528,7 +599,8 @@ static int *get_bound_table(enum DISP_HW_MAPPING_TB_TYPE tb_type)
 	case DISP_HW_EMI_BOUND_TB:
 		spin_lock_irqsave(&hrt_table_lock, flags);
 		for (i = 0; i < HRT_LEVEL_NUM; i++)
-			emi_bound_t[i] = emi_bound_table[l_rule_info.bound_tb_idx][i];
+			emi_bound_t[i] =
+			    emi_bound_table[l_rule_info.bound_tb_idx][i];
 		spin_unlock_irqrestore(&hrt_table_lock, flags);
 
 		return emi_bound_t;
@@ -541,19 +613,22 @@ static int *get_bound_table(enum DISP_HW_MAPPING_TB_TYPE tb_type)
 
 static int get_mapping_table(enum DISP_HW_MAPPING_TB_TYPE tb_type, int param)
 {
+	int layer_tb_idx = l_rule_info.layer_tb_idx;
+
 	switch (tb_type) {
 	case DISP_HW_OVL_TB:
-		return ovl_mapping_table[l_rule_info.layer_tb_idx];
+		return ovl_mapping_table[layer_tb_idx];
 	case DISP_HW_LARB_TB:
-		return larb_mapping_table[l_rule_info.layer_tb_idx];
+		return larb_mapping_table[layer_tb_idx];
 	case DISP_HW_LAYER_TB:
 		if (param < MAX_PHY_OVL_CNT && param >= 0)
-			return layer_mapping_table[l_rule_info.layer_tb_idx][param];
+			return layer_mapping_table[layer_tb_idx][param];
 		else
 			return -1;
 	default:
-		return -1;
+		break;
 	}
+	return -1;
 }
 
 int set_emi_bound_tb(int idx, int num, int *val)
@@ -607,9 +682,39 @@ int layering_rule_get_mm_freq_table(enum HRT_OPP_LEVEL opp_level)
 			dramc_type = HRT_DRAMC_TYPE_LP4_3200;
 	}
 #endif
-	mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE, dramc_type, opp_level);
+	mmprofile_log_ex(ddp_mmp_get_events()->dvfs,
+			MMPROFILE_FLAG_PULSE, dramc_type, opp_level);
 
 	return mm_freq_table[dramc_type][opp_level];
+}
+
+int layering_rule_get_emi_freq_table(enum HRT_OPP_LEVEL opp_level)
+{
+	enum HRT_DRAMC_TYPE dramc_type = HRT_DRAMC_TYPE_LP4_3733;
+
+	if (opp_level == HRT_OPP_LEVEL_DEFAULT) {
+		DISPINFO("skip opp level=%d\n", opp_level);
+		return 0;
+	} else if (opp_level > HRT_OPP_LEVEL_DEFAULT) {
+		DISPERR("unsupport opp level=%d\n", opp_level);
+		return 0;
+	}
+
+#if defined(CONFIG_MTK_DRAMC)
+	if (get_ddr_type() == TYPE_LPDDR3) {
+		dramc_type = HRT_DRAMC_TYPE_LP3;
+	} else {
+		/* LPDDR4-3733, LPDDR4-3200 */
+		if (dram_steps_freq(0) == 3600)
+			dramc_type = HRT_DRAMC_TYPE_LP4_3733;
+		else
+			dramc_type = HRT_DRAMC_TYPE_LP4_3200;
+	}
+#endif
+	mmprofile_log_ex(ddp_mmp_get_events()->dvfs, MMPROFILE_FLAG_PULSE,
+			 dramc_type, opp_level);
+
+	return emi_freq_table[dramc_type][opp_level];
 }
 
 void layering_rule_set_max_hrt_level(void)
@@ -617,8 +722,9 @@ void layering_rule_set_max_hrt_level(void)
 #if defined(CONFIG_MTK_DRAMC)
 	if (get_ddr_type() != TYPE_LPDDR3) {
 		/* LPDDR4-3733 */
+		/* max request to OPP1 */
 		if (dram_steps_freq(0) == 3600)
-			max_hrt_level = HRT_LEVEL_LEVEL2;  /* max request to OPP1 */
+			max_hrt_level = HRT_LEVEL_LEVEL2;
 	}
 #endif
 }
@@ -652,7 +758,8 @@ static bool _adaptive_dc_enabled(void)
 	return false;
 #endif
 
-	if (disp_mgr_has_mem_session() || !disp_helper_get_option(DISP_OPT_DC_BY_HRT) ||
+	if (disp_mgr_has_mem_session() ||
+		!disp_helper_get_option(DISP_OPT_DC_BY_HRT) ||
 		is_DAL_Enabled())
 		return false;
 
@@ -676,10 +783,6 @@ int modify_display_hrt_cb(int num)
 {
 	int i = 0, type = l_rule_info.bound_tb_idx;
 	unsigned long flags = 0;
-
-	/* just modify HRT table for LPDDR3 case now */
-	if (type != HRT_BOUND_TYPE_LP3)
-		return 1;
 
 	spin_lock_irqsave(&hrt_table_lock, flags);
 

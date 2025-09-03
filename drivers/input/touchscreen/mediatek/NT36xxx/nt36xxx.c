@@ -23,10 +23,16 @@
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 #include <linux/input/mt.h>
+#include <linux/uaccess.h>
+#include <uapi/linux/sched/types.h>
+#if 0 //KelvinYHHuang porting Q
 #include <linux/wakelock.h>
+#else
+#include <linux/pm_wakeup.h>
+#endif
 #include <linux/of.h>
 #include <linux/of_irq.h>
-#include <linux/sched.h>
+//#include <linux/sched.h>
 #include <linux/kthread.h>
 
 #include "tpd.h"
@@ -954,9 +960,9 @@ static int32_t nvt_flash_proc_init(void)
 
 /* function page definition */
 #define FUNCPAGE_GESTURE         1
-
+#if 0 //KelvinYHHuang porting Q
 static struct wake_lock gestrue_wakelock;
-
+#endif
 /*******************************************************
 Description:
 	Novatek touchscreen wake up gesture key report function.
@@ -1132,7 +1138,7 @@ return:
 *******************************************************/
 static int touch_event_handler(void *unused)
 {
-	struct sched_param param = { .sched_priority = 4 };
+	struct sched_param param = {.sched_priority = 4 };
 
 	int32_t ret = -1;
 	uint8_t point_data[POINT_DATA_LEN + 1] = {0};
@@ -1326,7 +1332,11 @@ static irqreturn_t nvt_ts_irq_handler(int32_t irq, void *dev_id)
 	{
 //#if WAKEUP_GESTURE
 	if (bTouchIsAwake == 0) {
+#if 0 //KelvinYHHuang porting Q
 		wake_lock_timeout(&gestrue_wakelock, msecs_to_jiffies(5000));
+#else
+		pm_wakeup_event(&ts->input_dev->dev, 5000);
+#endif
 	}
 //#endif
 	}
@@ -1669,7 +1679,10 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	for (retry = 0; retry < (sizeof(gesture_key_array) / sizeof(gesture_key_array[0])); retry++) {
 		input_set_capability(ts->input_dev, EV_KEY, gesture_key_array[retry]);
 	}
+#if 0 //KelvinYHHuang porting Q
 	wake_lock_init(&gestrue_wakelock, WAKE_LOCK_SUSPEND, "poll-wake-lock");
+#endif
+	device_init_wakeup(&ts->input_dev->dev, 1);
 #endif
 
 	sprintf(ts->phys, "input/ts");
@@ -1766,6 +1779,9 @@ err_init_NVT_ts:
 #if BOOT_UPDATE_FIRMWARE
 err_create_nvt_fwu_wq_failed:
 #endif
+#if WAKEUP_GESTURE
+	device_init_wakeup(&ts->input_dev->dev, 0);
+#endif
 err_int_request_failed:
 err_create_kthread_failed:
 	mutex_destroy(&ts->lock);
@@ -1800,6 +1816,10 @@ static int32_t nvt_ts_remove(struct i2c_client *client)
 	mutex_destroy(&ts->lock);
 
 	NVT_LOG("Removing driver...\n");
+
+#if WAKEUP_GESTURE
+	device_init_wakeup(&ts->input_dev->dev, 0);
+#endif
 
 	nvt_irq_enable(__func__, false);//add
 	free_irq(client->irq, ts);

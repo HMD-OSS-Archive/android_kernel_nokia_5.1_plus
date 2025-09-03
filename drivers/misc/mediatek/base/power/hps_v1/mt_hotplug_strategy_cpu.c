@@ -21,6 +21,7 @@
 #include <linux/init.h>		/* module_init, module_exit */
 #include <linux/sched.h>	/* sched_get_* */
 #include <linux/cpu.h>		/* cpu_up */
+#include <linux/topology.h>
 
 #include "mt_hotplug_strategy_internal.h"
 
@@ -56,6 +57,20 @@
 #include <linux/cpumask.h>
 #include <linux/topology.h>
 #endif
+
+
+int __attribute__ ((weak))
+arch_cpu_is_big(unsigned int cpu)
+{
+	return 0;
+}
+
+int __attribute__ ((weak))
+arch_cpu_is_little(unsigned int cpu)
+{
+	return !arch_cpu_is_big(cpu);
+}
+
 
 /*
  * hps cpu interface - cpumask

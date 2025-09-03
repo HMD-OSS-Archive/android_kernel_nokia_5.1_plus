@@ -19,7 +19,6 @@
 #else
 #include <linux/notifier.h>
 #endif
-#include <linux/wakelock.h>
 
 /* add BBS log*/
 #define BBOX_FP_PROB_FAIL do {printk("BBox::UEC;39::0\n");} while (0);
@@ -227,7 +226,6 @@ struct gf_device {
 	struct pinctrl_state *pins_miso_spi, *pins_miso_pullhigh, *pins_miso_pulllow;
 	struct pinctrl_state *pins_reset_high, *pins_reset_low;
 #endif
-	struct wake_lock fp_wakelock;
 };
 
 /**************************REE SPI******************************/

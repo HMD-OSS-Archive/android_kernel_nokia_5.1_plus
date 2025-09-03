@@ -125,7 +125,7 @@ int mtk_nand_chip_read_page(struct mtk_nand_chip_info *info,
  * @size: data size to read. size <= pagesize,
  *    less than page size will partial read,
  *    and OOB is only related sectors, uncompleted refer to whole page.
-*/
+ */
 struct mtk_nand_chip_read_param {
 	unsigned char *data_buffer;
 	unsigned char *oob_buffer;

@@ -106,9 +106,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_data[] = {
 	0x1A002014, 0x0000FFF0, 0x0000FFF0,/* SMI_LARB_CON_SET */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_dpidle = AP_DCM_Golden_Setting_tcl_gs_dpidle_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_dpidle =
+AP_DCM_Golden_Setting_tcl_gs_dpidle_data;
 
-unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_len = ARRAY_SIZE(AP_DCM_Golden_Setting_tcl_gs_dpidle_data);
+unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_len =
+ARRAY_SIZE(AP_DCM_Golden_Setting_tcl_gs_dpidle_data);
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_data[] = {
  /* Address     Mask        Golden Setting Value */
@@ -199,9 +201,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_data[] = {
 	0x1A002014, 0x0000FFF0, 0x0000FFF0,/* SMI_LARB_CON_SET */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_suspend = AP_DCM_Golden_Setting_tcl_gs_suspend_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_suspend =
+AP_DCM_Golden_Setting_tcl_gs_suspend_data;
 
-unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_len = ARRAY_SIZE(AP_DCM_Golden_Setting_tcl_gs_suspend_data);
+unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_len
+= ARRAY_SIZE(AP_DCM_Golden_Setting_tcl_gs_suspend_data);
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_vp_mjc_data[] = {
  /* Address     Mask        Golden Setting Value */
@@ -222,7 +226,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_vp_mjc_data[] = {
 	0x17030300, 0x00000001, 0x00000000,/* JPGENC_DCM_CTRL */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_vp_mjc = AP_DCM_Golden_Setting_tcl_gs_vp_mjc_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_vp_mjc =
+AP_DCM_Golden_Setting_tcl_gs_vp_mjc_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_vp_mjc_len = 45;
 
@@ -241,7 +246,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_topck_name_data[] = {
 	0x17030300, 0x00000001, 0x00000000,/* JPGENC_DCM_CTRL */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_topck_name = AP_DCM_Golden_Setting_tcl_gs_topck_name_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_topck_name =
+AP_DCM_Golden_Setting_tcl_gs_topck_name_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_topck_name_len = 33;
 
@@ -331,7 +337,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_paging_data[] = {
 	0x1A002014, 0x0000FFF0, 0x0000FFF0,/* SMI_LARB_CON_SET */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_paging = AP_DCM_Golden_Setting_tcl_gs_paging_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_paging =
+AP_DCM_Golden_Setting_tcl_gs_paging_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_paging_len = 246;
 
@@ -421,7 +428,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_mp3_play_data[] = {
 	0x1A002014, 0x0000FFF0, 0x0000FFF0,/* SMI_LARB_CON_SET */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_mp3_play = AP_DCM_Golden_Setting_tcl_gs_mp3_play_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_mp3_play =
+AP_DCM_Golden_Setting_tcl_gs_mp3_play_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_mp3_play_len = 246;
 
@@ -448,7 +456,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_clkon_data[] = {
 	0x1A002018, 0x0000FFF0, 0x0000FFF0 /* SMI_LARB_CON_CLR */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_clkon = AP_DCM_Golden_Setting_tcl_gs_clkon_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_clkon =
+AP_DCM_Golden_Setting_tcl_gs_clkon_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_clkon_len = 57;
 
@@ -673,7 +682,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_dcm_off_data[] = {
 	0x1A002018, 0x0000FFF0, 0x0000FFF0 /* SMI_LARB_CON_CLR */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_dcm_off = AP_DCM_Golden_Setting_tcl_gs_dcm_off_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_dcm_off =
+AP_DCM_Golden_Setting_tcl_gs_dcm_off_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_dcm_off_len = 651;
 
@@ -763,7 +773,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_vr_data[] = {
 	0x1A002014, 0x0000FFF0, 0x0000FFF0,/* SMI_LARB_CON_SET */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_vr = AP_DCM_Golden_Setting_tcl_gs_vr_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_vr =
+AP_DCM_Golden_Setting_tcl_gs_vr_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_vr_len = 246;
 
@@ -853,7 +864,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_vp_data[] = {
 	0x1A002014, 0x0000FFF0, 0x0000FFF0,/* SMI_LARB_CON_SET */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_vp = AP_DCM_Golden_Setting_tcl_gs_vp_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_vp =
+AP_DCM_Golden_Setting_tcl_gs_vp_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_vp_len = 246;
 
@@ -1087,7 +1099,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_access_data[] = {
 	0x1A002018, 0x00000000, 0x00000000 /* SMI_LARB_CON_CLR */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_access = AP_DCM_Golden_Setting_tcl_gs_access_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_access =
+AP_DCM_Golden_Setting_tcl_gs_access_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_access_len = 678;
 
@@ -1124,7 +1137,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_pdn_ao_data[] = {
 	0x17030300, 0x00000001, 0x00000000,/* JPGENC_DCM_CTRL */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_pdn_ao = AP_DCM_Golden_Setting_tcl_gs_pdn_ao_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_pdn_ao =
+AP_DCM_Golden_Setting_tcl_gs_pdn_ao_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_pdn_ao_len = 87;
 
@@ -1217,7 +1231,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_idle_data[] = {
 	0x1A002014, 0x0000FFF0, 0x0000FFF0,/* SMI_LARB_CON_SET */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_idle = AP_DCM_Golden_Setting_tcl_gs_idle_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_idle =
+AP_DCM_Golden_Setting_tcl_gs_idle_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_idle_len = 255;
 
@@ -1307,7 +1322,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_talk_data[] = {
 	0x1A002014, 0x0000FFF0, 0x0000FFF0,/* SMI_LARB_CON_SET */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_talk = AP_DCM_Golden_Setting_tcl_gs_talk_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_talk =
+AP_DCM_Golden_Setting_tcl_gs_talk_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_talk_len = 246;
 
@@ -1397,7 +1413,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_connsys_data[] = {
 	0x1A002014, 0x0000FFF0, 0x0000FFF0,/* SMI_LARB_CON_SET */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_connsys = AP_DCM_Golden_Setting_tcl_gs_connsys_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_connsys =
+AP_DCM_Golden_Setting_tcl_gs_connsys_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_connsys_len = 246;
 
@@ -1420,9 +1437,11 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_sodi_data[] = {
 	0x17030300, 0x00000001, 0x00000000,/* JPGENC_DCM_CTRL */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_sodi = AP_DCM_Golden_Setting_tcl_gs_sodi_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_sodi =
+AP_DCM_Golden_Setting_tcl_gs_sodi_data;
 
-unsigned int AP_DCM_Golden_Setting_tcl_gs_sodi_len = ARRAY_SIZE(AP_DCM_Golden_Setting_tcl_gs_sodi_data);
+unsigned int AP_DCM_Golden_Setting_tcl_gs_sodi_len =
+ARRAY_SIZE(AP_DCM_Golden_Setting_tcl_gs_sodi_data);
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_datalink_data[] = {
  /* Address     Mask        Golden Setting Value */
@@ -1510,7 +1529,8 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_datalink_data[] = {
 	0x1A002014, 0x0000FFF0, 0x0000FFF0,/* SMI_LARB_CON_SET */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_datalink = AP_DCM_Golden_Setting_tcl_gs_datalink_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_datalink =
+AP_DCM_Golden_Setting_tcl_gs_datalink_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_datalink_len = 246;
 
@@ -1586,6 +1606,7 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_flight_data[] = {
 	0x1A002014, 0x0000FFF0, 0x0000FFF0,/* SMI_LARB_CON_SET */
 };
 
-const unsigned int *AP_DCM_Golden_Setting_tcl_gs_flight = AP_DCM_Golden_Setting_tcl_gs_flight_data;
+const unsigned int *AP_DCM_Golden_Setting_tcl_gs_flight =
+AP_DCM_Golden_Setting_tcl_gs_flight_data;
 
 unsigned int AP_DCM_Golden_Setting_tcl_gs_flight_len = 204;

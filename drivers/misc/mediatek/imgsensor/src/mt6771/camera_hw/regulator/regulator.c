@@ -180,4 +180,3 @@ enum IMGSENSOR_RETURN imgsensor_hw_regulator_open(
 	*pdevice = &device;
 	return IMGSENSOR_RETURN_SUCCESS;
 }
-

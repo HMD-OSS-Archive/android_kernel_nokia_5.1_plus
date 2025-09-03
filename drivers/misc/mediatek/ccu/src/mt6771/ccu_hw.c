@@ -112,7 +112,7 @@ static void isr_sp_task(void)
 
 	default:
 	{
-		LOG_DBG("no isr_sp_task: %x\n", sp_task);
+		LOG_DBG("no %s: %x\n", __func__, sp_task);
 		break;
 	}
 	}
@@ -136,119 +136,125 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 
 	isr_sp_task();
 
-	while (1) {
-		mailboxRet = mailbox_receive_cmd(&receivedCcuCmd);
+while (1) {
+	mailboxRet = mailbox_receive_cmd(&receivedCcuCmd);
 
-		if (mailboxRet == MAILBOX_QUEUE_EMPTY) {
-			LOG_DBG("MAIL_BOX IS EMPTY");
-			goto ISR_EXIT;
-		}
+	if (mailboxRet == MAILBOX_QUEUE_EMPTY) {
+		LOG_DBG("MAIL_BOX IS EMPTY");
+		goto ISR_EXIT;
+	}
 
-		LOG_DBG("receivedCcuCmd.msg_id : 0x%x\n", receivedCcuCmd.msg_id);
+	LOG_DBG("receivedCcuCmd.msg_id : 0x%x\n", receivedCcuCmd.msg_id);
 
-		switch (receivedCcuCmd.msg_id) {
+	switch (receivedCcuCmd.msg_id) {
 
-		case MSG_TO_APMCU_FLUSH_LOG:
-			{
-				/*for ccu_waitirq();*/
-				LOG_DBG
-					("got MSG_TO_APMCU_FLUSH_LOG:%d , wakeup ccuInfo.WaitQueueHead\n",
-					 receivedCcuCmd.in_data_ptr);
-				bWaitCond = true;
-				g_LogBufIdx = receivedCcuCmd.in_data_ptr;
+	case MSG_TO_APMCU_FLUSH_LOG:
+	{
+		/*for ccu_waitirq();*/
+		LOG_DBG
+		("got %s:%d, wakeup %s\n",
+		 "MSG_TO_APMCU_FLUSH_LOG",
+		 receivedCcuCmd.in_data_ptr,
+		 "ccuInfo.WaitQueueHead");
+		bWaitCond = true;
+		g_LogBufIdx = receivedCcuCmd.in_data_ptr;
 
-				wake_up_interruptible(&ccuInfo.WaitQueueHead);
-				LOG_DBG("wakeup ccuInfo.WaitQueueHead done\n");
-				break;
-			}
-			case MSG_TO_APMCU_CCU_ASSERT:
-			{
-				LOG_ERR
-					("got MSG_TO_APMCU_CCU_ASSERT:%d, wakeup ccuInfo.WaitQueueHead\n",
-					 receivedCcuCmd.in_data_ptr);
-				LOG_ERR
-					("================== AP_ISR_CCU_ASSERT ===================\n");
-				bWaitCond = true;
-				g_LogBufIdx = 0xFFFFFFFF;	/* -1*/
+		wake_up_interruptible(&ccuInfo.WaitQueueHead);
+		LOG_DBG("wakeup ccuInfo.WaitQueueHead done\n");
+		break;
+	}
+	case MSG_TO_APMCU_CCU_ASSERT:
+	{
+		LOG_ERR
+		("got %s:%d, wakeup %s\n",
+		 "MSG_TO_APMCU_CCU_ASSERT",
+		 receivedCcuCmd.in_data_ptr,
+		 "ccuInfo.WaitQueueHead");
+		LOG_ERR
+			("======== AP_ISR_CCU_ASSERT ========\n");
+		bWaitCond = true;
+		g_LogBufIdx = 0xFFFFFFFF;	/* -1*/
 
-				wake_up_interruptible(&ccuInfo.WaitQueueHead);
-				LOG_ERR("wakeup ccuInfo.WaitQueueHead done\n");
-				break;
-			}
-			case MSG_TO_APMCU_CCU_WARNING:
-			{
-				LOG_ERR
-					("got MSG_TO_APMCU_CCU_WARNING:%d, wakeup ccuInfo.WaitQueueHead\n",
-					 receivedCcuCmd.in_data_ptr);
-				LOG_ERR
-					("================== AP_ISR_CCU_WARNING ===================\n");
-				bWaitCond = true;
-				g_LogBufIdx = -2;
+		wake_up_interruptible(&ccuInfo.WaitQueueHead);
+		LOG_ERR("wakeup ccuInfo.WaitQueueHead done\n");
+		break;
+	}
+	case MSG_TO_APMCU_CCU_WARNING:
+	{
+		LOG_ERR
+		("got %s:%d, wakeup %s\n",
+		 "MSG_TO_APMCU_CCU_WARNING",
+		 receivedCcuCmd.in_data_ptr,
+		 "ccuInfo.WaitQueueHead");
+		LOG_ERR
+			("======== AP_ISR_CCU_WARNING ========\n");
+		bWaitCond = true;
+		g_LogBufIdx = -2;
 
-				wake_up_interruptible(&ccuInfo.WaitQueueHead);
-				LOG_ERR("wakeup ccuInfo.WaitQueueHead done\n");
-				break;
-			}
+		wake_up_interruptible(&ccuInfo.WaitQueueHead);
+		LOG_ERR("wakeup ccuInfo.WaitQueueHead done\n");
+		break;
+	}
 #ifdef CCU_AF_ENABLE
-			case MSG_TO_APMCU_CAM_A_AFO_i:
-			{
-				LOG_DBG
-				       ("AFWaitQueueHead:%d\n",
-					receivedCcuCmd.in_data_ptr);
-				if (receivedCcuCmd.tg_info == 1) {
-					LOG_DBG
-				       ("================== AFO_A_done_from_CCU ===================\n");
-				    AFbWaitCond[0] = true;
-					AFg_LogBufIdx[0] = 3;
+	case MSG_TO_APMCU_CAM_A_AFO_i:
+	{
+		LOG_DBG
+		       ("AFWaitQueueHead:%d\n",
+			receivedCcuCmd.in_data_ptr);
+		if (receivedCcuCmd.tg_info == 1) {
+			LOG_DBG
+		       ("======== AFO_A_done_from_CCU ========\n");
+		    AFbWaitCond[0] = true;
+			AFg_LogBufIdx[0] = 3;
 
-					wake_up_interruptible(&ccuInfo.AFWaitQueueHead[0]);
-					LOG_DBG("wakeup ccuInfo.AFWaitQueueHead done\n");
-				} else if (receivedCcuCmd.tg_info == 2) {
-					LOG_DBG
-				       ("================== AFO_B_done_from_CCU ===================\n");
-					AFbWaitCond[1] = true;
-					AFg_LogBufIdx[1] = 4;
+			wake_up_interruptible(&ccuInfo.AFWaitQueueHead[0]);
+			LOG_DBG("wakeup ccuInfo.AFWaitQueueHead done\n");
+		} else if (receivedCcuCmd.tg_info == 2) {
+			LOG_DBG
+		       ("======== AFO_B_done_from_CCU ========\n");
+			AFbWaitCond[1] = true;
+			AFg_LogBufIdx[1] = 4;
 
-					wake_up_interruptible(&ccuInfo.AFWaitQueueHead[1]);
-					LOG_DBG("wakeup ccuInfo.AFBWaitQueueHead done\n");
-				} else {
-					AFbWaitCond[0] = true;
-					AFbWaitCond[1] = true;
-					AFg_LogBufIdx[0] = 5;
-					AFg_LogBufIdx[1] = 5;
-					wake_up_interruptible(&ccuInfo.AFWaitQueueHead[0]);
-					LOG_DBG("wakeup ccuInfo.AFWaitQueueHead done\n");
-					wake_up_interruptible(&ccuInfo.AFWaitQueueHead[1]);
-					LOG_DBG("wakeup ccuInfo.AFBWaitQueueHead done\n");
-					LOG_DBG("abort and wakeup\n");
-				}
-				break;
-			}
-			case MSG_TO_APMCU_CAM_B_AFO_i:
-			{
-				LOG_DBG
-				       ("AFBWaitQueueHead:%d\n",
-					receivedCcuCmd.in_data_ptr);
-				LOG_DBG
-				       ("================== AFO_B_done_from_CCU ===================\n");
-				AFbWaitCond[1] = true;
-				AFg_LogBufIdx[1] = 4;
+			wake_up_interruptible(&ccuInfo.AFWaitQueueHead[1]);
+			LOG_DBG("wakeup ccuInfo.AFBWaitQueueHead done\n");
+		} else {
+			AFbWaitCond[0] = true;
+			AFbWaitCond[1] = true;
+			AFg_LogBufIdx[0] = 5;
+			AFg_LogBufIdx[1] = 5;
+			wake_up_interruptible(&ccuInfo.AFWaitQueueHead[0]);
+			LOG_DBG("wakeup ccuInfo.AFWaitQueueHead done\n");
+			wake_up_interruptible(&ccuInfo.AFWaitQueueHead[1]);
+			LOG_DBG("wakeup ccuInfo.AFBWaitQueueHead done\n");
+			LOG_DBG("abort and wakeup\n");
+		}
+		break;
+	}
+	case MSG_TO_APMCU_CAM_B_AFO_i:
+	{
+		LOG_DBG
+		       ("AFBWaitQueueHead:%d\n",
+			receivedCcuCmd.in_data_ptr);
+		LOG_DBG
+		       ("======== AFO_B_done_from_CCU ========\n");
+		AFbWaitCond[1] = true;
+		AFg_LogBufIdx[1] = 4;
 
-				wake_up_interruptible(&ccuInfo.AFWaitQueueHead[1]);
-				LOG_DBG("wakeup ccuInfo.AFBWaitQueueHead done\n");
-				break;
-			}
+		wake_up_interruptible(&ccuInfo.AFWaitQueueHead[1]);
+		LOG_DBG("wakeup ccuInfo.AFBWaitQueueHead done\n");
+		break;
+	}
 #endif /*CCU_AF_ENABLE*/
 
-		default:
-			LOG_DBG("got msgId: %d, cmd_wait\n", receivedCcuCmd.msg_id);
-			ccu_memcpy(&CcuAckCmd, &receivedCcuCmd, sizeof(struct ccu_msg));
-			cmd_done = true;
-			wake_up_interruptible(&cmd_wait);
-			break;
+	default:
+		LOG_DBG("got msgId: %d, cmd_wait\n", receivedCcuCmd.msg_id);
+		ccu_memcpy(&CcuAckCmd, &receivedCcuCmd, sizeof(struct ccu_msg));
+		cmd_done = true;
+		wake_up_interruptible(&cmd_wait);
+		break;
 
-		}
 	}
+}
 
 ISR_EXIT:
 
@@ -303,7 +309,8 @@ static int ccu_enque_cmd_loop(void *arg)
 				break;
 			}
 
-			wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+			wait_woken(&wait, TASK_INTERRUPTIBLE,
+				MAX_SCHEDULE_TIMEOUT);
 			LOG_DBG("awake for ccu_dev->cmd_wait\n");
 		}
 		remove_wait_queue(&ccu_dev->cmd_wait, &wait);
@@ -315,14 +322,16 @@ static int ccu_enque_cmd_loop(void *arg)
 
 			user = vlist_node_of(head, struct ccu_user_s);
 			mutex_lock(&user->data_mutex);
-			/* flush thread will handle the remaining queue if flush */
-			if (user->flush || list_empty(&user->enque_ccu_cmd_list)) {
+		/* flush thread will handle the remaining queue if flush */
+			if (user->flush ||
+				list_empty(&user->enque_ccu_cmd_list)) {
 				mutex_unlock(&user->data_mutex);
 				continue;
 			}
 
 			/* get first node from enque list */
-			cmd = vlist_node_of(user->enque_ccu_cmd_list.next, struct ccu_cmd_s);
+			cmd = vlist_node_of(user->enque_ccu_cmd_list.next,
+				struct ccu_cmd_s);
 
 			list_del_init(vlist_link(cmd, struct ccu_cmd_s));
 			user->running = true;
@@ -332,10 +341,12 @@ static int ccu_enque_cmd_loop(void *arg)
 			ccu_send_command(cmd);
 
 			mutex_lock(&user->data_mutex);
-			list_add_tail(vlist_link(cmd, struct ccu_cmd_s), &user->deque_ccu_cmd_list);
+			list_add_tail(vlist_link(cmd, struct ccu_cmd_s),
+				&user->deque_ccu_cmd_list);
 			user->running = false;
 
-			LOG_DBG("list_empty(%d)\n", (int)list_empty(&user->deque_ccu_cmd_list));
+			LOG_DBG("list_empty(%d)\n",
+				(int)list_empty(&user->deque_ccu_cmd_list));
 
 			mutex_unlock(&user->data_mutex);
 
@@ -364,6 +375,7 @@ int ccu_init_hw(struct ccu_device_s *device)
 {
 	int ret = 0, n;
 
+	ccuInfo.IsCcuPoweredOn = 0;
 #ifdef CONFIG_MTK_CHIP
 	init_check_sw_ver();
 #endif
@@ -400,10 +412,12 @@ int ccu_init_hw(struct ccu_device_s *device)
 
 	ccu_dev = device;
 
-	LOG_DBG("(0x%llx),(0x%llx),(0x%llx)\n", ccu_base, camsys_base, bin_base);
+	LOG_DBG("(0x%llx),(0x%llx),(0x%llx)\n",
+		ccu_base, camsys_base, bin_base);
 
 
-	if (request_irq(device->irq_num, ccu_isr_handler, IRQF_TRIGGER_NONE, "ccu", NULL)) {
+	if (request_irq(device->irq_num, ccu_isr_handler,
+		IRQF_TRIGGER_NONE, "ccu", NULL)) {
 		LOG_ERR("fail to request ccu irq!\n");
 		ret = -ENODEV;
 		goto out;
@@ -480,7 +494,8 @@ int ccu_send_command(struct ccu_cmd_s *pCmd)
 
 	/* 1. push to mailbox_send */
 	LOG_DBG("send command: id(%d), in(%x), out(%x)\n",
-			pCmd->task.msg_id, pCmd->task.in_data_ptr, pCmd->task.out_data_ptr);
+		pCmd->task.msg_id, pCmd->task.in_data_ptr,
+		pCmd->task.out_data_ptr);
 	mailbox_send_cmd(&(pCmd->task));
 
 	/* 2. wait until done */
@@ -488,10 +503,12 @@ int ccu_send_command(struct ccu_cmd_s *pCmd)
 	ret = wait_command();
 	if (ret == 0) {
 		pCmd->status = CCU_ENG_STATUS_TIMEOUT;
-		LOG_ERR("timeout to wait ack command: %d\n", pCmd->task.msg_id);
+		LOG_ERR("timeout to wait ack command: %d\n",
+			pCmd->task.msg_id);
 		goto out;
 	} else if (ret < 0) {
-		LOG_ERR("interrupted by system signal: %d/%d\n", pCmd->task.msg_id, ret);
+		LOG_ERR("interrupted by system signal: %d/%d\n",
+			pCmd->task.msg_id, ret);
 
 		if (ret == -ERESTARTSYS)
 			LOG_ERR("interrupted as -ERESTARTSYS\n");
@@ -506,7 +523,8 @@ int ccu_send_command(struct ccu_cmd_s *pCmd)
 	ccu_memcpy(&pCmd->task, &CcuAckCmd, sizeof(struct ccu_msg));
 
 	LOG_DBG("got ack command: id(%d), in(%x), out(%x)\n",
-			pCmd->task.msg_id, pCmd->task.in_data_ptr, pCmd->task.out_data_ptr);
+		pCmd->task.msg_id, pCmd->task.in_data_ptr,
+		pCmd->task.out_data_ptr);
 
 out:
 
@@ -530,8 +548,10 @@ int ccu_power(struct ccu_power_s *power)
 		/*CCU power on sequence*/
 
 		/*0. Set CCU_A_RESET. CCU_HW_RST=1*/
-		ccu_write_reg(ccu_base, RESET, 0xFF3FFCFF);	/*TSF be affected.*/
-		ccu_write_reg(ccu_base, RESET, 0x00010000);	/*CCU_HW_RST.*/
+		/*TSF be affected.*/
+		ccu_write_reg(ccu_base, RESET, 0xFF3FFCFF);
+		/*CCU_HW_RST.*/
+		ccu_write_reg(ccu_base, RESET, 0x00010000);
 		LOG_DBG("reset wrote\n");
 		/*ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);*/
 
@@ -540,8 +560,10 @@ int ccu_power(struct ccu_power_s *power)
 		LOG_DBG("CCU CG released\n");
 
 		/*use user space buffer*/
-		ccu_write_reg(ccu_base, CCU_DATA_REG_LOG_BUF0, power->workBuf.mva_log[0]);
-		ccu_write_reg(ccu_base, CCU_DATA_REG_LOG_BUF1, power->workBuf.mva_log[1]);
+		ccu_write_reg(ccu_base, CCU_DATA_REG_LOG_BUF0,
+			power->workBuf.mva_log[0]);
+		ccu_write_reg(ccu_base, CCU_DATA_REG_LOG_BUF1,
+			power->workBuf.mva_log[1]);
 
 		LOG_DBG("LogBuf_mva[0](0x%x)\n", power->workBuf.mva_log[0]);
 		LOG_DBG("LogBuf_mva[1](0x%x)\n", power->workBuf.mva_log[1]);
@@ -551,19 +573,27 @@ int ccu_power(struct ccu_power_s *power)
 
 	} else if (power->bON == 0) {
 		/*CCU Power off*/
-		ret = _ccu_powerdown();
+		if (ccuInfo.IsCcuPoweredOn)
+			ret = _ccu_powerdown();
+		else
+			LOG_DBG_MUST("ccu not power on yet\n");
+
 	} else if (power->bON == 2) {
 		/*Restart CCU, no need to release CG*/
 
 		/*0. Set CCU_A_RESET. CCU_HW_RST=1*/
-		ccu_write_reg(ccu_base, RESET, 0xFF3FFCFF);	/*TSF be affected.*/
-		ccu_write_reg(ccu_base, RESET, 0x00010000);	/*CCU_HW_RST.*/
+		/*TSF be affected.*/
+		ccu_write_reg(ccu_base, RESET, 0xFF3FFCFF);
+		/*CCU_HW_RST.*/
+		ccu_write_reg(ccu_base, RESET, 0x00010000);
 		LOG_DBG("reset wrote\n");
 		/*ccu_write_reg_bit(ccu_base, RESET, CCU_HW_RST, 1);*/
 
 		/*use user space buffer*/
-		ccu_write_reg(ccu_base, CCU_DATA_REG_LOG_BUF0, power->workBuf.mva_log[0]);
-		ccu_write_reg(ccu_base, CCU_DATA_REG_LOG_BUF1, power->workBuf.mva_log[1]);
+		ccu_write_reg(ccu_base, CCU_DATA_REG_LOG_BUF0,
+			power->workBuf.mva_log[0]);
+		ccu_write_reg(ccu_base, CCU_DATA_REG_LOG_BUF1,
+			power->workBuf.mva_log[1]);
 
 		LOG_DBG("LogBuf_mva[0](0x%x)\n", power->workBuf.mva_log[0]);
 		LOG_DBG("LogBuf_mva[1](0x%x)\n", power->workBuf.mva_log[1]);
@@ -571,11 +601,12 @@ int ccu_power(struct ccu_power_s *power)
 		/*Pause CCU, but don't pullup CG*/
 
 		/*Check CCU halt status*/
-		while ((ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE_2)
-										&& (timeout >= 0)) {
+		while ((ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) !=
+			CCU_STATUS_INIT_DONE_2) && (timeout >= 0)) {
 			mdelay(1);
 			LOG_DBG("wait ccu halt done\n");
-			LOG_DBG("ccu halt stat: %x\n", ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT));
+			LOG_DBG("ccu halt stat: %x\n",
+				ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT));
 			timeout = timeout - 1;
 		}
 
@@ -608,7 +639,8 @@ int ccu_force_powerdown(void)
 	int ret = 0;
 
 	if (ccuInfo.IsCcuPoweredOn == 1) {
-		LOG_WARN("CCU kernel drv released on CCU running, try to force shutdown\n");
+		LOG_WARN(
+		"CCU kernel drv released on CCU running, try to force shutdown\n");
 		LOG_WARN("dump cam_mtcmos_check\n");
 		cam_mtcmos_check();
 		/*Set special isr task to MSG_TO_CCU_SHUTDOWN*/
@@ -637,16 +669,18 @@ static int _ccu_powerdown(void)
 	if (ccu_read_reg_bit(ccu_base, RESET, CCU_HW_RST) == 1) {
 		LOG_INF_MUST("ccu reset is up, skip halt checking.\n");
 	} else {
-		while ((ccu_read_reg_bit(ccu_base, CCU_ST, CCU_SYS_HALT) == 0) && timeout > 0) {
+		while ((ccu_read_reg_bit(ccu_base, CCU_ST, CCU_SYS_HALT) == 0)
+			&& timeout > 0) {
 			mdelay(1);
 			LOG_DBG("wait ccu shutdown done\n");
-			LOG_DBG("ccu shutdown stat: %x\n", ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT));
+			LOG_DBG("ccu shutdown stat: %x\n",
+				ccu_read_reg_bit(ccu_base, DONE_ST, CCU_HALT));
 			timeout = timeout - 1;
 		}
 
 		if (timeout <= 0) {
-			LOG_ERR("_ccu_powerdown timeout\n");
-			/*Even timed-out, clock disable is still necessary, DO NOT return here.*/
+			LOG_ERR("%s timeout\n", __func__);
+/*Even timed-out, clock disable is still necessary, DO NOT return here.*/
 		}
 	}
 
@@ -690,40 +724,49 @@ int ccu_run(void)
 
 	ccu_write_reg_bit(ccu_base, CCU_CTL, CCU_RUN_REQ, 0);
 
-	LOG_DBG("released CCU reset, wait for initial done, %x\n", ccu_read_reg(ccu_base, RESET));
+	LOG_DBG("released CCU reset, wait for initial done, %x\n",
+		ccu_read_reg(ccu_base, RESET));
 	LOG_DBG("CCU reset: %x\n", ccu_read_reg(ccu_base, RESET));
 
 	/*4. Pulling CCU init done spare register*/
-	while ((ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE) && (timeout >= 0)) {
+	while ((ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) !=
+		CCU_STATUS_INIT_DONE) && (timeout >= 0)) {
 		udelay(100);
 		LOG_DBG_MUST("wait ccu initial done\n");
-		LOG_DBG_MUST("ccu initial stat: %x\n", ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE));
+		LOG_DBG_MUST("ccu initial stat: %x\n",
+			ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE));
 		timeout = timeout - 1;
 	}
 
 	if (timeout <= 0) {
 		LOG_ERR("CCU init timeout\n");
-		LOG_ERR("ccu initial debug info: %x\n", ccu_read_reg(ccu_base, CCU_INFO28));
+		LOG_ERR("ccu initial debug info: %x\n",
+			ccu_read_reg(ccu_base, CCU_INFO28));
 		return -ETIMEDOUT;
 	}
 
 	LOG_DBG_MUST("ccu initial done\n");
-	LOG_DBG_MUST("ccu initial stat: %x\n", ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE));
-	LOG_DBG_MUST("ccu initial debug info: %x\n", ccu_read_reg(ccu_base, CCU_INFO29));
-	LOG_DBG_MUST("ccu initial debug info00: %x\n", ccu_read_reg(ccu_base, CCU_INFO00));
-	LOG_DBG_MUST("ccu initial debug info01: %x\n", ccu_read_reg(ccu_base, CCU_INFO01));
+	LOG_DBG_MUST("ccu initial stat: %x\n",
+		ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE));
+	LOG_DBG_MUST("ccu initial debug info: %x\n",
+		ccu_read_reg(ccu_base, CCU_INFO29));
+	LOG_DBG_MUST("ccu initial debug info00: %x\n",
+		ccu_read_reg(ccu_base, CCU_INFO00));
+	LOG_DBG_MUST("ccu initial debug info01: %x\n",
+		ccu_read_reg(ccu_base, CCU_INFO01));
 
-	/*
-	 * 20160930
-	 * Due to AHB2GMC HW Bug, mailbox use SRAM
-	 * Driver wait CCU main initialize done and query INFO00 & INFO01 as mailbox address
-	 */
+/*
+ * 20160930
+ * Due to AHB2GMC HW Bug, mailbox use SRAM
+ * Driver wait CCU main initialize done and query
+ * INFO00 & INFO01 as mailbox address
+ */
 	pMailBox[MAILBOX_SEND] =
 		(struct ccu_mailbox_t *)(uintptr_t)(dmem_base +
-				ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_CCU));
+		ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_CCU));
 	pMailBox[MAILBOX_GET] =
 		(struct ccu_mailbox_t *)(uintptr_t)(dmem_base +
-				ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_APMCU));
+		ccu_read_reg(ccu_base, CCU_DATA_REG_MAILBOX_APMCU));
 
 
 	ccuMbPtr = (struct ccu_mailbox_t *) pMailBox[MAILBOX_SEND];
@@ -735,7 +778,8 @@ int ccu_run(void)
 	ccu_write_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE, 0);
 
 	timeout = 100;
-	while ((ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) != CCU_STATUS_INIT_DONE_2) && (timeout >= 0)) {
+	while ((ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE) !=
+		CCU_STATUS_INIT_DONE_2) && (timeout >= 0)) {
 		udelay(100);
 		LOG_DBG_MUST("wait ccu log test\n");
 		timeout = timeout - 1;
@@ -743,14 +787,16 @@ int ccu_run(void)
 
 	if (timeout <= 0) {
 		LOG_ERR("CCU init timeout 2\n");
-		LOG_ERR("ccu initial debug info: %x\n", ccu_read_reg(ccu_base, CCU_INFO28));
+		LOG_ERR("ccu initial debug info: %x\n",
+			ccu_read_reg(ccu_base, CCU_INFO28));
 		return -ETIMEDOUT;
 	}
 
 	LOG_DBG_MUST("ccu log test done\n");
 	LOG_DBG_MUST("ccu log test stat: %x\n",
-			ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE));
-	LOG_DBG_MUST("ccu log test debug info: %x\n", ccu_read_reg(ccu_base, CCU_INFO29));
+		ccu_read_reg(ccu_base, CCU_STA_REG_SW_INIT_DONE));
+	LOG_DBG_MUST("ccu log test debug info: %x\n",
+		ccu_read_reg(ccu_base, CCU_INFO29));
 
 	LOG_DBG_MUST("-:%s\n", __func__);
 
@@ -762,16 +808,18 @@ int ccu_waitirq(struct CCU_WAIT_IRQ_STRUCT *WaitIrq)
 {
 	signed int ret = 0, Timeout = WaitIrq->EventInfo.Timeout;
 
-	LOG_DBG("Clear(%d),bWaitCond(%d),Timeout(%d)\n", WaitIrq->EventInfo.Clear, bWaitCond, Timeout);
-	LOG_DBG("arg is struct CCU_WAIT_IRQ_STRUCT, size:%zu\n", sizeof(struct CCU_WAIT_IRQ_STRUCT));
+	LOG_DBG("Clear(%d),bWaitCond(%d),Timeout(%d)\n",
+		WaitIrq->EventInfo.Clear, bWaitCond, Timeout);
+	LOG_DBG("arg is struct CCU_WAIT_IRQ_STRUCT, size:%zu\n",
+		sizeof(struct CCU_WAIT_IRQ_STRUCT));
 
 	if (Timeout != 0) {
 		/* 2. start to wait signal */
 		LOG_DBG("+:wait_event_interruptible_timeout\n");
-		Timeout = wait_event_interruptible_timeout(ccuInfo.WaitQueueHead,
-				bWaitCond,
-				CCU_MsToJiffies(WaitIrq->EventInfo.
-					Timeout));
+		Timeout = wait_event_interruptible_timeout(
+			ccuInfo.WaitQueueHead,
+			bWaitCond,
+			CCU_MsToJiffies(WaitIrq->EventInfo.Timeout));
 		bWaitCond = false;
 		LOG_DBG("-:wait_event_interruptible_timeout\n");
 	} else {
@@ -786,11 +834,11 @@ int ccu_waitirq(struct CCU_WAIT_IRQ_STRUCT *WaitIrq)
 		LOG_DBG("accuiring ApTaskMutex\n");
 		mutex_lock(&ap_task_manage.ApTaskMutex);
 		LOG_DBG("got ApTaskMutex\n");
-		/*}*/
-		/*else*/
-		/*{*/
-		/*LOG_DBG("ccuInfo.taskCount is not zero: %d\n", task_count_temp);*/
-		/*}*/
+/*}*/
+/*else*/
+/*{*/
+/*LOG_DBG("ccuInfo.taskCount is not zero: %d\n", task_count_temp);*/
+/*}*/
 		bWaitCond = false;
 		LOG_DBG("-:ccu wait_event_interruptible\n");
 	}
@@ -809,17 +857,19 @@ int ccu_AFwaitirq(struct CCU_WAIT_IRQ_STRUCT *WaitIrq, int tg_num)
 {
 	signed int ret = 0, Timeout = WaitIrq->EventInfo.Timeout;
 
-	LOG_DBG("Clear(%d),AFbWaitCond(%d),Timeout(%d)\n", WaitIrq->EventInfo.Clear, AFbWaitCond[tg_num-1], Timeout);
-	LOG_DBG("arg is struct CCU_WAIT_IRQ_STRUCT, size:%zu\n", sizeof(struct CCU_WAIT_IRQ_STRUCT));
+	LOG_DBG("Clear(%d),AFbWaitCond(%d),Timeout(%d)\n",
+		WaitIrq->EventInfo.Clear, AFbWaitCond[tg_num-1], Timeout);
+	LOG_DBG("arg is struct CCU_WAIT_IRQ_STRUCT, size:%zu\n",
+		sizeof(struct CCU_WAIT_IRQ_STRUCT));
 
 	if (Timeout != 0) {
 		/* 2. start to wait signal */
 		LOG_DBG("+:wait_event_interruptible_timeout\n");
 	AFbWaitCond[tg_num-1] = false;
-		Timeout = wait_event_interruptible_timeout(ccuInfo.AFWaitQueueHead[tg_num-1],
-				AFbWaitCond[tg_num-1],
-				CCU_MsToJiffies(WaitIrq->EventInfo.
-					Timeout));
+		Timeout = wait_event_interruptible_timeout(
+			ccuInfo.AFWaitQueueHead[tg_num-1],
+			AFbWaitCond[tg_num-1],
+			CCU_MsToJiffies(WaitIrq->EventInfo.Timeout));
 
 		LOG_DBG("-:wait_event_interruptible_timeout\n");
 	} else {
@@ -830,23 +880,26 @@ int ccu_AFwaitirq(struct CCU_WAIT_IRQ_STRUCT *WaitIrq, int tg_num)
 
 		mutex_unlock(&ap_task_manage.ApTaskMutex);
 		LOG_DBG("unlock ApTaskMutex\n");
-		wait_event_interruptible(ccuInfo.AFWaitQueueHead[tg_num-1], AFbWaitCond[tg_num-1]);
+		wait_event_interruptible(ccuInfo.AFWaitQueueHead[tg_num-1],
+			AFbWaitCond[tg_num-1]);
 		LOG_DBG("accuiring ApTaskMutex\n");
 		mutex_lock(&ap_task_manage.ApTaskMutex);
 		LOG_DBG("got ApTaskMutex\n");
-		/*}*/
-		/*else*/
-		/*{*/
-		/*LOG_DBG("ccuInfo.taskCount is not zero: %d\n", task_count_temp);*/
-		/*}*/
+/*}*/
+/*else*/
+/*{*/
+/*LOG_DBG("ccuInfo.taskCount is not zero: %d\n", task_count_temp);*/
+/*}*/
 		AFbWaitCond[tg_num-1] = false;
 		LOG_DBG("-:ccu wait_event_interruptible\n");
 	}
 
 	if (Timeout > 0) {
-		LOG_DBG("remain timeout:%d, task: %d\n", Timeout, AFg_LogBufIdx[tg_num-1]);
+		LOG_DBG("remain timeout:%d, task: %d\n",
+			Timeout, AFg_LogBufIdx[tg_num-1]);
 		/*send to user if not timeout*/
-		WaitIrq->EventInfo.TimeInfo.passedbySigcnt = (int)AFg_LogBufIdx[tg_num-1];
+		WaitIrq->EventInfo.TimeInfo.passedbySigcnt =
+		(int)AFg_LogBufIdx[tg_num-1];
 	}
 	/*EXIT:*/
 
@@ -869,7 +922,7 @@ int ccu_read_info_reg(int regNo)
 {
 	int *offset = (int *)(uintptr_t)(ccu_base + 0x60 + regNo * 4);
 
-	LOG_DBG("ccu_read_info_reg: %x\n", (unsigned int)(*offset));
+	LOG_DBG("%s: %x\n", __func__, (unsigned int)(*offset));
 
 	return *offset;
 }

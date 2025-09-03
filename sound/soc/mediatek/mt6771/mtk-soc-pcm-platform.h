@@ -1,22 +1,22 @@
 /*
-* Copyright (C) 2015 MediaTek Inc.
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /******************************************************************************
-*
+ *
  *
  * Filename:
  * ---------
@@ -34,11 +34,9 @@
  * -------
  *   Chipeng Chang (MTK02308)
  *
- *---------------------------------------------------------------------------
----
+ *-------------------------------------------------------------------------
  *
-
-*******************************************************************************/
+ ******************************************************************************/
 
 #ifndef AUDIO_MT6797_SOUND_H
 #define AUDIO_MT6797_SOUND_H
@@ -71,7 +69,6 @@
 #include <linux/wait.h>
 #include <linux/spinlock.h>
 #include <linux/sched.h>
-#include <linux/wakelock.h>
 #include <linux/semaphore.h>
 #include <linux/jiffies.h>
 #include <linux/proc_fs.h>
@@ -81,10 +78,7 @@
 #include <linux/irq.h>
 #include <linux/io.h>
 #include <asm/div64.h>
-#include <mt-plat/aee.h>
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#include <mt-plat/upmu_common.h>
-#endif
+//#include <mt-plat/aee.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
@@ -98,8 +92,8 @@
 
 
 /*
-  *    PCM buffer size and period size setting
-  */
+ *    PCM buffer size and period size setting
+ */
 #define BT_DAI_MAX_BUFFER_SIZE     (16*1024)
 #define BT_DAI_MIN_PERIOD_SIZE     1
 #define BT_DAI_MAX_PERIOD_SIZE     BT_DAI_MAX_BUFFER_SIZE
@@ -142,10 +136,10 @@
 #define HDMI_MAX_BUFFER_SIZE     (384*1024)
 #define HDMI_MIN_PERIOD_SIZE       1
 #define HDMI_MAX_PERIODBYTE_SIZE     HDMI_MAX_BUFFER_SIZE
-#define HDMI_MAX_2CH_16BIT_PERIOD_SIZE     (HDMI_MAX_PERIODBYTE_SIZE/(2*2)) /* 2 channels , 16bits */
-#define HDMI_MAX_8CH_16BIT_PERIOD_SIZE     (HDMI_MAX_PERIODBYTE_SIZE/(8*2)) /* 8 channels , 16bits */
-#define HDMI_MAX_2CH_24BIT_PERIOD_SIZE     (HDMI_MAX_PERIODBYTE_SIZE/(2*2*2)) /* 2 channels , 24bits */
-#define HDMI_MAX_8CH_24BIT_PERIOD_SIZE     (HDMI_MAX_PERIODBYTE_SIZE/(8*2*2)) /* 8 channels , 24bits */
+#define HDMI_MAX_2CH_16BIT_PERIOD_SIZE     (HDMI_MAX_PERIODBYTE_SIZE/(2*2))
+#define HDMI_MAX_8CH_16BIT_PERIOD_SIZE     (HDMI_MAX_PERIODBYTE_SIZE/(8*2))
+#define HDMI_MAX_2CH_24BIT_PERIOD_SIZE     (HDMI_MAX_PERIODBYTE_SIZE/(2*2*2))
+#define HDMI_MAX_8CH_24BIT_PERIOD_SIZE     (HDMI_MAX_PERIODBYTE_SIZE/(8*2*2))
 
 #define MRGRX_MAX_BUFFER_SIZE     (64*1024)
 #define MRGRX_MIN_PERIOD_SIZE       1
@@ -154,10 +148,6 @@
 #define FM_I2S_MAX_BUFFER_SIZE     (64*1024)
 #define FM_I2S_MIN_PERIOD_SIZE       1
 #define FM_I2S_MAX_PERIOD_SIZE     MRGRX_MAX_BUFFER_SIZE
-
-#define VOW_BARGE_IN_MAX_BUFFER_SIZE    (16 * 1024)
-#define VOW_BARGE_IN_MIN_PERIOD_SIZE      1
-#define VOW_BARGE_IN_MAX_PERIOD_SIZE    VOW_BARGE_IN_MAX_BUFFER_SIZE
 
 #define AUDIO_SRAM_PLAYBACK_FULL_SIZE	Dl1_MAX_BUFFER_SIZE
 #define AUDIO_SRAM_PLAYBACK_PARTIAL_SIZE	Dl1_MAX_BUFFER_SIZE

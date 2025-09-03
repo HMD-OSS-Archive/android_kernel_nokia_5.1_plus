@@ -16,43 +16,43 @@
  * Version: V2.6.0.3
  */
 
-#include "tpd.h"
 #include "include/tpd_gt9xx_common.h"
-#include <linux/interrupt.h>
-#include <linux/i2c.h>
-#include <linux/sched.h>
-#include <linux/kthread.h>
-#include <linux/wait.h>
-#include <linux/time.h>
+#include "tpd.h"
 #include <linux/delay.h>
 #include <linux/device.h>
+#include <linux/i2c.h>
+#include <linux/interrupt.h>
+#include <linux/kthread.h>
 #include <linux/miscdevice.h>
+#include <linux/proc_fs.h> /*proc */
+#include <linux/sched.h>
+#include <linux/time.h>
 #include <linux/uaccess.h>
-#include <linux/proc_fs.h>	/*proc */
+#include <linux/wait.h>
 
 #pragma pack(1)
 struct st_cmd_head {
-	u8 wr;			/* write read flag£¬0:R1:W2:PID 3: */
-	u8 flag;		/* 0:no need flag/int 1: need flag2:need int */
-	u8 flag_addr[2];	/* flag address */
-	u8 flag_val;		/* flag val */
-	u8 flag_relation;	/* flag_val:flag 0:not equal 1:equal 2:> 3:< */
-	u16 circle;		/* polling cycle */
-	u8 times;		/* plling times */
-	u8 retry;		/* I2C retry times */
-	u16 delay;		/* delay before read or after write */
-	u16 data_len;		/* data length */
-	u8 addr_len;		/* address length */
-	u8 addr[2];		/* address */
-	u8 res[3];		/* reserved */
-	u8 *data;		/* data pointer */
+	u8 wr;		  /* write read flag£¬0:R1:W2:PID 3: */
+	u8 flag;	  /* 0:no need flag/int 1: need flag2:need int */
+	u8 flag_addr[2];  /* flag address */
+	u8 flag_val;      /* flag val */
+	u8 flag_relation; /* flag_val:flag 0:not equal 1:equal 2:> 3:< */
+	u16 circle;       /* polling cycle */
+	u8 times;	 /* plling times */
+	u8 retry;	 /* I2C retry times */
+	u16 delay;	/* delay before read or after write */
+	u16 data_len;     /* data length */
+	u8 addr_len;      /* address length */
+	u8 addr[2];       /* address */
+	u8 res[3];	/* reserved */
+	u8 *data;	 /* data pointer */
 };
 #pragma pack()
 static struct st_cmd_head cmd_head, cmd_head2;
 
-#define DATA_LENGTH_UINT	512
+#define DATA_LENGTH_UINT 512
 #define CMD_HEAD_LENGTH (sizeof(struct st_cmd_head) - sizeof(u8 *))
-static char procname[20] = { 0 };
+static char procname[20] = {0};
 
 static struct i2c_client *gt_client;
 
@@ -91,7 +91,7 @@ u8 force_wake_flag;
 u8 gtp_hotknot_enabled;
 
 static const struct file_operations hotknot_fops = {
-/* .owner = THIS_MODULE, */
+	/* .owner = THIS_MODULE, */
 	.open = hotknot_open,
 	.release = hotknot_release,
 	.read = hotknot_read,
@@ -99,9 +99,7 @@ static const struct file_operations hotknot_fops = {
 };
 
 static struct miscdevice hotknot_misc_device = {
-	.minor = MISC_DYNAMIC_MINOR,
-	.name = HOTKNOTNAME,
-	.fops = &hotknot_fops,
+	.minor = MISC_DYNAMIC_MINOR, .name = HOTKNOTNAME, .fops = &hotknot_fops,
 };
 
 static void tool_set_proc_name(char *procname)
@@ -128,8 +126,8 @@ static s32 tool_i2c_write_no_extra(u8 *buf, u16 len)
 static s32 tool_i2c_read_with_extra(u8 *buf, u16 len)
 {
 	s32 ret = -1;
-	u8 pre[2] = { 0x0f, 0xff };
-	u8 end[2] = { 0x80, 0x00 };
+	u8 pre[2] = {0x0f, 0xff};
+	u8 end[2] = {0x80, 0x00};
 
 	tool_i2c_write_no_extra(pre, 2);
 	ret = tool_i2c_read_no_extra(buf, len);
@@ -141,8 +139,8 @@ static s32 tool_i2c_read_with_extra(u8 *buf, u16 len)
 static s32 tool_i2c_write_with_extra(u8 *buf, u16 len)
 {
 	s32 ret = -1;
-	u8 pre[2] = { 0x0f, 0xff };
-	u8 end[2] = { 0x80, 0x00 };
+	u8 pre[2] = {0x0f, 0xff};
+	u8 end[2] = {0x80, 0x00};
 
 	tool_i2c_write_no_extra(pre, 2);
 	ret = tool_i2c_write_no_extra(buf, len);
@@ -153,14 +151,14 @@ static s32 tool_i2c_write_with_extra(u8 *buf, u16 len)
 
 static void register_i2c_func(void)
 {
-/* if (!strncmp(IC_TYPE, "GT818", 5) || !strncmp(IC_TYPE, "GT816", 5) */
-/* || !strncmp(IC_TYPE, "GT811", 5) || !strncmp(IC_TYPE, "GT818F", 6) */
-/* || !strncmp(IC_TYPE, "GT827", 5) || !strncmp(IC_TYPE,"GT828", 5) */
-/* || !strncmp(IC_TYPE, "GT813", 5)) */
-	if (strncmp(IC_TYPE, "GT8110", 6) && strncmp(IC_TYPE, "GT8105", 6)
-	    && strncmp(IC_TYPE, "GT801", 5) && strncmp(IC_TYPE, "GT800", 5)
-	    && strncmp(IC_TYPE, "GT801PLUS", 9) && strncmp(IC_TYPE, "GT811", 5)
-	    && strncmp(IC_TYPE, "GTxxx", 5) && strncmp(IC_TYPE, "GT9XX", 5)) {
+	/* if (!strncmp(IC_TYPE, "GT818", 5) || !strncmp(IC_TYPE, "GT816", 5) */
+	/* || !strncmp(IC_TYPE, "GT811", 5) || !strncmp(IC_TYPE, "GT818F", 6) */
+	/* || !strncmp(IC_TYPE, "GT827", 5) || !strncmp(IC_TYPE,"GT828", 5) */
+	/* || !strncmp(IC_TYPE, "GT813", 5)) */
+	if (strncmp(IC_TYPE, "GT8110", 6) && strncmp(IC_TYPE, "GT8105", 6) &&
+	    strncmp(IC_TYPE, "GT801", 5) && strncmp(IC_TYPE, "GT800", 5) &&
+	    strncmp(IC_TYPE, "GT801PLUS", 9) && strncmp(IC_TYPE, "GT811", 5) &&
+	    strncmp(IC_TYPE, "GTxxx", 5) && strncmp(IC_TYPE, "GT9XX", 5)) {
 		tool_i2c_read = tool_i2c_read_with_extra;
 		tool_i2c_write = tool_i2c_write_with_extra;
 		GTP_DEBUG("I2C function: with pre and end cmd!");
@@ -275,7 +273,7 @@ static u8 relation(u8 src, u8 dst, u8 rlt)
 	case 1:
 		ret = (src == dst) ? true : false;
 		GTP_DEBUG("equal:src:0x%02x dst:0x%02x ret:%d.", src, dst,
-			  (s32) ret);
+			  (s32)ret);
 		break;
 
 	case 2:
@@ -307,8 +305,10 @@ static u8 comfirm(void)
 	s32 i = 0;
 	u8 buf[32];
 
-	/* memcpy(&buf[GTP_ADDR_LENGTH - cmd_head.addr_len], &cmd_head.flag_addr, cmd_head.addr_len); */
-	/* memcpy(buf, &cmd_head.flag_addr, cmd_head.addr_len);//Modified by Scott, 2012-02-17 */
+	/* memcpy(&buf[GTP_ADDR_LENGTH - cmd_head.addr_len], */
+	/* &cmd_head.flag_addr, cmd_head.addr_len); */
+	/* memcpy(buf, &cmd_head.flag_addr, cmd_head.addr_len); Modified by */
+	/* Scott, 2012-02-17 */
 	memcpy(buf, cmd_head.flag_addr, cmd_head.addr_len);
 
 	for (i = 0; i < cmd_head.times; i++) {
@@ -317,9 +317,8 @@ static u8 comfirm(void)
 			return FAIL;
 		}
 
-		if (true ==
-		    relation(buf[GTP_ADDR_LENGTH], cmd_head.flag_val,
-			     cmd_head.flag_relation)) {
+		if (true == relation(buf[GTP_ADDR_LENGTH], cmd_head.flag_val,
+				     cmd_head.flag_relation)) {
 			GTP_DEBUG("value at flag addr:0x%02x.",
 				  buf[GTP_ADDR_LENGTH]);
 			GTP_DEBUG("flag value:0x%02x.", cmd_head.flag_val);
@@ -343,7 +342,7 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff,
 	s32 ret = 0;
 
 	GTP_DEBUG_FUNC();
-	GTP_DEBUG_ARRAY((u8 *) buff, len);
+	GTP_DEBUG_ARRAY((u8 *)buff, len);
 
 	if (gtp_resetting == 1) {
 		/* GTP_ERROR("[Write]tpd_halt =1 fail!"); */
@@ -358,10 +357,10 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff,
 	GTP_DEBUG("wr:0x%02x.", cmd_head.wr);
 
 	if (cmd_head.wr == 1) {
-		/* copy_from_user(&cmd_head.data[cmd_head.addr_len], &buff[CMD_HEAD_LENGTH], cmd_head.data_len); */
-		ret =
-		    copy_from_user(&cmd_head.data[GTP_ADDR_LENGTH],
-				   &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
+		/* copy_from_user(&cmd_head.data[cmd_head.addr_len], */
+		/* &buff[CMD_HEAD_LENGTH], cmd_head.data_len); */
+		ret = copy_from_user(&cmd_head.data[GTP_ADDR_LENGTH],
+				     &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
 		if (ret)
 			GTP_ERROR("copy_from_user failed.");
 
@@ -382,22 +381,22 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff,
 			/* Need interrupt! */
 		}
 
-		if (tool_i2c_write
-		    (&cmd_head.data[GTP_ADDR_LENGTH - cmd_head.addr_len],
-		     cmd_head.data_len + cmd_head.addr_len) <= 0) {
+		if (tool_i2c_write(
+			    &cmd_head.data[GTP_ADDR_LENGTH - cmd_head.addr_len],
+			    cmd_head.data_len + cmd_head.addr_len) <= 0) {
 			GTP_ERROR("[WRITE]Write data failed!");
 			return FAIL;
 		}
 
-		GTP_DEBUG_ARRAY(&cmd_head.data
-				[GTP_ADDR_LENGTH - cmd_head.addr_len],
-				cmd_head.data_len + cmd_head.addr_len);
+		GTP_DEBUG_ARRAY(
+			&cmd_head.data[GTP_ADDR_LENGTH - cmd_head.addr_len],
+			cmd_head.data_len + cmd_head.addr_len);
 
 		if (cmd_head.delay)
 			msleep(cmd_head.delay);
 
 		return cmd_head.data_len + CMD_HEAD_LENGTH;
-	} else if (cmd_head.wr == 3) {	/* Write ic type */
+	} else if (cmd_head.wr == 3) { /* Write ic type */
 		memcpy(IC_TYPE, cmd_head.data, cmd_head.data_len);
 		register_i2c_func();
 
@@ -406,7 +405,7 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff,
 		/* memcpy(IC_TYPE, cmd_head.data, cmd_head.data_len); */
 
 		return cmd_head.data_len + CMD_HEAD_LENGTH;
-	} else if (cmd_head.wr == 7) {	/* disable irq! */
+	} else if (cmd_head.wr == 7) { /* disable irq! */
 		gtp_irq_disable();
 #ifdef CONFIG_GTP_ESD_PROTECT
 		gtp_esd_switch(i2c_client_point, SWITCH_OFF);
@@ -415,7 +414,7 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff,
 		gtp_charger_switch(0);
 #endif
 		return CMD_HEAD_LENGTH;
-	} else if (cmd_head.wr == 9) {	/* enable irq! */
+	} else if (cmd_head.wr == 9) { /* enable irq! */
 		gtp_irq_enable();
 #ifdef CONFIG_GTP_ESD_PROTECT
 		gtp_esd_switch(i2c_client_point, SWITCH_ON);
@@ -426,7 +425,7 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff,
 		return CMD_HEAD_LENGTH;
 	} else if (cmd_head.wr == 17) {
 		ret = copy_from_user(&cmd_head.data[GTP_ADDR_LENGTH],
-				   &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
+				     &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
 		if (ret)
 			GTP_DEBUG("copy_from_user failed.");
 
@@ -441,12 +440,12 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff,
 		return CMD_HEAD_LENGTH;
 	}
 #ifdef UPDATE_FUNCTIONS
-	else if (cmd_head.wr == 11) {	/* Enter update mode! */
+	else if (cmd_head.wr == 11) { /* Enter update mode! */
 		if (gup_enter_update_mode(gt_client) == FAIL)
 			return FAIL;
-	} else if (cmd_head.wr == 13) {	/* Leave update mode! */
+	} else if (cmd_head.wr == 13) { /* Leave update mode! */
 		gup_leave_update_mode();
-	} else if (cmd_head.wr == 15) {	/* Update firmware! */
+	} else if (cmd_head.wr == 15) { /* Update firmware! */
 		show_len = 0;
 		total_len = 0;
 		memset(cmd_head.data, 0, cmd_head.data_len + 1);
@@ -459,9 +458,9 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff,
 	}
 #endif
 #ifdef CONFIG_GTP_HOTKNOT
-	else if (cmd_head.wr == 19) {	/* load subsystem */
+	else if (cmd_head.wr == 19) { /* load subsystem */
 		ret = copy_from_user(&cmd_head.data[0], &buff[CMD_HEAD_LENGTH],
-				   cmd_head.data_len);
+				     cmd_head.data_len);
 		if (cmd_head.data[0] == 0) {
 			if (gup_load_hotknot_fw() == FAIL)
 				return FAIL;
@@ -477,7 +476,6 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff,
 		} else if (cmd_head.data[0] == 3) {
 			if (gup_load_touch_fw(NULL) == FAIL)
 				return FAIL;
-
 		}
 	}
 #endif
@@ -488,48 +486,49 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff,
 		u8 rqst_hotknot_state;
 
 		ret = copy_from_user(&cmd_head.data[GTP_ADDR_LENGTH],
-				   &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
+				     &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
 		if (ret)
 			GTP_ERROR("copy_from_user failed.");
 
 		rqst_hotknot_state = cmd_head.data[GTP_ADDR_LENGTH];
 		wait_hotknot_state |= rqst_hotknot_state;
 		wait_hotknot_timeout =
-		    (cmd_head.data[GTP_ADDR_LENGTH + 1] << 8) +
-		    cmd_head.data[GTP_ADDR_LENGTH + 2];
-		GTP_DEBUG
-		    ("Goodix tool received wait polling state:0x%x,timeout:%d, all wait state:0x%x",
-		     rqst_hotknot_state, wait_hotknot_timeout,
-		     wait_hotknot_state);
+			(cmd_head.data[GTP_ADDR_LENGTH + 1] << 8) +
+			cmd_head.data[GTP_ADDR_LENGTH + 2];
+		GTP_DEBUG(
+			"Goodix tool received wait polling state:0x%x,timeout:%d, all wait state:0x%x",
+			rqst_hotknot_state, wait_hotknot_timeout,
+			wait_hotknot_state);
 		got_hotknot_state &= (~rqst_hotknot_state);
 		/* got_hotknot_extra_state = 0; */
 		switch (rqst_hotknot_state) {
 			set_current_state(TASK_INTERRUPTIBLE);
 		case HN_DEVICE_PAIRED:
 			hotknot_paired_flag = 0;
-			wait_event_interruptible(bp_waiter, force_wake_flag ||
-						 rqst_hotknot_state ==
-						 (got_hotknot_state &
-						  rqst_hotknot_state));
+			wait_event_interruptible(
+				bp_waiter,
+				force_wake_flag ||
+					rqst_hotknot_state ==
+						(got_hotknot_state &
+						 rqst_hotknot_state));
 			wait_hotknot_state &= (~rqst_hotknot_state);
 			if (rqst_hotknot_state !=
 			    (got_hotknot_state & rqst_hotknot_state)) {
-				GTP_ERROR
-				    ("Wait 0x%x block polling waiter failed.",
-				     rqst_hotknot_state);
+				GTP_ERROR(
+					"Wait 0x%x block polling waiter failed.",
+					rqst_hotknot_state);
 				force_wake_flag = 0;
 				return FAIL;
 			}
 			break;
 		case HN_MASTER_SEND:
 		case HN_SLAVE_RECEIVED:
-			wait_event_interruptible_timeout(bp_waiter,
-							 force_wake_flag
-							 || rqst_hotknot_state
-							 ==
-							 (got_hotknot_state &
-							  rqst_hotknot_state),
-							 wait_hotknot_timeout);
+			wait_event_interruptible_timeout(
+				bp_waiter, force_wake_flag ||
+						   rqst_hotknot_state ==
+							   (got_hotknot_state &
+							    rqst_hotknot_state),
+				wait_hotknot_timeout);
 			wait_hotknot_state &= (~rqst_hotknot_state);
 			if (rqst_hotknot_state ==
 			    (got_hotknot_state & rqst_hotknot_state))
@@ -541,19 +540,18 @@ static ssize_t goodix_tool_write(struct file *filp, const char __user *buff,
 			return FAIL;
 		case HN_MASTER_DEPARTED:
 		case HN_SLAVE_DEPARTED:
-			wait_event_interruptible_timeout(bp_waiter,
-							 force_wake_flag
-							 || rqst_hotknot_state
-							 ==
-							 (got_hotknot_state &
-							  rqst_hotknot_state),
-							 wait_hotknot_timeout);
+			wait_event_interruptible_timeout(
+				bp_waiter, force_wake_flag ||
+						   rqst_hotknot_state ==
+							   (got_hotknot_state &
+							    rqst_hotknot_state),
+				wait_hotknot_timeout);
 			wait_hotknot_state &= (~rqst_hotknot_state);
 			if (rqst_hotknot_state !=
 			    (got_hotknot_state & rqst_hotknot_state)) {
-				GTP_ERROR
-				    ("Wait 0x%x block polling waitor timeout.",
-				     rqst_hotknot_state);
+				GTP_ERROR(
+					"Wait 0x%x block polling waitor timeout.",
+					rqst_hotknot_state);
 				force_wake_flag = 0;
 				return FAIL;
 			}
@@ -632,10 +630,12 @@ static ssize_t goodix_tool_read(struct file *flie, char __user *page,
 				return FAIL;
 			}
 
-			/* memcpy(&page[loc], &cmd_head.data[GTP_ADDR_LENGTH], len); */
-			ret = simple_read_from_buffer(&page[loc], size, ppos,
-						    &cmd_head.data
-						    [GTP_ADDR_LENGTH], len);
+			/* memcpy(&page[loc], &cmd_head.data[GTP_ADDR_LENGTH],
+			 */
+			/* len); */
+			ret = simple_read_from_buffer(
+				&page[loc], size, ppos,
+				&cmd_head.data[GTP_ADDR_LENGTH], len);
 			if (ret < 0)
 				return ret;
 
@@ -646,9 +646,8 @@ static ssize_t goodix_tool_read(struct file *flie, char __user *page,
 		}
 		return cmd_head.data_len;
 	} else if (cmd_head.wr == 2) {
-		ret =
-		    simple_read_from_buffer(page, size, ppos, IC_TYPE,
-					    sizeof(IC_TYPE));
+		ret = simple_read_from_buffer(page, size, ppos, IC_TYPE,
+					      sizeof(IC_TYPE));
 		return ret;
 	} else if (cmd_head.wr == 4) {
 		u8 progress_buf[4];
@@ -658,14 +657,15 @@ static ssize_t goodix_tool_read(struct file *flie, char __user *page,
 		progress_buf[2] = total_len >> 8;
 		progress_buf[3] = total_len & 0xff;
 
-		ret = simple_read_from_buffer(page, size, ppos, progress_buf, 4);
+		ret = simple_read_from_buffer(page, size, ppos, progress_buf,
+					      4);
 		return ret;
 	} else if (cmd_head.wr == 6) {
 		/* Read error code! */
-	} else if (cmd_head.wr == 8) {	/* Read driver version */
+	} else if (cmd_head.wr == 8) { /* Read driver version */
 		ret = simple_read_from_buffer(page, size, ppos,
-					    GTP_DRIVER_VERSION,
-					    strlen(GTP_DRIVER_VERSION));
+					      GTP_DRIVER_VERSION,
+					      strlen(GTP_DRIVER_VERSION));
 		return ret;
 	}
 	return -EPERM;
@@ -692,7 +692,7 @@ static ssize_t hotknot_write(struct file *filp, const char __user *buff,
 	int cnt = 30;
 
 	GTP_DEBUG_FUNC();
-	GTP_DEBUG_ARRAY((u8 *) buff, len);
+	GTP_DEBUG_ARRAY((u8 *)buff, len);
 
 	while (cnt-- && gtp_loading_fw)
 		ssleep(1);
@@ -709,9 +709,11 @@ static ssize_t hotknot_write(struct file *filp, const char __user *buff,
 	GTP_DEBUG("wr:0x%02x.", cmd_head2.wr);
 
 	if (cmd_head2.wr == 1) {
-		/* copy_from_user(&cmd_head2.data[cmd_head2.addr_len], &buff[CMD_HEAD_LENGTH], cmd_head2.data_len); */
+		/* copy_from_user(&cmd_head2.data[cmd_head2.addr_len], */
+		/* &buff[CMD_HEAD_LENGTH], cmd_head2.data_len); */
 		ret = copy_from_user(&cmd_head2.data[GTP_ADDR_LENGTH],
-				   &buff[CMD_HEAD_LENGTH], cmd_head2.data_len);
+				     &buff[CMD_HEAD_LENGTH],
+				     cmd_head2.data_len);
 
 		if (ret)
 			GTP_ERROR("copy_from_user failed.");
@@ -733,22 +735,23 @@ static ssize_t hotknot_write(struct file *filp, const char __user *buff,
 			/* Need interrupt! */
 		}
 
-		if (tool_i2c_write
-		    (&cmd_head2.data[GTP_ADDR_LENGTH - cmd_head2.addr_len],
-		     cmd_head2.data_len + cmd_head2.addr_len) <= 0) {
+		if (tool_i2c_write(&cmd_head2.data[GTP_ADDR_LENGTH -
+						   cmd_head2.addr_len],
+				   cmd_head2.data_len + cmd_head2.addr_len) <=
+		    0) {
 			GTP_ERROR("[WRITE]Write data failed!");
 			return FAIL;
 		}
 
-		GTP_DEBUG_ARRAY(&cmd_head2.data
-				[GTP_ADDR_LENGTH - cmd_head2.addr_len],
-				cmd_head2.data_len + cmd_head2.addr_len);
+		GTP_DEBUG_ARRAY(
+			&cmd_head2.data[GTP_ADDR_LENGTH - cmd_head2.addr_len],
+			cmd_head2.data_len + cmd_head2.addr_len);
 
 		if (cmd_head2.delay)
 			msleep(cmd_head2.delay);
 
 		return cmd_head2.data_len + CMD_HEAD_LENGTH;
-	} else if (cmd_head2.wr == 3) {	/* Write ic type */
+	} else if (cmd_head2.wr == 3) { /* Write ic type */
 		memcpy(IC_TYPE, cmd_head2.data, cmd_head2.data_len);
 		register_i2c_func();
 
@@ -757,7 +760,7 @@ static ssize_t hotknot_write(struct file *filp, const char __user *buff,
 		/* memcpy(IC_TYPE, cmd_head2.data, cmd_head2.data_len); */
 
 		return cmd_head2.data_len + CMD_HEAD_LENGTH;
-	} else if (cmd_head2.wr == 7) {	/* disable irq! */
+	} else if (cmd_head2.wr == 7) { /* disable irq! */
 		gtp_irq_disable();
 #ifdef CONFIG_GTP_ESD_PROTECT
 		gtp_esd_switch(i2c_client_point, SWITCH_OFF);
@@ -766,7 +769,7 @@ static ssize_t hotknot_write(struct file *filp, const char __user *buff,
 		gtp_charger_switch(0);
 #endif
 		return CMD_HEAD_LENGTH;
-	} else if (cmd_head2.wr == 9) {	/* enable irq! */
+	} else if (cmd_head2.wr == 9) { /* enable irq! */
 		gtp_irq_enable();
 #ifdef CONFIG_GTP_ESD_PROTECT
 		gtp_esd_switch(i2c_client_point, SWITCH_ON);
@@ -777,7 +780,8 @@ static ssize_t hotknot_write(struct file *filp, const char __user *buff,
 		return CMD_HEAD_LENGTH;
 	} else if (cmd_head2.wr == 17) {
 		ret = copy_from_user(&cmd_head2.data[GTP_ADDR_LENGTH],
-				   &buff[CMD_HEAD_LENGTH], cmd_head2.data_len);
+				     &buff[CMD_HEAD_LENGTH],
+				     cmd_head2.data_len);
 		if (ret)
 			GTP_DEBUG("copy_from_user failed.");
 
@@ -792,12 +796,12 @@ static ssize_t hotknot_write(struct file *filp, const char __user *buff,
 		return CMD_HEAD_LENGTH;
 	}
 #ifdef UPDATE_FUNCTIONS
-	else if (cmd_head2.wr == 11) {	/* Enter update mode! */
+	else if (cmd_head2.wr == 11) { /* Enter update mode! */
 		if (gup_enter_update_mode(gt_client) == FAIL)
 			return FAIL;
-	} else if (cmd_head2.wr == 13) {	/* Leave update mode! */
+	} else if (cmd_head2.wr == 13) { /* Leave update mode! */
 		gup_leave_update_mode();
-	} else if (cmd_head2.wr == 15) {	/* Update firmware! */
+	} else if (cmd_head2.wr == 15) { /* Update firmware! */
 		show_len = 0;
 		total_len = 0;
 		memset(cmd_head2.data, 0, cmd_head2.data_len + 1);
@@ -810,9 +814,9 @@ static ssize_t hotknot_write(struct file *filp, const char __user *buff,
 	}
 #endif
 #ifdef CONFIG_GTP_HOTKNOT
-	else if (cmd_head2.wr == 19) {	/* load subsystem */
+	else if (cmd_head2.wr == 19) { /* load subsystem */
 		ret = copy_from_user(&cmd_head2.data[0], &buff[CMD_HEAD_LENGTH],
-				   cmd_head2.data_len);
+				     cmd_head2.data_len);
 		if (cmd_head2.data[0] == 0) {
 			if (gup_load_hotknot_fw() == FAIL)
 				return FAIL;
@@ -837,7 +841,8 @@ static ssize_t hotknot_write(struct file *filp, const char __user *buff,
 		u8 rqst_hotknot_state;
 
 		ret = copy_from_user(&cmd_head2.data[GTP_ADDR_LENGTH],
-				   &buff[CMD_HEAD_LENGTH], cmd_head2.data_len);
+				     &buff[CMD_HEAD_LENGTH],
+				     cmd_head2.data_len);
 
 		if (ret)
 			GTP_ERROR("copy_from_user failed.");
@@ -845,41 +850,42 @@ static ssize_t hotknot_write(struct file *filp, const char __user *buff,
 		rqst_hotknot_state = cmd_head2.data[GTP_ADDR_LENGTH];
 		wait_hotknot_state |= rqst_hotknot_state;
 		wait_hotknot_timeout =
-		    (cmd_head2.data[GTP_ADDR_LENGTH + 1] << 8) +
-		    cmd_head2.data[GTP_ADDR_LENGTH + 2];
-		GTP_DEBUG
-		    ("Goodix tool received wait polling state:0x%x,timeout:%d, all wait state:0x%x",
-		     rqst_hotknot_state, wait_hotknot_timeout,
-		     wait_hotknot_state);
+			(cmd_head2.data[GTP_ADDR_LENGTH + 1] << 8) +
+			cmd_head2.data[GTP_ADDR_LENGTH + 2];
+		GTP_DEBUG(
+			"Goodix tool received wait polling state:0x%x,timeout:%d, all wait state:0x%x",
+			rqst_hotknot_state, wait_hotknot_timeout,
+			wait_hotknot_state);
 		got_hotknot_state &= (~rqst_hotknot_state);
 		/* got_hotknot_extra_state = 0; */
 		switch (rqst_hotknot_state) {
 			set_current_state(TASK_INTERRUPTIBLE);
 		case HN_DEVICE_PAIRED:
 			hotknot_paired_flag = 0;
-			wait_event_interruptible(bp_waiter, force_wake_flag ||
-						 rqst_hotknot_state ==
-						 (got_hotknot_state &
-						  rqst_hotknot_state));
+			wait_event_interruptible(
+				bp_waiter,
+				force_wake_flag ||
+					rqst_hotknot_state ==
+						(got_hotknot_state &
+						 rqst_hotknot_state));
 			wait_hotknot_state &= (~rqst_hotknot_state);
 			if (rqst_hotknot_state !=
 			    (got_hotknot_state & rqst_hotknot_state)) {
-				GTP_ERROR
-				    ("Wait 0x%x block polling waiter failed.",
-				     rqst_hotknot_state);
+				GTP_ERROR(
+					"Wait 0x%x block polling waiter failed.",
+					rqst_hotknot_state);
 				force_wake_flag = 0;
 				return FAIL;
 			}
 			break;
 		case HN_MASTER_SEND:
 		case HN_SLAVE_RECEIVED:
-			wait_event_interruptible_timeout(bp_waiter,
-							 force_wake_flag
-							 || rqst_hotknot_state
-							 ==
-							 (got_hotknot_state &
-							  rqst_hotknot_state),
-							 wait_hotknot_timeout);
+			wait_event_interruptible_timeout(
+				bp_waiter, force_wake_flag ||
+						   rqst_hotknot_state ==
+							   (got_hotknot_state &
+							    rqst_hotknot_state),
+				wait_hotknot_timeout);
 			wait_hotknot_state &= (~rqst_hotknot_state);
 			if (rqst_hotknot_state ==
 			    (got_hotknot_state & rqst_hotknot_state))
@@ -891,19 +897,18 @@ static ssize_t hotknot_write(struct file *filp, const char __user *buff,
 			return FAIL;
 		case HN_MASTER_DEPARTED:
 		case HN_SLAVE_DEPARTED:
-			wait_event_interruptible_timeout(bp_waiter,
-							 force_wake_flag
-							 || rqst_hotknot_state
-							 ==
-							 (got_hotknot_state &
-							  rqst_hotknot_state),
-							 wait_hotknot_timeout);
+			wait_event_interruptible_timeout(
+				bp_waiter, force_wake_flag ||
+						   rqst_hotknot_state ==
+							   (got_hotknot_state &
+							    rqst_hotknot_state),
+				wait_hotknot_timeout);
 			wait_hotknot_state &= (~rqst_hotknot_state);
 			if (rqst_hotknot_state !=
 			    (got_hotknot_state & rqst_hotknot_state)) {
-				GTP_ERROR
-				    ("Wait 0x%x block polling waitor timeout.",
-				     rqst_hotknot_state);
+				GTP_ERROR(
+					"Wait 0x%x block polling waitor timeout.",
+					rqst_hotknot_state);
 				force_wake_flag = 0;
 				return FAIL;
 			}
@@ -982,9 +987,9 @@ static ssize_t _hotknot_read(struct file *file, char __user *page, size_t size,
 				return FAIL;
 			}
 
-			ret =
-			    copy_to_user(&page[loc],
-					 &cmd_head2.data[GTP_ADDR_LENGTH], len);
+			ret = copy_to_user(&page[loc],
+					   &cmd_head2.data[GTP_ADDR_LENGTH],
+					   len);
 			loc += len;
 
 			GTP_DEBUG_ARRAY(&cmd_head2.data[GTP_ADDR_LENGTH], len);
@@ -1004,7 +1009,7 @@ static ssize_t _hotknot_read(struct file *file, char __user *page, size_t size,
 		return cmd_head2.data_len;
 	} else if (cmd_head2.wr == 6) {
 		/* Read error code! */
-	} else if (cmd_head2.wr == 8) {	/* Read driver version */
+	} else if (cmd_head2.wr == 8) { /* Read driver version */
 		s32 tmp_len = strlen(GTP_DRIVER_VERSION);
 
 		ret = copy_to_user(page, GTP_DRIVER_VERSION, tmp_len);

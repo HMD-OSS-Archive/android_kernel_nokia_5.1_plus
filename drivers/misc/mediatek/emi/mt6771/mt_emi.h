@@ -20,11 +20,13 @@
 #define ENABLE_ELM	1
 #define ENABLE_MBW	0
 #define DECS_ON_SSPM
+#define MPU_BYPASS
 /* #define ENABLE_MPU_SLVERR */
+#define DBG_INFO_READY	1
 
 /* IRQ from device tree */
 #define MPU_IRQ_INDEX	0
-#define ELM_IRQ_INDEX	1 /* Bianco uses CGM IRQ as ELM IRQ */
+#define ELM_IRQ_INDEX	1 /* fcBianco uses CGM IRQ as ELM IRQ */
 
 /* macro for MPU */
 #define ENABLE_AP_REGION	1

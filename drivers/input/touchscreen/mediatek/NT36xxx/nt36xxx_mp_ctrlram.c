@@ -2,7 +2,7 @@
  * Copyright (C) 2010 - 2017 Novatek, Inc.
  *
  * $Revision: 21288 $
- * $Date: 2018-01-05 11:38:47 +0800 (?��?, 05 一??2018) $
+ * $Date: 2018-01-05 11:38:47 +0800 (?±ä?, 05 ä¸€??2018) $
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ static int32_t TestResult_FW_CC_Q = 0;
 static int32_t TestResult_Noise = 0;
 static int32_t TestResult_FW_DiffMax = 0;
 static int32_t TestResult_FW_DiffMin = 0;
-static int32_t TestResult_All = 0;
+static int32_t TestResult_All = 1;
 static int32_t *RawData_Short = NULL;
 static int32_t *RawData_Short_Diff = NULL;
 static int32_t *RawData_Short_Base = NULL;

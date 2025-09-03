@@ -107,8 +107,6 @@
 #include "mu3d_hal_hw.h"
 #include "ssusb_qmu.h"
 
-#include <linux/phy/mediatek/mtk_usb_phy.h>
-
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 #define AP_UART0_COMPATIBLE_NAME "mediatek,gpio"
 #endif
@@ -652,7 +650,6 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u32 int_usb, u8 devctl, u8
 				break;
 		case OTG_STATE_B_PERIPHERAL:
 			musb_g_suspend(musb);
-			#if 0
 			musb->is_active = is_otg_enabled(musb)
 			    && otg->gadget->b_hnp_enable;
 			if (musb->is_active) {
@@ -661,7 +658,6 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u32 int_usb, u8 devctl, u8
 				mod_timer(&musb->otg_timer, jiffies
 					  + msecs_to_jiffies(OTG_TIME_B_ASE0_BRST));
 			}
-			#endif
 			break;
 		case OTG_STATE_A_WAIT_BCON:
 			if (musb->a_wait_bcon != 0)
@@ -1067,35 +1063,6 @@ static void set_ssusb_ip_sleep(struct musb *musb)
 	os_setmsk(U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST);
 }
 
-
-void musb_power_down(struct musb *musb)
-{
-#ifdef EP_PROFILING
-		cancel_delayed_work_sync(&musb->ep_prof_work);
-#endif
-		/*
-		* Note: musb_save_context() _MUST_ be called
-		* _BEFORE_ setting SSUSB_IP_SW_RST.
-		* Because when setting SSUSB_IP_SW_RST to reset the SSUSB IP,
-		* All MAC regs can _NOT_ be read and be reset to
-		* the default value.
-		* So save the MUST-SAVED reg in the context structure.
-		*/
-		musb_save_context(musb);
-
-		set_ssusb_ip_sleep(musb);
-
-#ifndef CONFIG_FPGA_EARLY_PORTING
-		/* Let PHY enter savecurrent mode. And turn off CLK. */
-#ifdef CONFIG_PHY_MTK_SSUSB
-		phy_power_off(musb->mtk_phy);
-#else
-		usb_phy_savecurrent(musb->is_clk_on);
-#endif
-		musb->is_clk_on = 0;
-#endif
-}
-
 /*
  * Make the HDRC stop (disable interrupts, etc.);
  * reversible by musb_start
@@ -1129,7 +1096,25 @@ void musb_stop(struct musb *musb)
 
 	/* Move to suspend work queue */
 #ifdef NEVER
-	musb_power_down(musb);
+	/*
+	 * Note: When reset the SSUSB IP, All MAC regs can _NOT_ be accessed and be reset to the default value.
+	 * So save the MUST-SAVED reg in the context structure before set SSUSB_IP_SW_RST.
+	 */
+	musb_save_context(musb);
+
+	/* Set SSUSB_IP_SW_RST to avoid power leakage */
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+	if (!in_uart_mode)
+		set_ssusb_ip_sleep(musb);
+#else
+	set_ssusb_ip_sleep(musb);
+#endif
+
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	/* Let PHY enter savecurrent mode. And turn off CLK. */
+	usb_phy_savecurrent(musb->is_clk_on);
+	musb->is_clk_on = 0;
+#endif
 #endif				/* NEVER */
 
 	/* FIXME
@@ -2031,8 +2016,6 @@ static void musb_restore_context(struct musb *musb)
 #endif
 }
 
-
-
 static void musb_suspend_work(struct work_struct *data)
 {
 	struct musb *musb = container_of(data, struct musb, suspend_work);
@@ -2042,7 +2025,29 @@ static void musb_suspend_work(struct work_struct *data)
 
 	if (musb->is_clk_on == 1
 	    && !usb_cable_connected()) {
-		musb_power_down(musb);
+
+#ifdef EP_PROFILING
+		cancel_delayed_work_sync(&musb->ep_prof_work);
+#endif
+		/*
+		 * Note: musb_save_context() _MUST_ be called _BEFORE_ setting SSUSB_IP_SW_RST.
+		 * Because when setting SSUSB_IP_SW_RST to reset the SSUSB IP,
+		 * All MAC regs can _NOT_ be read and be reset to the default value.
+		 * So save the MUST-SAVED reg in the context structure.
+		 */
+		musb_save_context(musb);
+
+		set_ssusb_ip_sleep(musb);
+
+#ifndef CONFIG_FPGA_EARLY_PORTING
+		/* Let PHY enter savecurrent mode. And turn off CLK. */
+#ifdef CONFIG_PHY_MTK_SSUSB
+		phy_power_off(musb->mtk_phy);
+#else
+		usb_phy_savecurrent(musb->is_clk_on);
+#endif
+		musb->is_clk_on = 0;
+#endif
 	}
 }
 
@@ -2163,7 +2168,7 @@ static void musb_free(struct musb *musb)
  *		dma_controller_destroy(c);
  *	}
 */
-	wake_lock_destroy(&musb->usb_wakelock);
+	wakeup_source_trash(&musb->usb_wakelock);
 
 	/* added for ssusb: */
 #ifdef CONFIG_USBIF_COMPLIANCE
@@ -2215,7 +2220,7 @@ static int __init musb_init_controller(struct device *dev, int nIrq, void __iome
 	}
 
 	/* allocate */
-	musb = allocate_instance(dev, plat->config, ctrl);
+	musb = allocate_instance(dev, (struct musb_hdrc_config *)plat->config, ctrl);
 	if (!musb) {
 		status = -ENOMEM;
 		goto fail0;
@@ -2234,7 +2239,7 @@ static int __init musb_init_controller(struct device *dev, int nIrq, void __iome
 
 	_mu3d_musb = musb;
 
-	wake_lock_init(&musb->usb_wakelock, WAKE_LOCK_SUSPEND, "USB.lock");
+	wakeup_source_init(&musb->usb_wakelock, "USB.lock");
 
 	INIT_DELAYED_WORK(&musb->check_ltssm_work, check_ltssm_work);
 
@@ -2518,8 +2523,6 @@ static int __init musb_probe(struct platform_device *pdev)
 	if (status < 0)
 		goto exit_regs;
 
-	mt_usb_disconnect();
-
 	return status;
 
 exit_regs:
@@ -2793,8 +2796,20 @@ static int musb_suspend_noirq(struct device *dev)
 	struct musb *musb = dev_to_musb(dev);
 
 	os_printk(K_INFO, "%s\n", __func__);
+	/*
+	 * Note: musb_save_context() _MUST_ be called _BEFORE_ mtu3d_suspend_noirq().
+	 * Because when mtu3d_suspend_noirq() resets the SSUSB IP, All MAC regs can _NOT_ be read and be reset to
+	 * the default value. So save the MUST-SAVED reg in the context structure.
+	 */
+	musb_save_context(musb);
 
-	musb_power_down(musb);
+	set_ssusb_ip_sleep(musb);
+
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	/* Let PHY enter savecurrent mode. And turn off CLK. */
+	usb_phy_savecurrent(musb->is_clk_on);
+	musb->is_clk_on = 0;
+#endif
 
 	return 0;
 }
@@ -2878,7 +2893,7 @@ static struct platform_driver musb_driver_probe = {
 };
 
 static int usb_test_wakelock_inited;
-static struct wake_lock usb_test_wakelock;
+static struct wakeup_source usb_test_wakelock;
 int mu3d_force_on;
 static int set_mu3d_force_on(const char *val, const struct kernel_param *kp)
 {
@@ -2912,14 +2927,14 @@ static int set_mu3d_force_on(const char *val, const struct kernel_param *kp)
 		os_printk(K_WARNIN, "wake_lock usb_test_wakelock\n");
 		if (!usb_test_wakelock_inited) {
 			os_printk(K_WARNIN, "%s wake_lock_init\n", __func__);
-			wake_lock_init(&usb_test_wakelock, WAKE_LOCK_SUSPEND, "usb.test.lock");
+			wakeup_source_init(&usb_test_wakelock, "usb.test.lock");
 			usb_test_wakelock_inited = 1;
 		}
-		wake_lock(&usb_test_wakelock);
+		__pm_stay_awake(&usb_test_wakelock);
 		break;
 	case 6:
 		os_printk(K_WARNIN, "wake_unlock usb_test_wakelock\n");
-		wake_unlock(&usb_test_wakelock);
+		__pm_relax(&usb_test_wakelock);
 		break;
 	default:
 		break;

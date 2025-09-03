@@ -35,59 +35,64 @@
 /* #include "disp_drv.h" */
 /* #include "lcd_drv.h" */
 
-/* **************************************************************************** */
+/* ********************************************************************* */
 /* This part is for customization parameters of D-IC and DSI . */
-/* **************************************************************************** */
+/* ********************************************************************* */
 bool fbconfig_start_LCM_config;
-#define FBCONFIG_MDELAY(n)	(PM_lcm_utils_dsi0.mdelay((n)))
-#define SET_RESET_PIN(v)	(PM_lcm_utils_dsi0.set_reset_pin((v)))
-#define dsi_set_cmdq(pdata, queue_size, force_update) PM_lcm_utils_dsi0.dsi_set_cmdq(pdata, queue_size, force_update)
-#define FBCONFIG_KEEP_NEW_SETTING 1
-#define FBCONFIG_DEBUG 0
+#define FBCONFIG_MDELAY(n)		(PM_lcm_utils_dsi0.mdelay((n)))
+#define SET_RESET_PIN(v)		(PM_lcm_utils_dsi0.set_reset_pin((v)))
+#define dsi_set_cmdq(pdata, queue_size, force_update) \
+		PM_lcm_utils_dsi0.dsi_set_cmdq(pdata, queue_size, force_update)
+#define FBCONFIG_KEEP_NEW_SETTING	1
+#define FBCONFIG_DEBUG			0
 
-#define FBCONFIG_IOW(num, dtype)     _IOW('X', num, dtype)
-#define FBCONFIG_IOR(num, dtype)     _IOR('X', num, dtype)
-#define FBCONFIG_IOWR(num, dtype)    _IOWR('X', num, dtype)
-#define FBCONFIG_IO(num)             _IO('X', num)
+#define FBCONFIG_IOW(num, dtype)	_IOW('X', num, dtype)
+#define FBCONFIG_IOR(num, dtype)	_IOR('X', num, dtype)
+#define FBCONFIG_IOWR(num, dtype)	_IOWR('X', num, dtype)
+#define FBCONFIG_IO(num)		_IO('X', num)
 
-#define GET_DSI_ID	   FBCONFIG_IOW(43, unsigned int)
-#define SET_DSI_ID	   FBCONFIG_IOW(44, unsigned int)
-#define LCM_GET_ID     FBCONFIG_IOR(45, unsigned int)
-#define LCM_GET_ESD    FBCONFIG_IOWR(46, unsigned int)
-#define DRIVER_IC_CONFIG    FBCONFIG_IOR(47, unsigned int)
-#define DRIVER_IC_CONFIG_DONE  FBCONFIG_IO(0)
-#define DRIVER_IC_RESET    FBCONFIG_IOR(48, unsigned int)
-
-
-#define MIPI_SET_CLK     FBCONFIG_IOW(51, unsigned int)
-#define MIPI_SET_LANE    FBCONFIG_IOW(52, unsigned int)
-#define MIPI_SET_TIMING  FBCONFIG_IOW(53, unsigned int)
-#define MIPI_SET_VM      FBCONFIG_IOW(54, unsigned int)	/* mipi video mode timing setting */
-#define MIPI_SET_CC	 FBCONFIG_IOW(55, unsigned int)	/* mipi non-continuous clock */
-#define MIPI_SET_SSC	 FBCONFIG_IOW(56, unsigned int)	/* spread frequency */
-#define MIPI_SET_CLK_V2  FBCONFIG_IOW(57, unsigned int)	/* For div1,div2,fbk_div case */
+#define GET_DSI_ID		FBCONFIG_IOW(43, unsigned int)
+#define SET_DSI_ID		FBCONFIG_IOW(44, unsigned int)
+#define LCM_GET_ID		FBCONFIG_IOR(45, unsigned int)
+#define LCM_GET_ESD		FBCONFIG_IOWR(46, unsigned int)
+#define DRIVER_IC_CONFIG	FBCONFIG_IOR(47, unsigned int)
+#define DRIVER_IC_CONFIG_DONE	FBCONFIG_IO(0)
+#define DRIVER_IC_RESET		FBCONFIG_IOR(48, unsigned int)
 
 
-#define TE_SET_ENABLE  FBCONFIG_IOW(61, unsigned int)
-#define FB_LAYER_DUMP  FBCONFIG_IOW(62, unsigned int)
-#define FB_LAYER_GET_INFO FBCONFIG_IOW(63, unsigned int)
-#define FB_LAYER_GET_EN FBCONFIG_IOW(64, unsigned int)
-#define LCM_GET_ESD_RET    FBCONFIG_IOR(65, unsigned int)
+#define MIPI_SET_CLK		FBCONFIG_IOW(51, unsigned int)
+#define MIPI_SET_LANE		FBCONFIG_IOW(52, unsigned int)
+#define MIPI_SET_TIMING		FBCONFIG_IOW(53, unsigned int)
+/* mipi video mode timing setting */
+#define MIPI_SET_VM		FBCONFIG_IOW(54, unsigned int)
+/* mipi non-continuous clock */
+#define MIPI_SET_CC		FBCONFIG_IOW(55, unsigned int)
+/* spread frequency */
+#define MIPI_SET_SSC		FBCONFIG_IOW(56, unsigned int)
+/* For div1,div2,fbk_div case */
+#define MIPI_SET_CLK_V2		FBCONFIG_IOW(57, unsigned int)
 
-#define LCM_GET_DSI_CONTINU    FBCONFIG_IOR(71, unsigned int)
-#define LCM_GET_DSI_CLK   FBCONFIG_IOR(72, unsigned int)
-#define LCM_GET_DSI_TIMING   FBCONFIG_IOR(73, unsigned int)
-#define LCM_GET_DSI_LANE_NUM    FBCONFIG_IOR(74, unsigned int)
-#define LCM_GET_DSI_TE    FBCONFIG_IOR(75, unsigned int)
-#define LCM_GET_DSI_SSC    FBCONFIG_IOR(76, unsigned int)
-#define LCM_GET_DSI_CLK_V2    FBCONFIG_IOR(77, unsigned int)
-#define LCM_TEST_DSI_CLK    FBCONFIG_IOR(78, unsigned int)
-#define FB_GET_MISC FBCONFIG_IOR(80, unsigned int)
+
+#define TE_SET_ENABLE		FBCONFIG_IOW(61, unsigned int)
+#define FB_LAYER_DUMP		FBCONFIG_IOW(62, unsigned int)
+#define FB_LAYER_GET_INFO	FBCONFIG_IOW(63, unsigned int)
+#define FB_LAYER_GET_EN		FBCONFIG_IOW(64, unsigned int)
+#define LCM_GET_ESD_RET		FBCONFIG_IOR(65, unsigned int)
+
+#define LCM_GET_DSI_CONTINU	FBCONFIG_IOR(71, unsigned int)
+#define LCM_GET_DSI_CLK		FBCONFIG_IOR(72, unsigned int)
+#define LCM_GET_DSI_TIMING	FBCONFIG_IOR(73, unsigned int)
+#define LCM_GET_DSI_LANE_NUM	FBCONFIG_IOR(74, unsigned int)
+#define LCM_GET_DSI_TE		FBCONFIG_IOR(75, unsigned int)
+#define LCM_GET_DSI_SSC		FBCONFIG_IOR(76, unsigned int)
+#define LCM_GET_DSI_CLK_V2	FBCONFIG_IOR(77, unsigned int)
+#define LCM_TEST_DSI_CLK	FBCONFIG_IOR(78, unsigned int)
+#define FB_GET_MISC		FBCONFIG_IOR(80, unsigned int)
 
 #ifdef UFMT_GET_bpp
-#define DP_COLOR_BITS_PER_PIXEL(color)    UFMT_GET_bpp(color)
+#define DP_COLOR_BITS_PER_PIXEL(color)	UFMT_GET_bpp(color)
 #else
-#define DP_COLOR_BITS_PER_PIXEL(color)    ((0x0003FF00 & color) >>  8)
+#define DP_COLOR_BITS_PER_PIXEL(color)	((0x0003FF00 & color) >>  8)
 #endif
 
 
@@ -95,19 +100,11 @@ struct dentry *ConfigPara_dbgfs;
 struct CONFIG_RECORD_LIST head_list;
 struct LCM_REG_READ reg_read;
 
-/* int esd_check_addr; */
-/* int esd_check_para_num; */
-/* int esd_check_type; */
-/* char * esd_check_buffer =NULL; */
-/* extern void fbconfig_disp_set_mipi_timing(MIPI_TIMING timing); */
-/* extern unsigned int fbconfig_get_layer_info(FBCONFIG_LAYER_INFO *layers); */
-/* extern unsigned int fbconfig_get_layer_vaddr(int layer_id,int * layer_size,int * enable); */
-/* unsigned int fbconfig_get_layer_height(int layer_id,int * layer_size,int * enable,int* height ,int * fmt); */
 struct PM_TOOL_S {
 	enum DSI_INDEX dsi_id;
 	struct LCM_REG_READ reg_read;
-	LCM_PARAMS *pLcm_params;
-	LCM_DRIVER *pLcm_drv;
+	struct LCM_PARAMS *pLcm_params;
+	struct LCM_DRIVER *pLcm_drv;
 };
 static struct PM_TOOL_S pm_params = {
 	.dsi_id = PM_DSI0,
@@ -132,19 +129,23 @@ static enum DISP_MODULE_ENUM pm_get_dsi_handle(enum DSI_INDEX dsi_id)
 		return DISP_MODULE_UNKNOWN;
 }
 
-int fbconfig_get_esd_check(enum DSI_INDEX dsi_id, uint32_t cmd, uint8_t *buffer, uint32_t num)
+int fbconfig_get_esd_check(enum DSI_INDEX dsi_id, uint32_t cmd,
+			   uint8_t *buffer, uint32_t num)
 {
 	int array[4];
 	int ret = 0;
+
 	/* set max return packet size */
 	/* array[0] = 0x00013700; */
 	array[0] = 0x3700 + (num << 16);
 	dsi_set_cmdq(array, 1, 1);
 	atomic_set(&ESDCheck_byCPU, 1);
 	if ((dsi_id == PM_DSI0) || (dsi_id == PM_DSI_DUAL))
-		ret = DSI_dcs_read_lcm_reg_v2(pm_get_dsi_handle(PM_DSI0), NULL, cmd, buffer, num);
+		ret = DSI_dcs_read_lcm_reg_v2(pm_get_dsi_handle(PM_DSI0),
+					      NULL, cmd, buffer, num);
 	else if (dsi_id == PM_DSI1)
-		ret = DSI_dcs_read_lcm_reg_v2(pm_get_dsi_handle(PM_DSI1), NULL, cmd, buffer, num);
+		ret = DSI_dcs_read_lcm_reg_v2(pm_get_dsi_handle(PM_DSI1),
+					      NULL, cmd, buffer, num);
 	atomic_set(&ESDCheck_byCPU, 0);
 	if (ret == 0)
 		return -1;
@@ -158,7 +159,6 @@ int fbconfig_get_esd_check(enum DSI_INDEX dsi_id, uint32_t cmd, uint8_t *buffer,
 
 void Panel_Master_DDIC_config(void)
 {
-
 	struct list_head *p;
 	struct CONFIG_RECORD_LIST *node;
 
@@ -166,7 +166,8 @@ void Panel_Master_DDIC_config(void)
 		node = list_entry(p, struct CONFIG_RECORD_LIST, list);
 		switch (node->record.type) {
 		case RECORD_CMD:
-			dsi_set_cmdq(node->record.ins_array, node->record.ins_num, 1);
+			dsi_set_cmdq(node->record.ins_array,
+				     node->record.ins_num, 1);
 			break;
 		case RECORD_MS:
 			FBCONFIG_MDELAY(node->record.ins_array[0]);
@@ -176,29 +177,10 @@ void Panel_Master_DDIC_config(void)
 			break;
 		default:
 			pr_debug("sxk=>No such Type!!!!!\n");
+			break;
 		}
-
 	}
-
 }
-
-/*static void print_from_head_to_tail(void)*/
-/*{*/
-/*	int i;*/
-/*	struct list_head *p;*/
-/*	CONFIG_RECORD_LIST *print;*/
-/*	pr_debug("DDIC=====>:print_from_head_to_tail  START\n");*/
-
-/*	list_for_each_prev(p, &head_list.list) {*/
-/*		print = list_entry(p, CONFIG_RECORD_LIST, list);*/
-/*		pr_debug("type:%d num %d value:\r\n", print->record.type, print->record.ins_num);*/
-/*		for (i = 0; i < print->record.ins_num; i++)*/
-/*			pr_debug("0x%x\t", print->record.ins_array[i]);*/
-/*		pr_debug("\r\n");*/
-/*	}*/
-/*	pr_debug("DDIC=====>:print_from_head_to_tail  END\n");*/
-
-/*}*/
 
 static void free_list_memory(void)
 {
@@ -215,17 +197,16 @@ static void free_list_memory(void)
 		pr_debug("*****list is empty!!\n");
 	else
 		pr_debug("*****list is NOT empty!!\n");
-
 }
 
 static int fbconfig_open(struct inode *inode, struct file *file)
 {
-	struct PM_TOOL_S *pm_params = NULL;
+	struct PM_TOOL_S *pm_params;
 
 	file->private_data = inode->i_private;
-	pm_params = (struct PM_TOOL_S *) pm_get_handle();
+	pm_params = (struct PM_TOOL_S *)pm_get_handle();
 	if (pm_params == NULL) {
-		pr_debug("fbconfig_open=>pm_params is empty!!\n");
+		pr_debug("%s=>pm_params is empty!!\n", __func__);
 		return -EFAULT;
 	}
 	PanelMaster_set_PM_enable(1);
@@ -242,7 +223,8 @@ static int fbconfig_open(struct inode *inode, struct file *file)
 
 static char fbconfig_buffer[2048];
 
-static ssize_t fbconfig_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+static ssize_t fbconfig_read(struct file *file, char __user *ubuf,
+	size_t count, loff_t *ppos)
 {
 	const int debug_bufmax = sizeof(fbconfig_buffer) - 1;	/* 2047 */
 	int n = 0;
@@ -254,20 +236,20 @@ static ssize_t fbconfig_read(struct file *file, char __user *ubuf, size_t count,
 	return simple_read_from_buffer(ubuf, count, ppos, fbconfig_buffer, n);
 }
 
-static ssize_t fbconfig_write(struct file *file,
-			      const char __user *ubuf, size_t count, loff_t *ppos)
+static ssize_t fbconfig_write(struct file *file, const char __user *ubuf,
+			      size_t count, loff_t *ppos)
 {
 	return 0;
 }
 
-
-static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long fbconfig_ioctl(struct file *file, unsigned int cmd,
+			   unsigned long arg)
 {
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
 	struct PM_TOOL_S *pm = (struct PM_TOOL_S *) pm_get_handle();
 	uint32_t dsi_id = pm->dsi_id;
-	LCM_DSI_PARAMS *pParams = get_dsi_params_handle(dsi_id);
+	struct LCM_DSI_PARAMS *pParams = get_dsi_params_handle(dsi_id);
 
 #ifdef FBCONFIG_SHOULD_KICK_IDLEMGR
 	primary_display_idlemgr_kick(__func__, 1);
@@ -290,17 +272,18 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case LCM_TEST_DSI_CLK:
 	{
 		struct LCM_TYPE_FB lcm_fb;
-		LCM_PARAMS *pLcm_params = pm->pLcm_params;
+		struct LCM_PARAMS *pLcm_params = pm->pLcm_params;
 
 		lcm_fb.clock = pLcm_params->dsi.PLL_CLOCK;
 		lcm_fb.lcm_type = pLcm_params->dsi.mode;
 
 		pr_debug("fbconfig=>LCM_TEST_DSI_CLK:%d\n", ret);
-		return copy_to_user(argp, &lcm_fb, sizeof(lcm_fb)) ? -EFAULT : 0;
+		return copy_to_user(argp, &lcm_fb,
+			sizeof(lcm_fb)) ? -EFAULT : 0;
 	}
 	case LCM_GET_ID:
 	{
-/* LCM_DRIVER*pLcm_drv=pm->pLcm_drv; */
+		/* LCM_DRIVER *pLcm_drv = pm->pLcm_drv; */
 		unsigned int lcm_id = 0;
 #if 0
 		if (pLcm_drv != NULL)
@@ -308,16 +291,20 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		else
 			pr_debug("fbconfig=>LCM_GET_ID:%x\n", lcm_id);
 #endif
-		return copy_to_user(argp, &lcm_id, sizeof(lcm_id)) ? -EFAULT : 0;
+		return copy_to_user(argp, &lcm_id,
+				    sizeof(lcm_id)) ? -EFAULT : 0;
 	}
 	case DRIVER_IC_CONFIG:
 	{
-		struct CONFIG_RECORD_LIST *record_tmp_list = kmalloc(sizeof(*record_tmp_list), GFP_KERNEL);
+		struct CONFIG_RECORD_LIST *record_tmp_list =
+				kmalloc(sizeof(*record_tmp_list), GFP_KERNEL);
 		if (record_tmp_list == NULL)
 			return -ENOMEM;
 
-		if (copy_from_user(&record_tmp_list->record, (void __user *)arg, sizeof(struct CONFIG_RECORD))) {
-			pr_debug("list_add: copy_from_user failed! line:%d\n", __LINE__);
+		if (copy_from_user(&record_tmp_list->record, (void __user *)arg,
+				   sizeof(struct CONFIG_RECORD))) {
+			pr_debug("list_add: copy_from_user failed! line:%d\n",
+				 __LINE__);
 			kfree(record_tmp_list);
 			record_tmp_list = NULL;
 			return -EFAULT;
@@ -329,7 +316,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	{
 		/* print_from_head_to_tail(); */
 		Panel_Master_dsi_config_entry("PM_DDIC_CONFIG", NULL);
-		/*free the memory ..... */
+		/* free the memory ..... */
 		free_list_memory();
 		return 0;
 	}
@@ -349,7 +336,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case LCM_GET_DSI_CONTINU:
 	{
 		uint32_t ret = PanelMaster_get_CC(dsi_id);
-		/* need to improve ,0 now means nothing but one parameter.... */
+		/* need to improve ,0 now means nothing but one parameter. */
 		pr_debug("LCM_GET_DSI_CONTINU=>DSI: %d\n", ret);
 		return put_user(ret, (unsigned long *)argp);
 	}
@@ -378,7 +365,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	{
 		struct DSI_RET dsi_ssc;
 
-		if (copy_from_user(&dsi_ssc, (void __user *)argp, sizeof(dsi_ssc))) {
+		if (copy_from_user(&dsi_ssc, (void __user *)argp,
+			sizeof(dsi_ssc))) {
 			pr_debug("[MIPI_SET_SSC]: copy_from_user failed! line:%d\n",
 				 __LINE__);
 			return -EFAULT;
@@ -400,7 +388,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	{
 		uint32_t lane_num = pParams->LANE_NUM;
 
-		pr_debug("Panel Master=>LCM_GET_DSI_Lane_num=>dsi:%d\r\n", lane_num);
+		pr_debug("Panel Master=>LCM_GET_DSI_Lane_num=>dsi:%d\r\n",
+			 lane_num);
 		return put_user(lane_num, (unsigned long *)argp);
 	}
 	case LCM_GET_DSI_TE:
@@ -416,7 +405,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		uint32_t ret;
 		struct MIPI_TIMING timing;
 
-		if (copy_from_user(&timing, (void __user *)argp, sizeof(timing))) {
+		if (copy_from_user(&timing, (void __user *)argp,
+				   sizeof(timing))) {
 			pr_debug("[MIPI_GET_TIMING]: copy_from_user failed! line:%d\n",
 				 __LINE__);
 			return -EFAULT;
@@ -424,7 +414,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = PanelMaster_get_dsi_timing(dsi_id, timing.type);
 		pr_debug("fbconfig=>LCM_GET_DSI_TIMING:%d\n", ret);
 		timing.value = ret;
-		return copy_to_user(argp, &timing, sizeof(timing)) ? -EFAULT : 0;
+		return copy_to_user(argp, &timing,
+				    sizeof(timing)) ? -EFAULT : 0;
 	}
 	case MIPI_SET_TIMING:
 	{
@@ -432,7 +423,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 		if (primary_display_is_sleepd())
 			return -EFAULT;
-		if (copy_from_user(&timing, (void __user *)argp, sizeof(timing))) {
+		if (copy_from_user(&timing, (void __user *)argp,
+				   sizeof(timing))) {
 			pr_debug("[MIPI_SET_TIMING]: copy_from_user failed! line:%d\n",
 				 __LINE__);
 			return -EFAULT;
@@ -444,7 +436,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case FB_LAYER_GET_EN:
 	{
 		pr_debug("[FB_LAYER_GET_EN] not support any more\n");
-		return  0;
+		return 0;
 	}
 	case FB_LAYER_GET_INFO:
 	{
@@ -463,14 +455,14 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		struct ESD_PARA esd_para;
 		uint8_t *buffer;
 
-		if (copy_from_user(&esd_para, (void __user *)arg, sizeof(esd_para))) {
+		if (copy_from_user(&esd_para, (void __user *)arg,
+				   sizeof(esd_para))) {
 			pr_debug("[LCM_GET_ESD]: copy_from_user failed! line:%d\n",
 				 __LINE__);
 			return -EFAULT;
 		}
 
 		if (esd_para.para_num < 0 || esd_para.para_num > 0x30) {
-
 			pr_debug("[LCM_GET_ESD]: wrong esd_para.para_num= %d! line:%d\n",
 						 esd_para.para_num, __LINE__);
 			return -EFAULT;
@@ -480,14 +472,14 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		if (!buffer)
 			return -ENOMEM;
 
-		ret =
-			fbconfig_get_esd_check_test(dsi_id, esd_para.addr, buffer,
-						    esd_para.para_num);
+		ret = fbconfig_get_esd_check_test(dsi_id, esd_para.addr, buffer,
+						  esd_para.para_num);
 		if (ret < 0) {
 			kfree(buffer);
 			return -EFAULT;
 		}
-		ret = copy_to_user(esd_para.esd_ret_buffer, buffer, esd_para.para_num);
+		ret = copy_to_user(esd_para.esd_ret_buffer, buffer,
+				   esd_para.para_num);
 		kfree(buffer);
 		return ret;
 	}
@@ -530,37 +522,37 @@ static int fbconfig_release(struct inode *inode, struct file *file)
 /* compat-ioctl */
 #ifdef CONFIG_COMPAT
 
-#define COMPAT_GET_DSI_ID	   FBCONFIG_IOW(43, compat_uint_t)
-#define COMPAT_SET_DSI_ID	   FBCONFIG_IOW(44, compat_uint_t)
-#define COMPAT_LCM_GET_ID     FBCONFIG_IOR(45, compat_uint_t)
-#define COMPAT_LCM_GET_ESD    FBCONFIG_IOWR(46, compat_uint_t)
-#define COMPAT_DRIVER_IC_CONFIG    FBCONFIG_IOR(47, compat_uint_t)
-#define COMPAT_DRIVER_IC_CONFIG_DONE  FBCONFIG_IO(0)
-#define COMPAT_DRIVER_IC_RESET    FBCONFIG_IOR(48, compat_uint_t)
+#define COMPAT_GET_DSI_ID		FBCONFIG_IOW(43, compat_uint_t)
+#define COMPAT_SET_DSI_ID		FBCONFIG_IOW(44, compat_uint_t)
+#define COMPAT_LCM_GET_ID		FBCONFIG_IOR(45, compat_uint_t)
+#define COMPAT_LCM_GET_ESD		FBCONFIG_IOWR(46, compat_uint_t)
+#define COMPAT_DRIVER_IC_CONFIG		FBCONFIG_IOR(47, compat_uint_t)
+#define COMPAT_DRIVER_IC_CONFIG_DONE	FBCONFIG_IO(0)
+#define COMPAT_DRIVER_IC_RESET		FBCONFIG_IOR(48, compat_uint_t)
 
-#define COMPAT_MIPI_SET_CLK     FBCONFIG_IOW(51, compat_uint_t)
-#define COMPAT_MIPI_SET_LANE    FBCONFIG_IOW(52, compat_uint_t)
-#define COMPAT_MIPI_SET_TIMING  FBCONFIG_IOW(53, compat_uint_t)
-#define COMPAT_MIPI_SET_VM      FBCONFIG_IOW(54, compat_uint_t)
-#define COMPAT_MIPI_SET_CC	 FBCONFIG_IOW(55, compat_uint_t)
-#define COMPAT_MIPI_SET_SSC	 FBCONFIG_IOW(56, compat_uint_t)
-#define COMPAT_MIPI_SET_CLK_V2  FBCONFIG_IOW(57, compat_uint_t)
+#define COMPAT_MIPI_SET_CLK		FBCONFIG_IOW(51, compat_uint_t)
+#define COMPAT_MIPI_SET_LANE		FBCONFIG_IOW(52, compat_uint_t)
+#define COMPAT_MIPI_SET_TIMING		FBCONFIG_IOW(53, compat_uint_t)
+#define COMPAT_MIPI_SET_VM		FBCONFIG_IOW(54, compat_uint_t)
+#define COMPAT_MIPI_SET_CC		FBCONFIG_IOW(55, compat_uint_t)
+#define COMPAT_MIPI_SET_SSC		FBCONFIG_IOW(56, compat_uint_t)
+#define COMPAT_MIPI_SET_CLK_V2		FBCONFIG_IOW(57, compat_uint_t)
 
-#define COMPAT_TE_SET_ENABLE  FBCONFIG_IOW(61, compat_uint_t)
-#define COMPAT_FB_LAYER_DUMP  FBCONFIG_IOW(62, compat_uint_t)
-#define COMPAT_FB_LAYER_GET_INFO FBCONFIG_IOW(63, compat_uint_t)
-#define COMPAT_FB_LAYER_GET_EN FBCONFIG_IOW(64, compat_uint_t)
-#define COMPAT_LCM_GET_ESD_RET    FBCONFIG_IOR(65, compat_uint_t)
+#define COMPAT_TE_SET_ENABLE		FBCONFIG_IOW(61, compat_uint_t)
+#define COMPAT_FB_LAYER_DUMP		FBCONFIG_IOW(62, compat_uint_t)
+#define COMPAT_FB_LAYER_GET_INFO	FBCONFIG_IOW(63, compat_uint_t)
+#define COMPAT_FB_LAYER_GET_EN		FBCONFIG_IOW(64, compat_uint_t)
+#define COMPAT_LCM_GET_ESD_RET		FBCONFIG_IOR(65, compat_uint_t)
 
-#define COMPAT_LCM_GET_DSI_CONTINU    FBCONFIG_IOR(71, compat_uint_t)
-#define COMPAT_LCM_GET_DSI_CLK   FBCONFIG_IOR(72, compat_uint_t)
-#define COMPAT_LCM_GET_DSI_TIMING   FBCONFIG_IOR(73, compat_uint_t)
-#define COMPAT_LCM_GET_DSI_LANE_NUM    FBCONFIG_IOR(74, compat_uint_t)
-#define COMPAT_LCM_GET_DSI_TE    FBCONFIG_IOR(75, compat_uint_t)
-#define COMPAT_LCM_GET_DSI_SSC    FBCONFIG_IOR(76, compat_uint_t)
-#define COMPAT_LCM_GET_DSI_CLK_V2    FBCONFIG_IOR(77, compat_uint_t)
-#define COMPAT_LCM_TEST_DSI_CLK    FBCONFIG_IOR(78, compat_uint_t)
-#define COMPAT_FB_GET_MISC    FBCONFIG_IOR(80, compat_uint_t)
+#define COMPAT_LCM_GET_DSI_CONTINU	FBCONFIG_IOR(71, compat_uint_t)
+#define COMPAT_LCM_GET_DSI_CLK		FBCONFIG_IOR(72, compat_uint_t)
+#define COMPAT_LCM_GET_DSI_TIMING	FBCONFIG_IOR(73, compat_uint_t)
+#define COMPAT_LCM_GET_DSI_LANE_NUM	FBCONFIG_IOR(74, compat_uint_t)
+#define COMPAT_LCM_GET_DSI_TE		FBCONFIG_IOR(75, compat_uint_t)
+#define COMPAT_LCM_GET_DSI_SSC		FBCONFIG_IOR(76, compat_uint_t)
+#define COMPAT_LCM_GET_DSI_CLK_V2	FBCONFIG_IOR(77, compat_uint_t)
+#define COMPAT_LCM_TEST_DSI_CLK		FBCONFIG_IOR(78, compat_uint_t)
+#define COMPAT_FB_GET_MISC		FBCONFIG_IOR(80, compat_uint_t)
 
 static int compat_get_lcm_type_fb(struct compat_lcm_type_fb __user *data32,
 				  struct LCM_TYPE_FB __user *data)
@@ -657,7 +649,7 @@ static int compat_put_dsi_ret(struct compat_dsi_ret *data32,
 }
 
 static int compat_get_mipi_timing(struct compat_mipi_timing *data32,
-				    struct MIPI_TIMING *data)
+				  struct MIPI_TIMING *data)
 {
 	compat_int_t i;
 	compat_uint_t d;
@@ -671,7 +663,7 @@ static int compat_get_mipi_timing(struct compat_mipi_timing *data32,
 }
 
 static int compat_put_mipi_timing(struct compat_mipi_timing *data32,
-				    struct MIPI_TIMING *data)
+				  struct MIPI_TIMING *data)
 {
 	compat_int_t i;
 	compat_uint_t d;
@@ -768,7 +760,8 @@ static int compat_get_esd_para(struct compat_esd_para *data32,
 	err |= get_user(i, &data32->para_num);
 	err |= put_user(i, &data->para_num);
 	err |= get_user(d, &data32->esd_ret_buffer);
-	err |= put_user((unsigned char *)(unsigned long)d, &data->esd_ret_buffer);
+	err |= put_user((unsigned char *)(unsigned long)d,
+			&data->esd_ret_buffer);
 
 	return err;
 }
@@ -792,7 +785,8 @@ static int compat_put_esd_para(struct compat_esd_para *data32,
 	return err;
 }
 
-static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd,
+				  unsigned long arg)
 {
 	long ret = 0;
 
@@ -817,7 +811,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, GET_DSI_ID, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, GET_DSI_ID,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return ret ? ret : err;
@@ -839,7 +834,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, SET_DSI_ID, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, SET_DSI_ID,
+						 (unsigned long)data);
 
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
@@ -860,7 +856,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, LCM_TEST_DSI_CLK, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, LCM_TEST_DSI_CLK,
+						 (unsigned long)data);
 		err = compat_put_lcm_type_fb(data32, data);
 		return ret ? ret : err;
 	}
@@ -881,7 +878,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, LCM_GET_ID, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, LCM_GET_ID,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return err ? err : 0;
@@ -901,7 +899,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, DRIVER_IC_CONFIG, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, DRIVER_IC_CONFIG,
+						 (unsigned long)data);
 		err = compat_put_config_record(data32, data);
 		return ret ? ret : err;
 	}
@@ -922,7 +921,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, DRIVER_IC_CONFIG_DONE, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, DRIVER_IC_CONFIG_DONE,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return ret ? ret : err;
@@ -944,7 +944,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, MIPI_SET_CC, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, MIPI_SET_CC,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return ret ? ret : err;
@@ -967,7 +968,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_CONTINU, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_CONTINU,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return ret ? ret : err;
@@ -989,7 +991,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, MIPI_SET_CLK, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, MIPI_SET_CLK,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return ret ? ret : err;
@@ -1011,7 +1014,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_CLK, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_CLK,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return ret ? ret : err;
@@ -1031,7 +1035,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, MIPI_SET_SSC, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, MIPI_SET_SSC,
+						 (unsigned long)data);
 		err = compat_put_dsi_ret(data32, data);
 		return ret ? ret : err;
 	}
@@ -1053,7 +1058,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_SSC, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_SSC,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return ret ? ret : err;
@@ -1075,7 +1081,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_LANE_NUM, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_LANE_NUM,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return ret ? ret : err;
@@ -1097,7 +1104,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_TE, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_TE,
+						 (unsigned long)data);
 		err |= get_user(i, data);
 		err |= put_user(i, data32);
 		return ret ? ret : err;
@@ -1117,7 +1125,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_TIMING, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, LCM_GET_DSI_TIMING,
+						 (unsigned long)data);
 		err = compat_put_mipi_timing(data32, data);
 		return ret ? ret : err;
 	}
@@ -1136,7 +1145,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, MIPI_SET_TIMING, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, MIPI_SET_TIMING,
+						 (unsigned long)data);
 		err = compat_put_mipi_timing(data32, data);
 		return ret ? ret : err;
 	}
@@ -1155,7 +1165,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, FB_LAYER_GET_EN, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, FB_LAYER_GET_EN,
+						 (unsigned long)data);
 		err = compat_put_pm_layer_en(data32, data);
 		return ret ? ret : err;
 	}
@@ -1174,13 +1185,15 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, FB_LAYER_GET_INFO, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, FB_LAYER_GET_INFO,
+						 (unsigned long)data);
 		err = compat_put_pm_layer_info(data32, data);
 		return ret ? ret : err;
 	}
 	case COMPAT_FB_LAYER_DUMP:
 	{
-		ret = file->f_op->unlocked_ioctl(file, FB_LAYER_DUMP, (unsigned long)arg);
+		ret = file->f_op->unlocked_ioctl(file, FB_LAYER_DUMP,
+						 (unsigned long)arg);
 		return ret;
 	}
 	case COMPAT_LCM_GET_ESD:
@@ -1198,7 +1211,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, LCM_GET_ESD, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, LCM_GET_ESD,
+						 (unsigned long)data);
 		err = compat_put_esd_para(data32, data);
 		return ret ? ret : err;
 	}
@@ -1219,7 +1233,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, TE_SET_ENABLE, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, TE_SET_ENABLE,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return ret ? ret : err;
@@ -1241,7 +1256,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, DRIVER_IC_RESET, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, DRIVER_IC_RESET,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return ret ? ret : err;
@@ -1263,7 +1279,8 @@ static long compat_fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (err)
 			return err;
 
-		ret = file->f_op->unlocked_ioctl(file, FB_GET_MISC, (unsigned long)data);
+		ret = file->f_op->unlocked_ioctl(file, FB_GET_MISC,
+						 (unsigned long)data);
 		err |= get_user(d, data);
 		err |= put_user(d, data32);
 		return ret ? ret : err;
@@ -1289,8 +1306,10 @@ static const struct file_operations fbconfig_fops = {
 
 void PanelMaster_Init(void)
 {
-	ConfigPara_dbgfs = debugfs_create_file("fbconfig",
-					       S_IFREG | S_IRUGO, NULL, (void *)0, &fbconfig_fops);
+#if defined(CONFIG_MTK_ENG_BUILD)
+	ConfigPara_dbgfs = debugfs_create_file("fbconfig", S_IFREG | 0444,
+					       NULL, (void *)0, &fbconfig_fops);
+#endif
 
 	INIT_LIST_HEAD(&head_list.list);
 }

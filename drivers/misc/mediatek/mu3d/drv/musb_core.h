@@ -42,15 +42,26 @@
 #include <linux/usb.h>
 #include <linux/usb/otg.h>
 #include <linux/usb/musb.h>
-#include <linux/wakelock.h>
+#include <linux/pm_wakeup.h>
 #include <linux/workqueue.h>
-/*#include <mt-plat/battery_common.h>*/
-#if (CONFIG_MTK_GAUGE_VERSION != 30)
-#include <mt-plat/charging.h>
-#endif
+#if !defined(CONFIG_MTK_GAUGE_VERSION) || defined(CONFIG_FPGA_EARLY_PORTING)
+enum charger_type {
+	CHARGER_UNKNOWN = 0,
+	STANDARD_HOST,		/* USB : 450mA */
+	CHARGING_HOST,
+	NONSTANDARD_CHARGER,	/* AC : 450mA~1A */
+	STANDARD_CHARGER,	/* AC : ~1A */
+	APPLE_2_1A_CHARGER, /* 2.1A apple charger */
+	APPLE_1_0A_CHARGER, /* 1A apple charger */
+	APPLE_0_5A_CHARGER, /* 0.5A apple charger */
+	WIRELESS_CHARGER,
+};
+#else
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 #include <mt-plat/charger_type.h>
 #endif
+#endif
+
 
 struct musb;
 struct musb_hw_ep;
@@ -61,7 +72,7 @@ extern int fake_CDP;
 extern unsigned int musb_speed;
 
 extern struct musb *_mu3d_musb;
-#if defined(CONFIG_MTK_SMART_BATTERY) && !defined(FOR_BRING_UP)
+#if defined(CONFIG_MTK_CHARGER) && !defined(FOR_BRING_UP)
 extern void BATTERY_SetUSBState(int usb_state_value);
 extern enum charger_type mt_get_charger_type(void);
 #endif
@@ -611,7 +622,7 @@ struct musb {
 	unsigned active_ep;
 	enum charger_type charger_mode;
 	struct work_struct suspend_work;
-	struct wake_lock usb_wakelock;
+	struct wakeup_source usb_wakelock;
 	struct delayed_work check_ltssm_work;
 #ifndef CONFIG_USBIF_COMPLIANCE
 	struct delayed_work reconnect_work;
@@ -706,7 +717,6 @@ extern const char musb_driver_name[];
 
 extern void musb_start(struct musb *musb);
 extern void musb_stop(struct musb *musb);
-extern void musb_power_down(struct musb *musb);
 
 extern void musb_write_fifo(struct musb_hw_ep *ep, u16 len, const u8 *src);
 extern void musb_read_fifo(struct musb_hw_ep *ep, u16 len, u8 *dst);
@@ -847,10 +857,8 @@ extern int mu3d_force_on;
 extern void mt_usb_connect(void);
 extern void mt_usb_disconnect(void);
 extern void mt_usb_reconnect(void);
-extern void mt_usb_dev_off(void);
 extern void mt_usb_connect_test(int start);
 extern void trigger_disconnect_check_work(void);
-extern struct workqueue_struct *mt_usb_get_workqueue(void);
 /* specific USB operation */
 enum CONNECTION_OPS {
 	CONNECTION_OPS_DISC = 0,

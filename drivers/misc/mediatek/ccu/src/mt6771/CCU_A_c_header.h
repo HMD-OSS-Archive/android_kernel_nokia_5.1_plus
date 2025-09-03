@@ -925,99 +925,99 @@ PACKING union CCU_A_REG_CCU_SOF_CNT
 /* ----------------- CCU_A Register Definition -------------------*/
 PACKING struct CCU_A_REGS
 {
-	PACKING union CCU_A_REG_RESET                 RESET;            /* 1000*/
-	PACKING union CCU_A_REG_START_TRIG            START_TRIG;       /* 1004*/
-	PACKING union CCU_A_REG_BANK_INCR             BANK_INCR;        /* 1008*/
-	PACKING union CCU_A_REG_CTRL                  CTRL;             /* 100C*/
-	PACKING union CCU_A_REG_T2H_A_DONE_ST         T2H_A_DONE_ST;    /* 1010*/
-	UINT32                          rsv_1014;         /* 1014*/
+	PACKING union CCU_A_REG_RESET             RESET;            /* 1000*/
+	PACKING union CCU_A_REG_START_TRIG        START_TRIG;       /* 1004*/
+	PACKING union CCU_A_REG_BANK_INCR         BANK_INCR;        /* 1008*/
+	PACKING union CCU_A_REG_CTRL              CTRL;             /* 100C*/
+	PACKING union CCU_A_REG_T2H_A_DONE_ST     T2H_A_DONE_ST;    /* 1010*/
+	UINT32                          rsv_1014;     /* 1014*/
 
-	PACKING union CCU_A_REG_H2T_A_DONE_ST         H2T_A_DONE_ST;    /* 1018*/
-	PACKING union CCU_A_REG_WDMA_DONE_ST          WDMA_DONE_ST;     /* 101C*/
-	PACKING union CCU_A_REGXI_REMAP               CCU_AXI_REMAP;    /* 1020*/
-	PACKING union CCU_A_REG_CCU_CTL               CCU_CTL;          /* 1024*/
-	PACKING union CCU_A_REG_CCU_ST                CCU_ST;           /* 1028*/
-	PACKING union CCU_A_REG_CCU_H2X_CFG           CCU_H2X_CFG;      /* 102C*/
-	UINT32                          rsv_1030;         /* 1030*/
+	PACKING union CCU_A_REG_H2T_A_DONE_ST     H2T_A_DONE_ST;    /* 1018*/
+	PACKING union CCU_A_REG_WDMA_DONE_ST      WDMA_DONE_ST;     /* 101C*/
+	PACKING union CCU_A_REGXI_REMAP           CCU_AXI_REMAP;    /* 1020*/
+	PACKING union CCU_A_REG_CCU_CTL           CCU_CTL;          /* 1024*/
+	PACKING union CCU_A_REG_CCU_ST            CCU_ST;           /* 1028*/
+	PACKING union CCU_A_REG_CCU_H2X_CFG       CCU_H2X_CFG;      /* 102C*/
+	UINT32                          rsv_1030;     /* 1030*/
 
-	PACKING union CCU_A_REG_CCU_INT_EN            CCU_INT_EN;       /* 1034*/
-	PACKING union CCU_A_REG_CCU_INT               CCU_INT;          /* 1038*/
-	PACKING union CCU_A_REG_CTL_CCU_INT           CTL_CCU_INT;      /* 103C*/
-	PACKING union CCU_A_REG_DCM_ST                DCM_ST;           /* 1040*/
-	PACKING union CCU_A_REG_DMA_ERR_ST            DMA_ERR_ST;       /* 1044*/
-	PACKING union CCU_A_REG_DMA_DEBUG             DMA_DEBUG;        /* 1048*/
-	UINT32                          rsv_104C;         /* 104C*/
+	PACKING union CCU_A_REG_CCU_INT_EN        CCU_INT_EN;       /* 1034*/
+	PACKING union CCU_A_REG_CCU_INT           CCU_INT;          /* 1038*/
+	PACKING union CCU_A_REG_CTL_CCU_INT       CTL_CCU_INT;      /* 103C*/
+	PACKING union CCU_A_REG_DCM_ST            DCM_ST;           /* 1040*/
+	PACKING union CCU_A_REG_DMA_ERR_ST        DMA_ERR_ST;       /* 1044*/
+	PACKING union CCU_A_REG_DMA_DEBUG         DMA_DEBUG;        /* 1048*/
+	UINT32                          rsv_104C;     /* 104C*/
 
-	PACKING union CCU_A_REG_EINTC_MASK            EINTC_MASK;       /* 1050*/
-	PACKING union CCU_A_REG_EINTC_CLR             EINTC_CLR;        /* 1054*/
-	PACKING union CCU_A_REG_EINTC_ST              EINTC_ST;         /* 1058*/
-	PACKING union CCU_A_REG_EINTC_MISC            EINTC_MISC;       /* 105C*/
-	PACKING union CCU_A_REGHB_REMAP_A             CCU_AHB_REMAP_A;  /* 1060*/
-	PACKING union CCU_A_REGHB_REMAP_B             CCU_AHB_REMAP_B;  /* 1064*/
-	PACKING union CCU_A_REGHB_REMAP_C             CCU_AHB_REMAP_C;  /* 1068*/
-	PACKING union CCU_A_REGHB_REMAP_D             CCU_AHB_REMAP_D;  /* 106C*/
-	PACKING union CCU_A_REG_CCU_PC                CCU_PC;           /* 1070*/
-	PACKING union CCU_A_REG_TOP_SPARE             TOP_SPARE;        /* 1074*/
+	PACKING union CCU_A_REG_EINTC_MASK        EINTC_MASK;       /* 1050*/
+	PACKING union CCU_A_REG_EINTC_CLR         EINTC_CLR;        /* 1054*/
+	PACKING union CCU_A_REG_EINTC_ST          EINTC_ST;         /* 1058*/
+	PACKING union CCU_A_REG_EINTC_MISC        EINTC_MISC;       /* 105C*/
+	PACKING union CCU_A_REGHB_REMAP_A         CCU_AHB_REMAP_A;  /* 1060*/
+	PACKING union CCU_A_REGHB_REMAP_B         CCU_AHB_REMAP_B;  /* 1064*/
+	PACKING union CCU_A_REGHB_REMAP_C         CCU_AHB_REMAP_C;  /* 1068*/
+	PACKING union CCU_A_REGHB_REMAP_D         CCU_AHB_REMAP_D;  /* 106C*/
+	PACKING union CCU_A_REG_CCU_PC            CCU_PC;           /* 1070*/
+	PACKING union CCU_A_REG_TOP_SPARE         TOP_SPARE;        /* 1074*/
 	UINT32                          rsv_1078[2];      /* 1078..107C*/
 
-	PACKING union CCU_A_REG_CCU_INFO00            CCU_INFO00;       /* 1080*/
-	PACKING union CCU_A_REG_CCU_INFO01            CCU_INFO01;       /* 1084*/
-	PACKING union CCU_A_REG_CCU_INFO02            CCU_INFO02;       /* 1088*/
-	PACKING union CCU_A_REG_CCU_INFO03            CCU_INFO03;       /* 108C*/
-	PACKING union CCU_A_REG_CCU_INFO04            CCU_INFO04;       /* 1090*/
-	PACKING union CCU_A_REG_CCU_INFO05            CCU_INFO05;       /* 1094*/
-	PACKING union CCU_A_REG_CCU_INFO06            CCU_INFO06;       /* 1098*/
-	PACKING union CCU_A_REG_CCU_INFO07            CCU_INFO07;       /* 109C*/
-	PACKING union CCU_A_REG_CCU_INFO08            CCU_INFO08;       /* 10A0*/
-	PACKING union CCU_A_REG_CCU_INFO09            CCU_INFO09;       /* 10A4*/
-	PACKING union CCU_A_REG_CCU_INFO10            CCU_INFO10;       /* 10A8*/
-	PACKING union CCU_A_REG_CCU_INFO11            CCU_INFO11;       /* 10AC*/
-	PACKING union CCU_A_REG_CCU_INFO12            CCU_INFO12;       /* 10B0*/
-	PACKING union CCU_A_REG_CCU_INFO13            CCU_INFO13;       /* 10B4*/
-	PACKING union CCU_A_REG_CCU_INFO14            CCU_INFO14;       /* 10B8*/
-	PACKING union CCU_A_REG_CCU_INFO15            CCU_INFO15;       /* 10BC*/
-	PACKING union CCU_A_REG_CCU_INFO16            CCU_INFO16;       /* 10C0*/
-	PACKING union CCU_A_REG_CCU_INFO17            CCU_INFO17;       /* 10C4*/
-	PACKING union CCU_A_REG_CCU_INFO18            CCU_INFO18;       /* 10C8*/
-	PACKING union CCU_A_REG_CCU_INFO19            CCU_INFO19;       /* 10CC*/
-	PACKING union CCU_A_REG_CCU_INFO20            CCU_INFO20;       /* 10D0*/
-	PACKING union CCU_A_REG_CCU_INFO21            CCU_INFO21;       /* 10D4*/
-	PACKING union CCU_A_REG_CCU_INFO22            CCU_INFO22;       /* 10D8*/
-	PACKING union CCU_A_REG_CCU_INFO23            CCU_INFO23;       /* 10DC*/
-	PACKING union CCU_A_REG_CCU_INFO24            CCU_INFO24;       /* 10E0*/
-	PACKING union CCU_A_REG_CCU_INFO25            CCU_INFO25;       /* 10E4*/
-	PACKING union CCU_A_REG_CCU_INFO26            CCU_INFO26;       /* 10E8*/
-	PACKING union CCU_A_REG_CCU_INFO27            CCU_INFO27;       /* 10EC*/
-	PACKING union CCU_A_REG_CCU_INFO28            CCU_INFO28;       /* 10F0*/
-	PACKING union CCU_A_REG_CCU_INFO29            CCU_INFO29;       /* 10F4*/
-	PACKING union CCU_A_REG_CCU_INFO30            CCU_INFO30;       /* 10F8*/
-	PACKING union CCU_A_REG_CCU_INFO31            CCU_INFO31;       /* 10FC*/
-	PACKING union CCU_A_REG_AAO_INT_PERIOD        AAO_INT_PERIOD;   /* 1100*/
-	PACKING union CCU_A_REG_AAO_INT_CNT           AAO_INT_CNT;      /* 1104*/
-	PACKING union CCU_A_REG_AFO_INT_PERIOD        AFO_INT_PERIOD;   /* 1108*/
-	PACKING union CCU_A_REG_AFO_INT_CNT           AFO_INT_CNT;      /* 110C*/
-	PACKING union CCU_A_REG_PSO_INT_PERIOD        PSO_INT_PERIOD;   /* 1110*/
-	PACKING union CCU_A_REG_PSO_INT_CNT           PSO_INT_CNT;      /* 1114*/
+	PACKING union CCU_A_REG_CCU_INFO00        CCU_INFO00;       /* 1080*/
+	PACKING union CCU_A_REG_CCU_INFO01        CCU_INFO01;       /* 1084*/
+	PACKING union CCU_A_REG_CCU_INFO02        CCU_INFO02;       /* 1088*/
+	PACKING union CCU_A_REG_CCU_INFO03        CCU_INFO03;       /* 108C*/
+	PACKING union CCU_A_REG_CCU_INFO04        CCU_INFO04;       /* 1090*/
+	PACKING union CCU_A_REG_CCU_INFO05        CCU_INFO05;       /* 1094*/
+	PACKING union CCU_A_REG_CCU_INFO06        CCU_INFO06;       /* 1098*/
+	PACKING union CCU_A_REG_CCU_INFO07        CCU_INFO07;       /* 109C*/
+	PACKING union CCU_A_REG_CCU_INFO08        CCU_INFO08;       /* 10A0*/
+	PACKING union CCU_A_REG_CCU_INFO09        CCU_INFO09;       /* 10A4*/
+	PACKING union CCU_A_REG_CCU_INFO10        CCU_INFO10;       /* 10A8*/
+	PACKING union CCU_A_REG_CCU_INFO11        CCU_INFO11;       /* 10AC*/
+	PACKING union CCU_A_REG_CCU_INFO12        CCU_INFO12;       /* 10B0*/
+	PACKING union CCU_A_REG_CCU_INFO13        CCU_INFO13;       /* 10B4*/
+	PACKING union CCU_A_REG_CCU_INFO14        CCU_INFO14;       /* 10B8*/
+	PACKING union CCU_A_REG_CCU_INFO15        CCU_INFO15;       /* 10BC*/
+	PACKING union CCU_A_REG_CCU_INFO16        CCU_INFO16;       /* 10C0*/
+	PACKING union CCU_A_REG_CCU_INFO17        CCU_INFO17;       /* 10C4*/
+	PACKING union CCU_A_REG_CCU_INFO18        CCU_INFO18;       /* 10C8*/
+	PACKING union CCU_A_REG_CCU_INFO19        CCU_INFO19;       /* 10CC*/
+	PACKING union CCU_A_REG_CCU_INFO20        CCU_INFO20;       /* 10D0*/
+	PACKING union CCU_A_REG_CCU_INFO21        CCU_INFO21;       /* 10D4*/
+	PACKING union CCU_A_REG_CCU_INFO22        CCU_INFO22;       /* 10D8*/
+	PACKING union CCU_A_REG_CCU_INFO23        CCU_INFO23;       /* 10DC*/
+	PACKING union CCU_A_REG_CCU_INFO24        CCU_INFO24;       /* 10E0*/
+	PACKING union CCU_A_REG_CCU_INFO25        CCU_INFO25;       /* 10E4*/
+	PACKING union CCU_A_REG_CCU_INFO26        CCU_INFO26;       /* 10E8*/
+	PACKING union CCU_A_REG_CCU_INFO27        CCU_INFO27;       /* 10EC*/
+	PACKING union CCU_A_REG_CCU_INFO28        CCU_INFO28;       /* 10F0*/
+	PACKING union CCU_A_REG_CCU_INFO29        CCU_INFO29;       /* 10F4*/
+	PACKING union CCU_A_REG_CCU_INFO30        CCU_INFO30;       /* 10F8*/
+	PACKING union CCU_A_REG_CCU_INFO31        CCU_INFO31;       /* 10FC*/
+	PACKING union CCU_A_REG_AAO_INT_PERIOD    AAO_INT_PERIOD;   /* 1100*/
+	PACKING union CCU_A_REG_AAO_INT_CNT       AAO_INT_CNT;      /* 1104*/
+	PACKING union CCU_A_REG_AFO_INT_PERIOD    AFO_INT_PERIOD;   /* 1108*/
+	PACKING union CCU_A_REG_AFO_INT_CNT       AFO_INT_CNT;      /* 110C*/
+	PACKING union CCU_A_REG_PSO_INT_PERIOD    PSO_INT_PERIOD;   /* 1110*/
+	PACKING union CCU_A_REG_PSO_INT_CNT       PSO_INT_CNT;      /* 1114*/
 	UINT32                          rsv_1118[2];      /* 1118..111C*/
 
-	PACKING union CCU_A_REG_AAO_FRAME_BCNT        AAO_FRAME_BCNT;   /* 1120*/
-	PACKING union CCU_A_REG_AAO_INT_ST            AAO_INT_ST;       /* 1124*/
-	PACKING union CCU_A_REG_AFO_FRAME_BCNT        AFO_FRAME_BCNT;   /* 1128*/
-	PACKING union CCU_A_REG_AFO_INT_ST            AFO_INT_ST;       /* 112C*/
-	PACKING union CCU_A_REG_PSO_FRAME_BCNT        PSO_FRAME_BCNT;   /* 1130*/
-	PACKING union CCU_A_REG_PSO_INT_ST            PSO_INT_ST;       /* 1134*/
+	PACKING union CCU_A_REG_AAO_FRAME_BCNT    AAO_FRAME_BCNT;   /* 1120*/
+	PACKING union CCU_A_REG_AAO_INT_ST        AAO_INT_ST;       /* 1124*/
+	PACKING union CCU_A_REG_AFO_FRAME_BCNT    AFO_FRAME_BCNT;   /* 1128*/
+	PACKING union CCU_A_REG_AFO_INT_ST        AFO_INT_ST;       /* 112C*/
+	PACKING union CCU_A_REG_PSO_FRAME_BCNT    PSO_FRAME_BCNT;   /* 1130*/
+	PACKING union CCU_A_REG_PSO_INT_ST        PSO_INT_ST;       /* 1134*/
 	UINT32                          rsv_1138;         /* 1138*/
 
-	PACKING union CCU_A_REG_CAMSV_INT_EN          CAMSV_INT_EN;     /* 113C*/
-	PACKING union CCU_A_REG_CAMSV_0_ICNT          CAMSV_0_ICNT;     /* 1140*/
-	PACKING union CCU_A_REG_CAMSV_0_INT_ST        CAMSV_0_INT_ST;   /* 1144*/
-	PACKING union CCU_A_REG_CAMSV_1_ICNT          CAMSV_1_ICNT;     /* 1148*/
-	PACKING union CCU_A_REG_CAMSV_1_INT_ST        CAMSV_1_INT_ST;   /* 114C*/
-	PACKING union CCU_A_REG_CAMSV_2_ICNT          CAMSV_2_ICNT;     /* 1150*/
-	PACKING union CCU_A_REG_CAMSV_2_INT_ST        CAMSV_2_INT_ST;   /* 1154*/
-	PACKING union CCU_A_REG_CAMSV_3_ICNT          CAMSV_3_ICNT;     /* 1158*/
-	PACKING union CCU_A_REG_CAMSV_3_INT_ST        CAMSV_3_INT_ST;   /* 115C*/
-	PACKING union CCU_A_REG_CCU_SOF_CNT           CCU_SOF_CNT;      /* 1160*/
+	PACKING union CCU_A_REG_CAMSV_INT_EN      CAMSV_INT_EN;     /* 113C*/
+	PACKING union CCU_A_REG_CAMSV_0_ICNT      CAMSV_0_ICNT;     /* 1140*/
+	PACKING union CCU_A_REG_CAMSV_0_INT_ST    CAMSV_0_INT_ST;   /* 1144*/
+	PACKING union CCU_A_REG_CAMSV_1_ICNT      CAMSV_1_ICNT;     /* 1148*/
+	PACKING union CCU_A_REG_CAMSV_1_INT_ST    CAMSV_1_INT_ST;   /* 114C*/
+	PACKING union CCU_A_REG_CAMSV_2_ICNT      CAMSV_2_ICNT;     /* 1150*/
+	PACKING union CCU_A_REG_CAMSV_2_INT_ST    CAMSV_2_INT_ST;   /* 1154*/
+	PACKING union CCU_A_REG_CAMSV_3_ICNT      CAMSV_3_ICNT;     /* 1158*/
+	PACKING union CCU_A_REG_CAMSV_3_INT_ST    CAMSV_3_INT_ST;   /* 115C*/
+	PACKING union CCU_A_REG_CCU_SOF_CNT       CCU_SOF_CNT;      /* 1160*/
 	UINT32                          rsv_1164[14246];  /* 1164..EFF8*/
 	UINT8                           rsv_EFFC;         /* EFFC*/
 	UINT16                          rsv_EFFD;         /* EFFD*/

@@ -4,8 +4,9 @@
  *     BSD Licence, (see NOTICE for more details)
  *     GNU General Public License, version 2.0, (see NOTICE for more details)
  */
+#include <linux/sched/clock.h>
+#include <linux/sched/debug.h>
 #include <linux/device.h>
-#include <mt-plat/mtk_meminfo.h>
 
 #include "nandx_util.h"
 #include "nandx_errno.h"
@@ -15,6 +16,7 @@
 #include "nandx_ops.h"
 #include "wrapper_pmt.h"
 #include "mntl_ops.h"
+#include "mntl_mem.h"
 
 int g_i4Homescreen;
 struct nandx_ops *ops_table;
@@ -991,7 +993,7 @@ static u32 mtk_nand_do_erase(struct mtk_nand_chip_info *info,
 	}
 
 	kfree(rows);
-	pr_debug("mtk_nand_do_erase done\n");
+	pr_debug("%s done\n", __func__);
 
 err:
 	nandx_release_device();
@@ -1806,7 +1808,7 @@ void dump_block_bit_map(u8 *array)
 	int num;
 	bool check;
 
-	pr_info("dump_block_bit_map\n");
+	pr_info("%s\n", __func__);
 	for (i = 0; i < 500; i++) {
 		num = array[i];
 		if (num == 0)
@@ -1946,12 +1948,6 @@ int mvg_case_exit(const char *gname, const char *cname)
 	return 0;
 }
 EXPORT_SYMBOL(mvg_case_exit);
-
-char *os_get_task_comm(char *buf, struct task_struct *tsk)
-{
-	return get_task_comm(buf, tsk);
-}
-EXPORT_SYMBOL(os_get_task_comm);
 
 unsigned long long os_sched_clock(void)
 {

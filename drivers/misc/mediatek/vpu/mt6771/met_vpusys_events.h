@@ -13,11 +13,11 @@
 
 
 /*
-  * Take VPU__D2D as an example:
-  * Define 2 ftrace event:
-  *            1. enter event
-  *            2. leave event
-  */
+ * Take VPU__D2D as an example:
+ * Define 2 ftrace event:
+ *            1. enter event
+ *            2. leave event
+ */
 
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM met_vpusys_events
@@ -48,7 +48,8 @@ TRACE_EVENT(__MET_PACKET__,
 		snprintf(__entry->str_desc, MX_LEN_STR_DESC, "%s", str_desc);
 		__entry->val = val;
 	),
-	TP_printk("WCLK=%llu,ACTION=%c,TASK=VPU.internal.core%d,PID=%d,SESS=%d,DESC=%s,VAL=%d,",
+	TP_printk(
+		"WCLK=%llu,ACTION=%c,TASK=VPU.internal.core%d,PID=%d,SESS=%d,DESC=%s,VAL=%d,",
 		__entry->wclk,
 		__entry->action,
 		__entry->core,
@@ -72,7 +73,8 @@ TRACE_EVENT(VPU__D2D_enter,
 		__entry->algo_id = algo_id;
 		__entry->dsp_freq = dsp_freq;
 	),
-	TP_printk("_id=c%da%d, dsp%d_freq=%d", __entry->core, __entry->algo_id, __entry->core, __entry->dsp_freq)
+	TP_printk("_id=c%da%d, dsp%d_freq=%d", __entry->core, __entry->algo_id,
+		__entry->core, __entry->dsp_freq)
 );
 
 TRACE_EVENT(VPU__D2D_leave,
@@ -108,16 +110,18 @@ TRACE_EVENT(VPU__polling,
 		__entry->value3 = value3;
 		__entry->value4 = value4;
 	),
-	TP_printk("_id=c%d, instruction_cnt=%d, idma_active=%d, uncached_data_stall=%d, icache_miss_stall=%d",
-					__entry->core,
-					__entry->value1,
-					__entry->value2,
-					__entry->value3,
-					__entry->value4)
+	TP_printk(
+		"_id=c%d, instruction_cnt=%d, idma_active=%d, uncached_data_stall=%d, icache_miss_stall=%d",
+		__entry->core,
+		__entry->value1,
+		__entry->value2,
+		__entry->value3,
+		__entry->value4)
 );
 
 TRACE_EVENT(VPU__DVFS,
-	TP_PROTO(int vcore_opp, int dsp_freq, int ipu_if_freq, int dsp1_freq, int dsp2_freq),
+	TP_PROTO(int vcore_opp, int dsp_freq, int ipu_if_freq, int dsp1_freq,
+		int dsp2_freq),
 	TP_ARGS(vcore_opp, dsp_freq, ipu_if_freq, dsp1_freq, dsp2_freq),
 	TP_STRUCT__entry(
 		__field(int, vcore_opp)
@@ -133,12 +137,13 @@ TRACE_EVENT(VPU__DVFS,
 		__entry->dsp1_freq = dsp1_freq;
 		__entry->dsp2_freq = dsp2_freq;
 	),
-	TP_printk("vcore_opp=%d, dsp_freq=%d, ipu_if_freq=%d, dsp1_freq=%d, dsp2_freq=%d",
-			__entry->vcore_opp,
-			__entry->dsp_freq,
-			__entry->ipu_if_freq,
-			__entry->dsp1_freq,
-			__entry->dsp2_freq)
+	TP_printk(
+		"vcore_opp=%d, dsp_freq=%d, ipu_if_freq=%d, dsp1_freq=%d, dsp2_freq=%d",
+		__entry->vcore_opp,
+		__entry->dsp_freq,
+		__entry->ipu_if_freq,
+		__entry->dsp1_freq,
+		__entry->dsp2_freq)
 );
 
 

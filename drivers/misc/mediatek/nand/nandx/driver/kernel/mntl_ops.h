@@ -29,7 +29,6 @@
 #include <linux/uaccess.h>
 #include <asm/div64.h>
 #include <linux/miscdevice.h>
-#include <mt-plat/dma.h>
 #include <linux/rtc.h>
 #include <linux/freezer.h>
 #include <linux/kthread.h>

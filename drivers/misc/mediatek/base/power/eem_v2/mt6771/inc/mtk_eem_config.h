@@ -24,6 +24,7 @@
 #define EEM_FAKE_EFUSE		(0)
 /* FIX ME */
 #define UPDATE_TO_UPOWER	(1)
+#define PPM_READY (1)
 #define EEM_LOCKTIME_LIMIT	(3000)
 #define ENABLE_EEMCTL0		(1)
 #define ENABLE_LOO			(0)
@@ -114,11 +115,11 @@ enum mt_cpu_dvfs_id {
 #define DEVINFO_18 0x09EA68F0
 #endif
 /*****************************************
-* eem sw setting
-******************************************
-*/
+ * eem sw setting
+ ******************************************
+ */
 #define NR_HW_RES_FOR_BANK	(13) /* real eem banks for efuse */
-#define EEM_INIT01_FLAG (0xF) /* should be 0x0F=> [3]:GPU, [2]:CCI, [1]:L, [0]:LL */
+#define EEM_INIT01_FLAG (0xF) /* should be 0x0F=>[3]:GPU,[2]:CCI,[1]:L,[0]:LL */
 #if ENABLE_LOO
 #define EEM_2L_INIT02_FLAG (0x11) /* should be 0x0F=> [4]:2L_HI, [0]:LL */
 #define EEM_L_INIT02_FLAG (0x6) /* should be 0x0F=> [2]:L_HI, [1]:L */
@@ -163,7 +164,8 @@ enum mt_cpu_dvfs_id {
 
 #define DTHI_VAL		(0x01) /* positive */
 #define DTLO_VAL		(0xfe) /* negative (2's compliment) */
-#define DETMAX_VAL		(0xffff) /* This timeout value is in cycles of bclk_ck. */
+/* This timeout value is in cycles of bclk_ck. */
+#define DETMAX_VAL		(0xffff)
 #define AGECONFIG_VAL		(0x555555)
 #define AGEM_VAL		(0x0)
 #define DCCONFIG_VAL		(0x555555)
@@ -199,7 +201,8 @@ enum mt_cpu_dvfs_id {
 #define EEM_CTL0_GPU (0x00050001)
 #endif
 
-#if EEM_FAKE_EFUSE		/* select PTP secure mode based on efuse config. */
+/* select PTP secure mode based on efuse config. */
+#if EEM_FAKE_EFUSE
 #define SEC_MOD_SEL			0xF0		/* non secure  mode */
 #else
 #define SEC_MOD_SEL			0x00		/* Secure Mode 0 */

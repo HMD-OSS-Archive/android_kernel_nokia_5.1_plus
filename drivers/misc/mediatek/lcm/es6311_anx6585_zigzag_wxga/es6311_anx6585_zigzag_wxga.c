@@ -51,10 +51,8 @@ static void lcm_set_gpio_output(unsigned int GPIO, unsigned int output)
 }
 
 #ifndef BUILD_LK
-/* 45 */
-static unsigned int GPIO_LCD_RST_EN;
-/* 158 */
-static unsigned int GPIO_LCD_PWR_EN;
+static unsigned int GPIO_LCD_RST_EN; /* GPIO45 */
+static unsigned int GPIO_LCD_PWR_EN; /* GPIO158 */
 
 void lcm_request_gpio_control(struct device *dev)
 {
@@ -74,11 +72,11 @@ static int lcm_driver_probe(struct device *dev, void const *data)
 
 static const struct of_device_id lcm_platform_of_match[] = {
 	{
-	 .compatible = "es,es6311_anx6585_zigzag_wxga",
-	 .data = 0,
-	 }, {
-	     /* sentinel */
-	     }
+		.compatible = "es,es6311_anx6585_zigzag_wxga",
+		.data = 0,
+	}, {
+		/* sentinel */
+	}
 };
 
 MODULE_DEVICE_TABLE(of, platform_of_match);
@@ -97,15 +95,15 @@ static int lcm_platform_probe(struct platform_device *pdev)
 static struct platform_driver lcm_driver = {
 	.probe = lcm_platform_probe,
 	.driver = {
-		   .name = "es6311_anx6585_zigzag_wxga",
-		   .owner = THIS_MODULE,
-		   .of_match_table = lcm_platform_of_match,
-		   },
+		.name = "es6311_anx6585_zigzag_wxga",
+		.owner = THIS_MODULE,
+		.of_match_table = lcm_platform_of_match,
+	},
 };
 
 static int __init lcm_init(void)
 {
-	pr_notice("LCM: register lcm init driver done\n");
+	pr_notice("[Kernel/LCM] register lcm init driver\n");
 	if (platform_driver_register(&lcm_driver)) {
 		pr_notice("LCM: failed to register this driver!\n");
 		return -ENODEV;
@@ -126,33 +124,37 @@ MODULE_DESCRIPTION("LCM display subsystem driver");
 MODULE_LICENSE("GPL");
 #endif
 
-/* --------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------- */
 /* Local Constants */
-/* --------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------- */
 
 #define FRAME_WIDTH  (800)
 #define FRAME_HEIGHT (1280)
 
-/* --------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------- */
 /* Local Variables */
-/* --------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------- */
 
-static LCM_UTIL_FUNCS lcm_util = { 0 };
+static struct LCM_UTIL_FUNCS lcm_util = { 0 };
 
 #define SET_RESET_PIN(v)    (lcm_util.set_reset_pin((v)))
 
 #define UDELAY(n) (lcm_util.udelay(n))
 #define MDELAY(n) (lcm_util.mdelay(n))
 
-/* --------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------- */
 /* Local Functions */
-/* --------------------------------------------------------------------------- */
-#define dsi_set_cmdq_V2(cmd, count, ppara, force_update)lcm_util.dsi_set_cmdq_V2(cmd, count, ppara, force_update)
-#define dsi_set_cmdq(pdata, queue_size, force_update)	lcm_util.dsi_set_cmdq(pdata, queue_size, force_update)
-#define wrtie_cmd(cmd)							lcm_util.dsi_write_cmd(cmd)
-#define write_regs(addr, pdata, byte_nums)		lcm_util.dsi_write_regs(addr, pdata, byte_nums)
-#define read_reg(cmd)							lcm_util.dsi_dcs_read_lcm_reg(cmd)
-#define read_reg_v2(cmd, buffer, buffer_size)	lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
+/* ------------------------------------------------------------------- */
+#define dsi_set_cmdq_V2(cmd, count, ppara, force_update) \
+	lcm_util.dsi_set_cmdq_V2(cmd, count, ppara, force_update)
+#define dsi_set_cmdq(pdata, queue_size, force_update) \
+	lcm_util.dsi_set_cmdq(pdata, queue_size, force_update)
+#define wrtie_cmd(cmd) lcm_util.dsi_write_cmd(cmd)
+#define write_regs(addr, pdata, byte_nums) \
+	lcm_util.dsi_write_regs(addr, pdata, byte_nums)
+#define read_reg(cmd) lcm_util.dsi_dcs_read_lcm_reg(cmd)
+#define read_reg_v2(cmd, buffer, buffer_size) \
+	lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
 
 #define   LCM_DSI_CMD_MODE	0
 
@@ -687,7 +689,7 @@ static void lcm_initial_registers(void)
 
 static void lcm_init_power(void)
 {
-	pr_debug("[Kernel/LCM] lcm_init_power() enter\n");
+	pr_notice("[Kernel/LCM] %s enter\n", __func__);
 
 	lcm_set_gpio_output(GPIO_LCD_PWR_EN, 1);
 	MDELAY(10);
@@ -695,7 +697,7 @@ static void lcm_init_power(void)
 
 static void lcm_suspend_power(void)
 {
-	pr_debug("[Kernel/LCM] lcm_suspend_power() enter\n");
+	pr_notice("[Kernel/LCM] %s enter\n", __func__);
 
 	lcm_set_gpio_output(GPIO_LCD_PWR_EN, 0);
 	MDELAY(20);
@@ -704,22 +706,22 @@ static void lcm_suspend_power(void)
 
 static void lcm_resume_power(void)
 {
-	pr_debug("[Kernel/LCM] lcm_resume_power() enter\n");
+	pr_notice("[Kernel/LCM] %s enter\n", __func__);
 
 	lcm_set_gpio_output(GPIO_LCD_PWR_EN, 1);
 }
 
-/* --------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------- */
 /* LCM Driver Implementations */
-/* --------------------------------------------------------------------------- */
-static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
+/* ------------------------------------------------------------------- */
+static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 {
-	memcpy(&lcm_util, util, sizeof(LCM_UTIL_FUNCS));
+	memcpy(&lcm_util, util, sizeof(struct LCM_UTIL_FUNCS));
 }
 
-static void lcm_get_params(LCM_PARAMS *params)
+static void lcm_get_params(struct LCM_PARAMS *params)
 {
-	memset(params, 0, sizeof(LCM_PARAMS));
+	memset(params, 0, sizeof(struct LCM_PARAMS));
 
 	params->type = LCM_TYPE_DSI;
 
@@ -737,14 +739,14 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.data_format.format = LCM_DSI_FORMAT_RGB888;
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
-	params->dsi.vertical_sync_active = 5;
-	params->dsi.vertical_backporch = 3;
-	params->dsi.vertical_frontporch	= 8;
-	params->dsi.vertical_active_line = FRAME_HEIGHT;
+	params->dsi.vertical_sync_active    = 5;
+	params->dsi.vertical_backporch      = 3;
+	params->dsi.vertical_frontporch	    = 8;
+	params->dsi.vertical_active_line    = FRAME_HEIGHT;
 
-	params->dsi.horizontal_sync_active = 5;
-	params->dsi.horizontal_backporch = 59;
-	params->dsi.horizontal_frontporch = 16;
+	params->dsi.horizontal_sync_active  = 5;
+	params->dsi.horizontal_backporch    = 59;
+	params->dsi.horizontal_frontporch   = 16;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
 	params->dsi.PLL_CLOCK = 210;
@@ -752,12 +754,16 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 static void lcm_init_lcm(void)
 {
-	pr_debug("[Kernel/LCM] lcm_init() enter\n");
+	pr_notice("[Kernel/LCM] %s enter\n", __func__);
+
+#ifdef BUILD_LK
+	lcm_resume();
+#endif
 }
 
 void lcm_suspend(void)
 {
-	pr_debug("[Kernel/LCM] 20811010280038lcm_suspend() enter\n");
+	pr_notice("[Kernel/LCM] %s enter\n", __func__);
 
 	lcm_set_gpio_output(GPIO_LCD_RST_EN, 1);
 	MDELAY(10);
@@ -769,7 +775,7 @@ void lcm_suspend(void)
 
 void lcm_resume(void)
 {
-	pr_debug("[Kernel/LCM]20811010280038 lcm_resume() enter\n");
+	pr_notice("[Kernel/LCM] %s enter\n", __func__);
 
 	lcm_set_gpio_output(GPIO_LCD_RST_EN, 0);
 	lcm_set_gpio_output(GPIO_LCD_PWR_EN, 0);
@@ -790,13 +796,9 @@ void lcm_resume(void)
 	lcm_initial_registers();
 }
 
-static unsigned int lcm_ata_check(unsigned char *buffer)
-{
-	return 1;
-}
-
 #if (LCM_DSI_CMD_MODE)
-static void lcm_update(unsigned int x, unsigned int y, unsigned int width, unsigned int height)
+static void lcm_update(unsigned int x,
+	unsigned int y, unsigned int width, unsigned int height)
 {
 	unsigned int x0 = x;
 	unsigned int y0 = y;
@@ -832,7 +834,12 @@ static void lcm_update(unsigned int x, unsigned int y, unsigned int width, unsig
 }
 #endif
 
-LCM_DRIVER es6311_anx6585_zigzag_wxga_lcm_drv = {
+static unsigned int lcm_ata_check(unsigned char *buffer)
+{
+	return 1;
+}
+
+struct LCM_DRIVER es6311_anx6585_zigzag_wxga_lcm_drv = {
 	.name = "es6311_anx6585_zigzag_wxga",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,

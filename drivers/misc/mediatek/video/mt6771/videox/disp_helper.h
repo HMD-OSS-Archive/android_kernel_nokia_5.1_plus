@@ -29,6 +29,7 @@ enum DISP_HELPER_OPT {
 	DISP_OPT_SODI_SUPPORT,
 	DISP_OPT_IDLE_MGR,
 	DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,
+	DISP_OPT_IDLEMGR_BY_REPAINT,
 	DISP_OPT_IDLEMGR_ENTER_ULPS,
 	DISP_OPT_SHARE_SRAM,
 	DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK,
@@ -59,24 +60,28 @@ enum DISP_HELPER_OPT {
 	DISP_OPT_PARTIAL_UPDATE,
 	DISP_OPT_CV_BYSUSPEND,
 	DISP_OPT_DELAYED_TRIGGER,
-	/* shadow register options @{*/
-	DISP_OPT_SHADOW_REGISTER,	/* is chip has shadow register? */
-	DISP_OPT_SHADOW_MODE,		/* 0:full; 1:force_commit; 2:bypass shadow */
-	/* @} */
-	DISP_OPT_OVL_EXT_LAYER,		/* is ovl has ext layer support? */
+
+	/* shadow register options */
+	DISP_OPT_SHADOW_REGISTER, /* does chip have shadow register? */
+	DISP_OPT_SHADOW_MODE, /* 0:full; 1:force_commit; 2:bypass shadow */
+
+	DISP_OPT_OVL_EXT_LAYER,	/* is ovl has ext layer support? */
 	DISP_OPT_REG_PARSER_RAW_DUMP,
+	DISP_OPT_PQ_REG_DUMP,
 	DISP_OPT_AOD,
-	/*ARR phase 1 option*/
+	/* ARR phase 1 option */
 	DISP_OPT_ARR_PHASE_1,
 	DISP_OPT_RSZ,
 	DISP_OPT_RPO,
 	DISP_OPT_DUAL_PIPE,
 	/* DISP_WDMA0 sharing internally for primary and external display */
 	DISP_OPT_SHARE_WDMA0,
+	DISP_OPT_FRAME_QUEUE,
 	DISP_OPT_ROUND_CORNER,
 	DISP_OPT_ANTILATENCY,
 	DISP_OPT_DC_BY_HRT,
 	DISP_OPT_OVL_DCM,
+	DISP_OPT_MOD_RECOVERY,
 	DISP_OPT_NUM
 };
 
@@ -104,4 +109,4 @@ enum DISP_HELPER_OPT disp_helper_name_to_opt(const char *name);
 int disp_helper_backup_reset(struct DISP_OPT_INFO info[], int n);
 int disp_helper_restore(struct DISP_OPT_INFO info[], int n);
 
-#endif
+#endif /* _DISP_HELPER_H_ */

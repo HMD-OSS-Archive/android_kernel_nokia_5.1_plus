@@ -22,6 +22,8 @@
 #include <linux/cpu.h>		/* cpu_up */
 #include <linux/kthread.h>	/* kthread_create */
 #include <asm-generic/bug.h>	/* BUG_ON */
+#include <linux/sched.h>
+#include <linux/sched/task.h>
 
 #include "mt_hotplug_strategy_internal.h"
 

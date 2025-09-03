@@ -23,10 +23,12 @@ extern unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_suspend_len;
 extern const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_sodi3p0;
 extern unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_sodi3p0_len;
 
-extern const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3;
+extern const unsigned int
+*AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3;
 extern unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_len;
 
-extern const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_sodi3p0_32kless;
+extern const unsigned int
+*AP_MT6358_PMIC_Register_Mapping_E2_gs_sodi3p0_32kless;
 extern unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_sodi3p0_32kless_len;
 
 extern const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_clkon;
@@ -35,8 +37,10 @@ extern unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_clkon_len;
 extern const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_pmic_lp_idle;
 extern unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_pmic_lp_idle_len;
 
-extern const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless;
-extern unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless_len;
+extern const unsigned int
+*AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless;
+extern unsigned int
+AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless_len;
 
 extern const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_dcm_off;
 extern unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_dcm_off_len;
@@ -47,7 +51,8 @@ extern unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_elr_len;
 extern const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_pmic_lp_active;
 extern unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_pmic_lp_active_len;
 
-extern const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_suspend_32kless;
+extern const unsigned int
+*AP_MT6358_PMIC_Register_Mapping_E2_gs_suspend_32kless;
 extern unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_suspend_32kless_len;
 
 

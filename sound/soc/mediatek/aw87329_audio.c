@@ -25,11 +25,12 @@
 #include <linux/gameport.h>
 #include <linux/moduleparam.h>
 #include <linux/mutex.h>
-#include <linux/wakelock.h>
+//#include <linux/wakelock.h>
 #include <linux/timer.h>
 #include <linux/workqueue.h>
 #include <linux/hrtimer.h>
 
+#include <linux/module.h>
 
 /*******************************************************************************
  * aw87329 marco

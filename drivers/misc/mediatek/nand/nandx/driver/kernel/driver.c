@@ -27,7 +27,6 @@
 #include <asm/cacheflush.h>
 #include <linux/uaccess.h>
 #include <asm/div64.h>
-#include <mt-plat/dma.h>
 
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -48,23 +47,6 @@
 #include "mtd_ops.h"
 #include "wrapper_pmt.h"
 #include "mntl_ops.h"
-
-struct nand_ecclayout nand_oob_128 = {
-	.eccbytes = 64,
-	.eccpos = {
-		   64, 65, 66, 67, 68, 69, 70, 71,
-		   72, 73, 74, 75, 76, 77, 78, 79,
-		   80, 81, 82, 83, 84, 85, 86, 86,
-		   88, 89, 90, 91, 92, 93, 94, 95,
-		   96, 97, 98, 99, 100, 101, 102, 103,
-		   104, 105, 106, 107, 108, 109, 110, 111,
-		   112, 113, 114, 115, 116, 117, 118, 119,
-		   120, 121, 122, 123, 124, 125, 126, 127},
-	.oobfree = {
-		    {1, 7}, {9, 7}, {17, 7}, {25, 7},
-		    {33, 7}, {41, 7}, {49, 7}, {57, 6}
-		}
-};
 
 struct nfc_compatible {
 	enum IC_VER ic_ver;
@@ -205,7 +187,6 @@ static struct mtd_info *mtd_info_create(struct platform_device *pdev,
 
 	/* propagate ecc info to mtd_info */
 	/* TODO: set NULL TO  */
-	mtd->ecclayout = &nand_oob_128;
 	mtd->ecc_strength = ncore->info->ecc_strength;
 	mtd->ecc_step_size = ncore->info->sector_size;
 	/*

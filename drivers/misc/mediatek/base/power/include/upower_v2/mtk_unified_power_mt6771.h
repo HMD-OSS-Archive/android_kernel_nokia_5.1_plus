@@ -12,14 +12,14 @@
  */
 
  /**********************************************
- * unified_power.h
- * This header file includes:
- * 1. Global configs for unified power driver
- * 2. Global macros
- * 3. Declarations of enums and main data structures
- * 4. Extern global variables
- * 5. Extern global APIs
- **********************************************/
+  * unified_power.h
+  * This header file includes:
+  * 1. Global configs for unified power driver
+  * 2. Global macros
+  * 3. Declarations of enums and main data structures
+  * 4. Extern global variables
+  * 5. Extern global APIs
+  **********************************************/
 #ifndef MTK_UNIFIED_POWER_MT6771_H
 #define MTK_UNIFIED_POWER_MT6771_H
 

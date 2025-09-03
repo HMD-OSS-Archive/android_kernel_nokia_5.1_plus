@@ -22,11 +22,11 @@
 
 
 /* Session Management */
-#define TZCMD_SYS_INIT				0
-#define TZCMD_SYS_SESSION_CREATE	  1
-#define TZCMD_SYS_SESSION_CLOSE	   2
-#define TZCMD_SYS_IRQ				 3
-#define TZCMD_SYS_THREAD_CREATE	   4
+#define TZCMD_SYS_INIT 0
+#define TZCMD_SYS_SESSION_CREATE 1
+#define TZCMD_SYS_SESSION_CLOSE 2
+#define TZCMD_SYS_IRQ 3
+#define TZCMD_SYS_THREAD_CREATE 4
 
 #define GZ_MSG_DATA_MAX_LEN 1024
 struct gz_syscall_cmd_param {
@@ -40,6 +40,19 @@ struct gz_syscall_cmd_param {
 	char data[GZ_MSG_DATA_MAX_LEN];
 };
 
-#define GZ_MSG_HEADER_LEN (sizeof(struct gz_syscall_cmd_param) - GZ_MSG_DATA_MAX_LEN)
+#define GZ_MSG_HEADER_LEN                                                      \
+	(sizeof(struct gz_syscall_cmd_param) - GZ_MSG_DATA_MAX_LEN)
 
-#endif				/* __TRUSTZONE_TA_SYSTEM__ */
+extern struct platform_device *tz_system_dev;
+extern struct cpumask trusty_all_cmask;
+extern struct cpumask trusty_big_cmask;
+extern int perf_boost_cnt;
+extern struct mutex perf_boost_lock;
+extern struct platform_driver tz_system_driver;
+#ifdef CONFIG_PM_WAKELOCKS
+extern struct wakeup_source TeeServiceCall_wake_lock;
+#else
+extern struct wake_lock TeeServiceCall_wake_lock;
+#endif
+
+#endif /* __TRUSTZONE_TA_SYSTEM__ */

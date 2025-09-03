@@ -233,7 +233,7 @@ calibration:
 static int nandx_chip_multi_read(struct nandx_chip_dev *chip_dev,
 				 struct nandx_ops **ops_list, int count)
 {
-	int ret, col, status;
+	int ret = NAND_OK, col, status = NAND_OK;
 	int i, j, num, rr_count, cali_count = 0;
 	u32 row;
 	void *data, *oob;

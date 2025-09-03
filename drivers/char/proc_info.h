@@ -3,7 +3,8 @@
 ============================================================================+*/
 //#define fver_BLOCK 				"/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/sys_info"
 #define fver_BLOCK                              "/dev/block/platform/bootdevice/by-name/systeminfo"
-#define wifimac_BLOCK                              "/vendor/nvdata/APCFG/APRDEB/WIFI"
+#define wifimac_BLOCK           "/mnt/vendor/nvdata/APCFG/APRDEB/WIFI" //For Android Q
+//#define wifimac_BLOCK                              "/vendor/nvdata/APCFG/APRDEB/WIFI"
 //#define wifimac_BLOCK                              "/data/misc/wifi_mac"
 #define btmac_BLOCK                                "/vendor/nvdata/APCFG/APRDEB/BT_Addr"
 

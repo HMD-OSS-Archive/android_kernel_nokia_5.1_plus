@@ -21,14 +21,22 @@
 #include <asm/setup.h>
 #include <mt-plat/mtk_secure_api.h>
 
+#include <mtk_spm_early_porting.h>
+
 #ifdef CONFIG_ARM64
-#include <linux/irqchip/mtk-gic.h>
+/* TODO: fix */
+#if !defined(SPM_K414_EARLY_PORTING)
+#include <linux/irqchip/mtk-gic-extend.h>
+#endif
 #endif
 #if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mtk_cirq.h>
 #endif
 /* #include <mach/mtk_clkmgr.h> */
+/* TODO: fix */
+#if !defined(SPM_K414_EARLY_PORTING)
 #include <mtk_cpuidle.h>
+#endif
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 #include <mach/wd_api.h>
 #endif
@@ -41,10 +49,15 @@
 
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
-#include <mtk_pmic_api_buck.h>
+#include "pmic_api_buck.h"
+/* TODO: fix */
+#if !defined(SPM_K414_EARLY_PORTING)
 #include <mtk_spm_vcore_dvfs.h>
+#endif
 
+#ifdef CONFIG_MTK_CCCI_DEVICES
 #include <mt-plat/mtk_ccci_common.h>
+#endif
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 #include <mt-plat/mtk_usb2jtag.h>
@@ -52,10 +65,13 @@
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include <sspm_define.h>
-#include <sspm_timesync.h>
+#include <v1/sspm_timesync.h>
 #endif
 
+/* TODO: fix */
+#if !defined(SPM_K414_EARLY_PORTING)
 #include <mtk_power_gs_api.h>
+#endif
 
 #ifdef CONFIG_MTK_ICCS_SUPPORT
 #include <mtk_hps_internal.h>
@@ -84,14 +100,17 @@ static void spm_dump_pmic_reg(void)
 
 	for (i = 0; i < ARRAY_SIZE(pmic_reg); i++) {
 		ret = pmic_read_interface_nolock(pmic_reg[i], &val, 0xffff, 0);
-		spm_crit2("#@# %s(%d) pmic reg(0x%x) = 0x%x\n", __func__, __LINE__,
-				pmic_reg[i], val);
+		spm_crit2("#@# %s(%d) pmic reg(0x%x) = 0x%x\n",
+			  __func__, __LINE__, pmic_reg[i], val);
 	}
 }
 #endif /* SPM_PMIC_DEBUG */
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+/* TODO: fix */
+#if !defined(SPM_K414_EARLY_PORTING)
 static int mt_power_gs_dump_suspend_count = 2;
+#endif
 #endif
 
 void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
@@ -104,8 +123,10 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	memset(&spm_d, 0, sizeof(struct spm_data));
 
 #ifdef SSPM_TIMESYNC_SUPPORT
-	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h, &spm_d.u.suspend.sys_timestamp_l);
-	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h, &spm_d.u.suspend.sys_src_clk_l);
+	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h,
+			     &spm_d.u.suspend.sys_timestamp_l);
+	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h,
+			      &spm_d.u.suspend.sys_src_clk_l);
 #endif
 
 	spm_opt |= spm_for_gps_flag ?  SPM_OPT_GPS_STAT     : 0;
@@ -128,8 +149,11 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+/* TODO: fix */
+#if !defined(SPM_K414_EARLY_PORTING)
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
 		mt_power_gs_dump_suspend(slp_dump_golden_setting_type);
+#endif
 #endif
 
 	/* dvfsrc_md_scenario_update(1); */
@@ -154,8 +178,10 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	memset(&spm_d, 0, sizeof(struct spm_data));
 
 #ifdef SSPM_TIMESYNC_SUPPORT
-	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h, &spm_d.u.suspend.sys_timestamp_l);
-	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h, &spm_d.u.suspend.sys_src_clk_l);
+	sspm_timesync_ts_get(&spm_d.u.suspend.sys_timestamp_h,
+			     &spm_d.u.suspend.sys_timestamp_l);
+	sspm_timesync_clk_get(&spm_d.u.suspend.sys_src_clk_h,
+			      &spm_d.u.suspend.sys_src_clk_l);
 #endif
 
 	ret = spm_to_sspm_command(SPM_RESUME, &spm_d);
@@ -214,30 +240,35 @@ void spm_ap_mdsrc_req(u8 set)
 		spin_lock_irqsave(&__spm_lock, flags);
 
 		if (spm_ap_mdsrc_req_cnt < 0) {
-			spm_crit2("warning: set = %d, spm_ap_mdsrc_req_cnt = %d\n", set,
-				  spm_ap_mdsrc_req_cnt);
+			spm_crit2(
+			"warning: set = %d, spm_ap_mdsrc_req_cnt = %d\n",
+			set,
+			spm_ap_mdsrc_req_cnt);
 			spin_unlock_irqrestore(&__spm_lock, flags);
 		} else {
 			spm_ap_mdsrc_req_cnt++;
 
-			mt_secure_call(MTK_SIP_KERNEL_SPM_AP_MDSRC_REQ, 1, 0, 0);
+			SMC_CALL(MTK_SIP_KERNEL_SPM_AP_MDSRC_REQ, 1, 0, 0);
 
 			spin_unlock_irqrestore(&__spm_lock, flags);
 
-			/* if md_apsrc_req = 1'b0, wait 26M settling time (3ms) */
-			if ((spm_read(PCM_REG13_DATA) & R13_MD1_APSRC_REQ) == 0) {
+			/* if md_apsrc_req = 1'b0, */
+			/* wait 26M settling time (3ms) */
+			if ((spm_read(PCM_REG13_DATA) &
+			     R13_MD1_APSRC_REQ) == 0) {
 				md_sleep = 1;
 				mdelay(3);
 			}
 
 			/* Check ap_mdsrc_ack = 1'b1 */
-			while ((spm_read(AP_MDSRC_REQ) & AP_MDSMSRC_ACK_LSB) == 0) {
+			while ((spm_read(AP_MDSRC_REQ) &
+				AP_MDSMSRC_ACK_LSB) == 0) {
 				if (i++ < 10) {
 					mdelay(1);
 				} else {
-					spm_crit2
-					    ("WARNING: MD SLEEP = %d, spm_ap_mdsrc_req CAN NOT polling AP_MD1SRC_ACK\n",
-					     md_sleep);
+					spm_crit2(
+		"WARNING: MD SLEEP = %d, %s CAN NOT polling AP_MD1SRC_ACK\n",
+		md_sleep, __func__);
 					break;
 				}
 			}
@@ -248,11 +279,14 @@ void spm_ap_mdsrc_req(u8 set)
 		spm_ap_mdsrc_req_cnt--;
 
 		if (spm_ap_mdsrc_req_cnt < 0) {
-			spm_crit2("warning: set = %d, spm_ap_mdsrc_req_cnt = %d\n", set,
-				  spm_ap_mdsrc_req_cnt);
+			spm_crit2(
+			"warning: set = %d, spm_ap_mdsrc_req_cnt = %d\n",
+			set,
+			spm_ap_mdsrc_req_cnt);
 		} else {
 			if (spm_ap_mdsrc_req_cnt == 0)
-				mt_secure_call(MTK_SIP_KERNEL_SPM_AP_MDSRC_REQ, 0, 0, 0);
+				SMC_CALL(MTK_SIP_KERNEL_SPM_AP_MDSRC_REQ,
+					 0, 0, 0);
 		}
 
 		spin_unlock_irqrestore(&__spm_lock, flags);

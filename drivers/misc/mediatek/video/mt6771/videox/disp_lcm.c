@@ -28,7 +28,8 @@
 unsigned int g_fih_panelid = 0;
 
 /* This macro and arrya is designed for multiple LCM support */
-/* for multiple LCM, we should assign I/F Port id in lcm driver, such as DPI0, DSI0/1 */
+/* for multiple LCM, we should assign I/F Port id in lcm driver, */
+/* such as DPI0, DSI0/1 */
 /* static struct disp_lcm_handle _disp_lcm_driver[MAX_LCM_NUMBER]; */
 
 int _lcm_count(void)
@@ -47,30 +48,28 @@ int _is_lcm_inited(struct disp_lcm_handle *plcm)
 	return 0;
 }
 
-LCM_PARAMS *_get_lcm_params_by_handle(struct disp_lcm_handle *plcm)
+struct LCM_PARAMS *_get_lcm_params_by_handle(struct disp_lcm_handle *plcm)
 {
 	if (plcm)
 		return plcm->params;
 
 	DISPPR_ERROR("WARNING, invalid lcm handle:%p\n", plcm);
 	return NULL;
-
 }
 
-LCM_DRIVER *_get_lcm_driver_by_handle(struct disp_lcm_handle *plcm)
+struct LCM_DRIVER *_get_lcm_driver_by_handle(struct disp_lcm_handle *plcm)
 {
 	if (plcm)
 		return plcm->drv;
 
 	DISPPR_ERROR("WARNING, invalid lcm handle:%p\n", plcm);
 	return NULL;
-
 }
 
 void _dump_lcm_info(struct disp_lcm_handle *plcm)
 {
-	LCM_DRIVER *l = NULL;
-	LCM_PARAMS *p = NULL;
+	struct LCM_DRIVER *l = NULL;
+	struct LCM_PARAMS *p = NULL;
 
 	if (plcm == NULL) {
 		DISPPR_ERROR("plcm is null\n");
@@ -85,8 +84,10 @@ void _dump_lcm_info(struct disp_lcm_handle *plcm)
 
 	DISPCHECK("[LCM] name: %s\n", l->name);
 	DISPCHECK("[LCM] resolution: %d x %d\n", p->width, p->height);
-	DISPCHECK("[LCM] physical size: %d x %d\n", p->physical_width, p->physical_height);
-	DISPCHECK("[LCM] physical size: %d x %d\n", p->physical_width, p->physical_height);
+	DISPCHECK("[LCM] physical size: %d x %d\n", p->physical_width,
+		  p->physical_height);
+	DISPCHECK("[LCM] physical size: %d x %d\n", p->physical_width,
+		  p->physical_height);
 
 	switch (p->lcm_if) {
 	case LCM_INTERFACE_DSI0:
@@ -118,7 +119,6 @@ void _dump_lcm_info(struct disp_lcm_handle *plcm)
 		break;
 	case LCM_TYPE_DSI:
 		DISPCHECK("[LCM] Type: DSI\n");
-
 		break;
 	case LCM_TYPE_DPI:
 		DISPCHECK("[LCM] Type: DPI\n");
@@ -154,13 +154,16 @@ void _dump_lcm_info(struct disp_lcm_handle *plcm)
 		     p->dsi.vertical_sync_active, p->dsi.vertical_backporch,
 		     p->dsi.vertical_frontporch, p->dsi.vertical_active_line,
 		     p->dsi.horizontal_sync_active, p->dsi.horizontal_backporch,
-		     p->dsi.horizontal_frontporch, p->dsi.horizontal_blanking_pixel);
+		     p->dsi.horizontal_frontporch,
+		     p->dsi.horizontal_blanking_pixel);
 		DISPCHECK("[LCM] pll_select: %d, pll_div1: %d, pll_div2: %d, fbk_div: %d,fbk_sel: %d, rg_bir: %d\n",
-		     p->dsi.pll_select, p->dsi.pll_div1, p->dsi.pll_div2, p->dsi.fbk_div,
+		     p->dsi.pll_select, p->dsi.pll_div1,
+		     p->dsi.pll_div2, p->dsi.fbk_div,
 		     p->dsi.fbk_sel, p->dsi.rg_bir);
-		DISPCHECK("[LCM] rg_bic: %d, rg_bp: %d,PLL_CLOCK: %d, dsi_clock: %d, ssc_range: %d,ssc_disable: %d",
-		     p->dsi.rg_bic, p->dsi.rg_bp, p->dsi.PLL_CLOCK, p->dsi.dsi_clock,
-		     p->dsi.ssc_range, p->dsi.ssc_disable);
+		DISPCHECK("[LCM] rg_bic: %d, rg_bp: %d,PLL_CLOCK: %d, dsi_clock: %d, ssc_range: %d,ssc_disable: %d\n",
+		     p->dsi.rg_bic, p->dsi.rg_bp, p->dsi.PLL_CLOCK,
+		     p->dsi.dsi_clock, p->dsi.ssc_range,
+		     p->dsi.ssc_disable);
 		DISPCHECK("[LCM]compatibility_for_nvk: %d, cont_clock: %d\n",
 		     p->dsi.compatibility_for_nvk,
 		     p->dsi.cont_clock);
@@ -172,10 +175,11 @@ void _dump_lcm_info(struct disp_lcm_handle *plcm)
 }
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
-static unsigned char dts[sizeof(LCM_DATA)*MAX_SIZE];
-static LCM_DTS lcm_dts;
+static unsigned char dts[sizeof(struct LCM_DATA)*MAX_SIZE];
+static struct LCM_DTS lcm_dts;
 
-int disp_of_getprop_u32(const struct device_node *np, const char *propname, u32 *out_value)
+int disp_of_getprop_u32(const struct device_node *np, const char *propname,
+			u32 *out_value)
 {
 	unsigned int i;
 	int ret = 0;
@@ -198,7 +202,8 @@ int disp_of_getprop_u32(const struct device_node *np, const char *propname, u32 
 	return len;
 }
 
-int disp_of_getprop_u8(const struct device_node *np, const char *propname, u8 *out_value)
+int disp_of_getprop_u8(const struct device_node *np, const char *propname,
+		       u8 *out_value)
 {
 	unsigned int i;
 	int ret = 0;
@@ -215,31 +220,39 @@ int disp_of_getprop_u8(const struct device_node *np, const char *propname, u8 *o
 	else {
 		len /= sizeof(*prop);
 		for (i = 0; i < len; i++)
-			*(out_value + i) = (unsigned char)((be32_to_cpup(prop++)) & 0xFF);
+			*(out_value + i) =
+				(unsigned char)((be32_to_cpup(prop++)) & 0xFF);
 	}
 
 	return len;
 }
 
-void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
+void parse_lcm_params_dt_node(struct device_node *np,
+			      struct LCM_PARAMS *lcm_params)
 {
 	if (!lcm_params) {
-		pr_err("%s:%d, ERROR: Error access to LCM_PARAMS(NULL)\n", __FILE__, __LINE__);
+		pr_err("%s:%d, ERROR: Error access to LCM_PARAMS(NULL)\n",
+			__FILE__, __LINE__);
 		return;
 	}
 
-	memset(lcm_params, 0x0, sizeof(LCM_PARAMS));
+	memset(lcm_params, 0x0, sizeof(struct LCM_PARAMS));
 
 	disp_of_getprop_u32(np, "lcm_params-types", &lcm_params->type);
 	disp_of_getprop_u32(np, "lcm_params-resolution", &lcm_params->width);
-	disp_of_getprop_u32(np, "lcm_params-io_select_mode", &lcm_params->io_select_mode);
+	disp_of_getprop_u32(np, "lcm_params-io_select_mode",
+			    &lcm_params->io_select_mode);
 
-	disp_of_getprop_u32(np, "lcm_params-dbi-port", &lcm_params->dbi.port);
-	disp_of_getprop_u32(np, "lcm_params-dbi-clock_freq", &lcm_params->dbi.clock_freq);
-	disp_of_getprop_u32(np, "lcm_params-dbi-data_width", &lcm_params->dbi.data_width);
+	disp_of_getprop_u32(np, "lcm_params-dbi-port",
+			    &lcm_params->dbi.port);
+	disp_of_getprop_u32(np, "lcm_params-dbi-clock_freq",
+			    &lcm_params->dbi.clock_freq);
+	disp_of_getprop_u32(np, "lcm_params-dbi-data_width",
+			    &lcm_params->dbi.data_width);
 	disp_of_getprop_u32(np, "lcm_params-dbi-data_format",
-			    (u32 *) (&lcm_params->dbi.data_format));
-	disp_of_getprop_u32(np, "lcm_params-dbi-cpu_write_bits", &lcm_params->dbi.cpu_write_bits);
+			    (u32 *)(&lcm_params->dbi.data_format));
+	disp_of_getprop_u32(np, "lcm_params-dbi-cpu_write_bits",
+			    &lcm_params->dbi.cpu_write_bits);
 	disp_of_getprop_u32(np, "lcm_params-dbi-io_driving_current",
 			    &lcm_params->dbi.io_driving_current);
 	disp_of_getprop_u32(np, "lcm_params-dbi-msb_io_driving_current",
@@ -247,18 +260,23 @@ void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
 	disp_of_getprop_u32(np, "lcm_params-dbi-ctrl_io_driving_current",
 			    &lcm_params->dbi.ctrl_io_driving_current);
 
-	disp_of_getprop_u32(np, "lcm_params-dbi-te_mode", &lcm_params->dbi.te_mode);
+	disp_of_getprop_u32(np, "lcm_params-dbi-te_mode",
+			    &lcm_params->dbi.te_mode);
 	disp_of_getprop_u32(np, "lcm_params-dbi-te_edge_polarity",
 			    &lcm_params->dbi.te_edge_polarity);
-	disp_of_getprop_u32(np, "lcm_params-dbi-te_hs_delay_cnt", &lcm_params->dbi.te_hs_delay_cnt);
-	disp_of_getprop_u32(np, "lcm_params-dbi-te_vs_width_cnt", &lcm_params->dbi.te_vs_width_cnt);
+	disp_of_getprop_u32(np, "lcm_params-dbi-te_hs_delay_cnt",
+			    &lcm_params->dbi.te_hs_delay_cnt);
+	disp_of_getprop_u32(np, "lcm_params-dbi-te_vs_width_cnt",
+			    &lcm_params->dbi.te_vs_width_cnt);
 	disp_of_getprop_u32(np, "lcm_params-dbi-te_vs_width_cnt_div",
 			    &lcm_params->dbi.te_vs_width_cnt_div);
 
 	disp_of_getprop_u32(np, "lcm_params-dbi-serial-params0",
 			    &lcm_params->dbi.serial.cs_polarity);
-	disp_of_getprop_u32(np, "lcm_params-dbi-serial-params1", &lcm_params->dbi.serial.css);
-	disp_of_getprop_u32(np, "lcm_params-dbi-serial-params2", &lcm_params->dbi.serial.sif_3wire);
+	disp_of_getprop_u32(np, "lcm_params-dbi-serial-params1",
+			    &lcm_params->dbi.serial.css);
+	disp_of_getprop_u32(np, "lcm_params-dbi-serial-params2",
+			    &lcm_params->dbi.serial.sif_3wire);
 	disp_of_getprop_u32(np, "lcm_params-dbi-parallel-params0",
 			    &lcm_params->dbi.parallel.write_setup);
 	disp_of_getprop_u32(np, "lcm_params-dbi-parallel-params1",
@@ -273,22 +291,36 @@ void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
 	disp_of_getprop_u32(np, "lcm_params-dpi-mipi_pll_clk_fbk_div",
 			    &lcm_params->dpi.mipi_pll_clk_fbk_div);
 
-	disp_of_getprop_u32(np, "lcm_params-dpi-dpi_clk_div", &lcm_params->dpi.dpi_clk_div);
-	disp_of_getprop_u32(np, "lcm_params-dpi-dpi_clk_duty", &lcm_params->dpi.dpi_clk_duty);
-	disp_of_getprop_u32(np, "lcm_params-dpi-PLL_CLOCK", &lcm_params->dpi.PLL_CLOCK);
-	disp_of_getprop_u32(np, "lcm_params-dpi-dpi_clock", &lcm_params->dpi.dpi_clock);
-	disp_of_getprop_u32(np, "lcm_params-dpi-ssc_disable", &lcm_params->dpi.ssc_disable);
-	disp_of_getprop_u32(np, "lcm_params-dpi-ssc_range", &lcm_params->dpi.ssc_range);
+	disp_of_getprop_u32(np, "lcm_params-dpi-dpi_clk_div",
+			    &lcm_params->dpi.dpi_clk_div);
+	disp_of_getprop_u32(np, "lcm_params-dpi-dpi_clk_duty",
+			    &lcm_params->dpi.dpi_clk_duty);
+	disp_of_getprop_u32(np, "lcm_params-dpi-PLL_CLOCK",
+			    &lcm_params->dpi.PLL_CLOCK);
+	disp_of_getprop_u32(np, "lcm_params-dpi-dpi_clock",
+			    &lcm_params->dpi.dpi_clock);
+	disp_of_getprop_u32(np, "lcm_params-dpi-ssc_disable",
+			    &lcm_params->dpi.ssc_disable);
+	disp_of_getprop_u32(np, "lcm_params-dpi-ssc_range",
+			    &lcm_params->dpi.ssc_range);
 
-	disp_of_getprop_u32(np, "lcm_params-dpi-width", &lcm_params->dpi.width);
-	disp_of_getprop_u32(np, "lcm_params-dpi-height", &lcm_params->dpi.height);
-	disp_of_getprop_u32(np, "lcm_params-dpi-bg_width", &lcm_params->dpi.bg_width);
-	disp_of_getprop_u32(np, "lcm_params-dpi-bg_height", &lcm_params->dpi.bg_height);
+	disp_of_getprop_u32(np, "lcm_params-dpi-width",
+			    &lcm_params->dpi.width);
+	disp_of_getprop_u32(np, "lcm_params-dpi-height",
+			    &lcm_params->dpi.height);
+	disp_of_getprop_u32(np, "lcm_params-dpi-bg_width",
+			    &lcm_params->dpi.bg_width);
+	disp_of_getprop_u32(np, "lcm_params-dpi-bg_height",
+			    &lcm_params->dpi.bg_height);
 
-	disp_of_getprop_u32(np, "lcm_params-dpi-clk_pol", &lcm_params->dpi.clk_pol);
-	disp_of_getprop_u32(np, "lcm_params-dpi-de_pol", &lcm_params->dpi.de_pol);
-	disp_of_getprop_u32(np, "lcm_params-dpi-vsync_pol", &lcm_params->dpi.vsync_pol);
-	disp_of_getprop_u32(np, "lcm_params-dpi-hsync_pol", &lcm_params->dpi.hsync_pol);
+	disp_of_getprop_u32(np, "lcm_params-dpi-clk_pol",
+			    &lcm_params->dpi.clk_pol);
+	disp_of_getprop_u32(np, "lcm_params-dpi-de_pol",
+			    &lcm_params->dpi.de_pol);
+	disp_of_getprop_u32(np, "lcm_params-dpi-vsync_pol",
+			    &lcm_params->dpi.vsync_pol);
+	disp_of_getprop_u32(np, "lcm_params-dpi-hsync_pol",
+			    &lcm_params->dpi.hsync_pol);
 	disp_of_getprop_u32(np, "lcm_params-dpi-hsync_pulse_width",
 			    &lcm_params->dpi.hsync_pulse_width);
 	disp_of_getprop_u32(np, "lcm_params-dpi-hsync_back_porch",
@@ -302,15 +334,22 @@ void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
 	disp_of_getprop_u32(np, "lcm_params-dpi-vsync_front_porch",
 			    &lcm_params->dpi.vsync_front_porch);
 
-	disp_of_getprop_u32(np, "lcm_params-dpi-format", &lcm_params->dpi.format);
-	disp_of_getprop_u32(np, "lcm_params-dpi-rgb_order", &lcm_params->dpi.rgb_order);
+	disp_of_getprop_u32(np, "lcm_params-dpi-format",
+			    &lcm_params->dpi.format);
+	disp_of_getprop_u32(np, "lcm_params-dpi-rgb_order",
+			    &lcm_params->dpi.rgb_order);
 	disp_of_getprop_u32(np, "lcm_params-dpi-is_serial_output",
 			    &lcm_params->dpi.is_serial_output);
-	disp_of_getprop_u32(np, "lcm_params-dpi-i2x_en", &lcm_params->dpi.i2x_en);
-	disp_of_getprop_u32(np, "lcm_params-dpi-i2x_edge", &lcm_params->dpi.i2x_edge);
-	disp_of_getprop_u32(np, "lcm_params-dpi-embsync", &lcm_params->dpi.embsync);
-	disp_of_getprop_u32(np, "lcm_params-dpi-lvds_tx_en", &lcm_params->dpi.lvds_tx_en);
-	disp_of_getprop_u32(np, "lcm_params-dpi-bit_swap", &lcm_params->dpi.bit_swap);
+	disp_of_getprop_u32(np, "lcm_params-dpi-i2x_en",
+			    &lcm_params->dpi.i2x_en);
+	disp_of_getprop_u32(np, "lcm_params-dpi-i2x_edge",
+			    &lcm_params->dpi.i2x_edge);
+	disp_of_getprop_u32(np, "lcm_params-dpi-embsync",
+			    &lcm_params->dpi.embsync);
+	disp_of_getprop_u32(np, "lcm_params-dpi-lvds_tx_en",
+			    &lcm_params->dpi.lvds_tx_en);
+	disp_of_getprop_u32(np, "lcm_params-dpi-bit_swap",
+			    &lcm_params->dpi.bit_swap);
 	disp_of_getprop_u32(np, "lcm_params-dpi-intermediat_buffer_num",
 			    &lcm_params->dpi.intermediat_buffer_num);
 	disp_of_getprop_u32(np, "lcm_params-dpi-io_driving_current",
@@ -318,19 +357,28 @@ void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
 	disp_of_getprop_u32(np, "lcm_params-dpi-lsb_io_driving_current",
 			    &lcm_params->dpi.lsb_io_driving_current);
 
-	disp_of_getprop_u32(np, "lcm_params-dsi-mode", &lcm_params->dsi.mode);
-	disp_of_getprop_u32(np, "lcm_params-dsi-switch_mode", &lcm_params->dsi.switch_mode);
-	disp_of_getprop_u32(np, "lcm_params-dsi-DSI_WMEM_CONTI", &lcm_params->dsi.DSI_WMEM_CONTI);
-	disp_of_getprop_u32(np, "lcm_params-dsi-DSI_RMEM_CONTI", &lcm_params->dsi.DSI_RMEM_CONTI);
-	disp_of_getprop_u32(np, "lcm_params-dsi-VC_NUM", &lcm_params->dsi.VC_NUM);
-	disp_of_getprop_u32(np, "lcm_params-dsi-lane_num", &lcm_params->dsi.LANE_NUM);
+	disp_of_getprop_u32(np, "lcm_params-dsi-mode",
+			    &lcm_params->dsi.mode);
+	disp_of_getprop_u32(np, "lcm_params-dsi-switch_mode",
+			    &lcm_params->dsi.switch_mode);
+	disp_of_getprop_u32(np, "lcm_params-dsi-DSI_WMEM_CONTI",
+			    &lcm_params->dsi.DSI_WMEM_CONTI);
+	disp_of_getprop_u32(np, "lcm_params-dsi-DSI_RMEM_CONTI",
+			    &lcm_params->dsi.DSI_RMEM_CONTI);
+	disp_of_getprop_u32(np, "lcm_params-dsi-VC_NUM",
+			    &lcm_params->dsi.VC_NUM);
+	disp_of_getprop_u32(np, "lcm_params-dsi-lane_num",
+			    &lcm_params->dsi.LANE_NUM);
 	disp_of_getprop_u32(np, "lcm_params-dsi-data_format",
-			    (u32 *) (&lcm_params->dsi.data_format));
+			    (u32 *)(&lcm_params->dsi.data_format));
 	disp_of_getprop_u32(np, "lcm_params-dsi-intermediat_buffer_num",
 			    &lcm_params->dsi.intermediat_buffer_num);
-	disp_of_getprop_u32(np, "lcm_params-dsi-ps", &lcm_params->dsi.PS);
-	disp_of_getprop_u32(np, "lcm_params-dsi-word_count", &lcm_params->dsi.word_count);
-	disp_of_getprop_u32(np, "lcm_params-dsi-packet_size", &lcm_params->dsi.packet_size);
+	disp_of_getprop_u32(np, "lcm_params-dsi-ps",
+			    &lcm_params->dsi.PS);
+	disp_of_getprop_u32(np, "lcm_params-dsi-word_count",
+			    &lcm_params->dsi.word_count);
+	disp_of_getprop_u32(np, "lcm_params-dsi-packet_size",
+			    &lcm_params->dsi.packet_size);
 
 	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_sync_active",
 			    &lcm_params->dsi.vertical_sync_active);
@@ -338,7 +386,8 @@ void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
 			    &lcm_params->dsi.vertical_backporch);
 	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_frontporch",
 			    &lcm_params->dsi.vertical_frontporch);
-	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_frontporch_for_low_power",
+	disp_of_getprop_u32(np,
+			    "lcm_params-dsi-vertical_frontporch_for_low_power",
 			    &lcm_params->dsi.vertical_frontporch_for_low_power);
 	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_active_line",
 			    &lcm_params->dsi.vertical_active_line);
@@ -352,59 +401,96 @@ void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
 			    &lcm_params->dsi.horizontal_blanking_pixel);
 	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_active_pixel",
 			    &lcm_params->dsi.horizontal_active_pixel);
-	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_bllp", &lcm_params->dsi.horizontal_bllp);
-	disp_of_getprop_u32(np, "lcm_params-dsi-line_byte", &lcm_params->dsi.line_byte);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_bllp",
+			    &lcm_params->dsi.horizontal_bllp);
+	disp_of_getprop_u32(np, "lcm_params-dsi-line_byte",
+			    &lcm_params->dsi.line_byte);
 	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_sync_active_byte",
 			    &lcm_params->dsi.horizontal_sync_active_byte);
 	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_backportch_byte",
 			    &lcm_params->dsi.horizontal_backporch_byte);
 	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_frontporch_byte",
 			    &lcm_params->dsi.horizontal_frontporch_byte);
-	disp_of_getprop_u32(np, "lcm_params-dsi-rgb_byte", &lcm_params->dsi.rgb_byte);
-	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_sync_active_word_count",
+	disp_of_getprop_u32(np, "lcm_params-dsi-rgb_byte",
+			    &lcm_params->dsi.rgb_byte);
+	disp_of_getprop_u32(np,
+			    "lcm_params-dsi-horizontal_sync_active_word_count",
 			    &lcm_params->dsi.horizontal_sync_active_word_count);
-	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_backporch_word_count",
+	disp_of_getprop_u32(np,
+			    "lcm_params-dsi-horizontal_backporch_word_count",
 			    &lcm_params->dsi.horizontal_backporch_word_count);
-	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_frontporch_word_count",
+	disp_of_getprop_u32(np,
+			    "lcm_params-dsi-horizontal_frontporch_word_count",
 			    &lcm_params->dsi.horizontal_frontporch_word_count);
 
-	disp_of_getprop_u8(np, "lcm_params-dsi-HS_TRAIL", &lcm_params->dsi.HS_TRAIL);
-	disp_of_getprop_u8(np, "lcm_params-dsi-ZERO", &lcm_params->dsi.HS_ZERO);
-	disp_of_getprop_u8(np, "lcm_params-dsi-HS_PRPR", &lcm_params->dsi.HS_PRPR);
-	disp_of_getprop_u8(np, "lcm_params-dsi-LPX", &lcm_params->dsi.LPX);
-	disp_of_getprop_u8(np, "lcm_params-dsi-TA_SACK", &lcm_params->dsi.TA_SACK);
-	disp_of_getprop_u8(np, "lcm_params-dsi-TA_GET", &lcm_params->dsi.TA_GET);
-	disp_of_getprop_u8(np, "lcm_params-dsi-TA_SURE", &lcm_params->dsi.TA_SURE);
-	disp_of_getprop_u8(np, "lcm_params-dsi-TA_GO", &lcm_params->dsi.TA_GO);
-	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_TRAIL", &lcm_params->dsi.CLK_TRAIL);
-	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_ZERO", &lcm_params->dsi.CLK_ZERO);
-	disp_of_getprop_u8(np, "lcm_params-dsi-LPX_WAIT", &lcm_params->dsi.LPX_WAIT);
-	disp_of_getprop_u8(np, "lcm_params-dsi-CONT_DET", &lcm_params->dsi.CONT_DET);
-	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_HS_PRPR", &lcm_params->dsi.CLK_HS_PRPR);
-	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_HS_POST", &lcm_params->dsi.CLK_HS_POST);
-	disp_of_getprop_u8(np, "lcm_params-dsi-DA_HS_EXIT", &lcm_params->dsi.DA_HS_EXIT);
-	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_HS_EXIT", &lcm_params->dsi.CLK_HS_EXIT);
+	disp_of_getprop_u8(np, "lcm_params-dsi-HS_TRAIL",
+			   &lcm_params->dsi.HS_TRAIL);
+	disp_of_getprop_u8(np, "lcm_params-dsi-ZERO",
+			   &lcm_params->dsi.HS_ZERO);
+	disp_of_getprop_u8(np, "lcm_params-dsi-HS_PRPR",
+			   &lcm_params->dsi.HS_PRPR);
+	disp_of_getprop_u8(np, "lcm_params-dsi-LPX",
+			   &lcm_params->dsi.LPX);
+	disp_of_getprop_u8(np, "lcm_params-dsi-TA_SACK",
+			   &lcm_params->dsi.TA_SACK);
+	disp_of_getprop_u8(np, "lcm_params-dsi-TA_GET",
+			   &lcm_params->dsi.TA_GET);
+	disp_of_getprop_u8(np, "lcm_params-dsi-TA_SURE",
+			   &lcm_params->dsi.TA_SURE);
+	disp_of_getprop_u8(np, "lcm_params-dsi-TA_GO",
+			   &lcm_params->dsi.TA_GO);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_TRAIL",
+			   &lcm_params->dsi.CLK_TRAIL);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_ZERO",
+			   &lcm_params->dsi.CLK_ZERO);
+	disp_of_getprop_u8(np, "lcm_params-dsi-LPX_WAIT",
+			   &lcm_params->dsi.LPX_WAIT);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CONT_DET",
+			   &lcm_params->dsi.CONT_DET);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_HS_PRPR",
+			   &lcm_params->dsi.CLK_HS_PRPR);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_HS_POST",
+			   &lcm_params->dsi.CLK_HS_POST);
+	disp_of_getprop_u8(np, "lcm_params-dsi-DA_HS_EXIT",
+			   &lcm_params->dsi.DA_HS_EXIT);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_HS_EXIT",
+			   &lcm_params->dsi.CLK_HS_EXIT);
 
-	disp_of_getprop_u32(np, "lcm_params-dsi-pll_select", &lcm_params->dsi.pll_select);
-	disp_of_getprop_u32(np, "lcm_params-dsi-pll_div1", &lcm_params->dsi.pll_div1);
-	disp_of_getprop_u32(np, "lcm_params-dsi-pll_div2", &lcm_params->dsi.pll_div2);
-	disp_of_getprop_u32(np, "lcm_params-dsi-fbk_div", &lcm_params->dsi.fbk_div);
-	disp_of_getprop_u32(np, "lcm_params-dsi-fbk_sel", &lcm_params->dsi.fbk_sel);
-	disp_of_getprop_u32(np, "lcm_params-dsi-rg_bir", &lcm_params->dsi.rg_bir);
-	disp_of_getprop_u32(np, "lcm_params-dsi-rg_bic", &lcm_params->dsi.rg_bic);
-	disp_of_getprop_u32(np, "lcm_params-dsi-rg_bp", &lcm_params->dsi.rg_bp);
-	disp_of_getprop_u32(np, "lcm_params-dsi-pll_clock", &lcm_params->dsi.PLL_CLOCK);
-	disp_of_getprop_u32(np, "lcm_params-dsi-dsi_clock", &lcm_params->dsi.dsi_clock);
-	disp_of_getprop_u32(np, "lcm_params-dsi-ssc_disable", &lcm_params->dsi.ssc_disable);
-	disp_of_getprop_u32(np, "lcm_params-dsi-ssc_range", &lcm_params->dsi.ssc_range);
+	disp_of_getprop_u32(np, "lcm_params-dsi-pll_select",
+			    &lcm_params->dsi.pll_select);
+	disp_of_getprop_u32(np, "lcm_params-dsi-pll_div1",
+			    &lcm_params->dsi.pll_div1);
+	disp_of_getprop_u32(np, "lcm_params-dsi-pll_div2",
+			    &lcm_params->dsi.pll_div2);
+	disp_of_getprop_u32(np, "lcm_params-dsi-fbk_div",
+			    &lcm_params->dsi.fbk_div);
+	disp_of_getprop_u32(np, "lcm_params-dsi-fbk_sel",
+			    &lcm_params->dsi.fbk_sel);
+	disp_of_getprop_u32(np, "lcm_params-dsi-rg_bir",
+			    &lcm_params->dsi.rg_bir);
+	disp_of_getprop_u32(np, "lcm_params-dsi-rg_bic",
+			    &lcm_params->dsi.rg_bic);
+	disp_of_getprop_u32(np, "lcm_params-dsi-rg_bp",
+			    &lcm_params->dsi.rg_bp);
+	disp_of_getprop_u32(np, "lcm_params-dsi-pll_clock",
+			    &lcm_params->dsi.PLL_CLOCK);
+	disp_of_getprop_u32(np, "lcm_params-dsi-dsi_clock",
+			    &lcm_params->dsi.dsi_clock);
+	disp_of_getprop_u32(np, "lcm_params-dsi-ssc_disable",
+			    &lcm_params->dsi.ssc_disable);
+	disp_of_getprop_u32(np, "lcm_params-dsi-ssc_range",
+			    &lcm_params->dsi.ssc_range);
 	disp_of_getprop_u32(np, "lcm_params-dsi-compatibility_for_nvk",
 			    &lcm_params->dsi.compatibility_for_nvk);
-	disp_of_getprop_u32(np, "lcm_params-dsi-cont_clock", &lcm_params->dsi.cont_clock);
+	disp_of_getprop_u32(np, "lcm_params-dsi-cont_clock",
+			    &lcm_params->dsi.cont_clock);
 
-	disp_of_getprop_u32(np, "lcm_params-dsi-ufoe_enable", &lcm_params->dsi.ufoe_enable);
+	disp_of_getprop_u32(np, "lcm_params-dsi-ufoe_enable",
+			    &lcm_params->dsi.ufoe_enable);
 	disp_of_getprop_u32(np, "lcm_params-dsi-ufoe_params",
 			    (u32 *) (&lcm_params->dsi.ufoe_params));
-	disp_of_getprop_u32(np, "lcm_params-dsi-edp_panel", &lcm_params->dsi.edp_panel);
+	disp_of_getprop_u32(np, "lcm_params-dsi-edp_panel",
+			    &lcm_params->dsi.edp_panel);
 
 	disp_of_getprop_u32(np, "lcm_params-dsi-customization_esd_check_enable",
 			    &lcm_params->dsi.customization_esd_check_enable);
@@ -420,7 +506,8 @@ void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
 	disp_of_getprop_u32(np, "lcm_params-dsi-lcm_ext_te_enable",
 			    &lcm_params->dsi.lcm_ext_te_enable);
 
-	disp_of_getprop_u32(np, "lcm_params-dsi-noncont_clock", &lcm_params->dsi.noncont_clock);
+	disp_of_getprop_u32(np, "lcm_params-dsi-noncont_clock",
+			    &lcm_params->dsi.noncont_clock);
 	disp_of_getprop_u32(np, "lcm_params-dsi-noncont_clock_period",
 			    &lcm_params->dsi.noncont_clock_period);
 	disp_of_getprop_u32(np, "lcm_params-dsi-clk_lp_per_line_enable",
@@ -435,86 +522,109 @@ void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
 
 	disp_of_getprop_u32(np, "lcm_params-dsi-switch_mode_enable",
 			    &lcm_params->dsi.switch_mode_enable);
-	disp_of_getprop_u32(np, "lcm_params-dsi-dual_dsi_type", &lcm_params->dsi.dual_dsi_type);
-	disp_of_getprop_u32(np, "lcm_params-dsi-lane_swap_en", &lcm_params->dsi.lane_swap_en);
+	disp_of_getprop_u32(np, "lcm_params-dsi-dual_dsi_type",
+			    &lcm_params->dsi.dual_dsi_type);
+	disp_of_getprop_u32(np, "lcm_params-dsi-lane_swap_en",
+			    &lcm_params->dsi.lane_swap_en);
 	disp_of_getprop_u32(np, "lcm_params-dsi-lane_swap0",
 			    (u32 *) (&(lcm_params->dsi.lane_swap[0][0])));
 	disp_of_getprop_u32(np, "lcm_params-dsi-lane_swap1",
 			    (u32 *) (&(lcm_params->dsi.lane_swap[1][0])));
-	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_vfp_lp", &lcm_params->dsi.vertical_vfp_lp);
-	disp_of_getprop_u32(np, "lcm_params-physical_width", &lcm_params->physical_width);
-	disp_of_getprop_u32(np, "lcm_params-physical_height", &lcm_params->physical_height);
-	disp_of_getprop_u32(np, "lcm_params-physical_width_um", &lcm_params->physical_width_um);
-	disp_of_getprop_u32(np, "lcm_params-physical_height_um", &lcm_params->physical_height_um);
-	disp_of_getprop_u32(np, "lcm_params-od_table_size", &lcm_params->od_table_size);
-	disp_of_getprop_u32(np, "lcm_params-od_table", (u32 *) (&lcm_params->od_table));
+	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_vfp_lp",
+			    &lcm_params->dsi.vertical_vfp_lp);
+	disp_of_getprop_u32(np, "lcm_params-physical_width",
+			    &lcm_params->physical_width);
+	disp_of_getprop_u32(np, "lcm_params-physical_height",
+			    &lcm_params->physical_height);
+	disp_of_getprop_u32(np, "lcm_params-physical_width_um",
+			    &lcm_params->physical_width_um);
+	disp_of_getprop_u32(np, "lcm_params-physical_height_um",
+			    &lcm_params->physical_height_um);
+	disp_of_getprop_u32(np, "lcm_params-od_table_size",
+			    &lcm_params->od_table_size);
+	disp_of_getprop_u32(np, "lcm_params-od_table",
+			    (u32 *) (&lcm_params->od_table));
 }
 
-void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned char *dts)
+void parse_lcm_ops_dt_node(struct device_node *np, struct LCM_DTS *lcm_dts,
+			   unsigned char *dts)
 {
 	unsigned int i;
 	unsigned char *tmp;
 	int len = 0;
 	int tmp_len;
+	struct LCM_DATA *lcm_data;
 
 	if (!lcm_dts) {
-		pr_err("%s:%d, ERROR: Error access to LCM_PARAMS(NULL)\n", __FILE__, __LINE__);
+		pr_err("%s:%d, ERROR: Error access to LCM_PARAMS(NULL)\n",
+			__FILE__, __LINE__);
 		return;
 	}
 	/* parse LCM init table */
 	len = disp_of_getprop_u8(np, "init", dts);
 	if (len <= 0) {
-		pr_err("%s:%d: Cannot find LCM init table, cannot skip it!\n", __FILE__, __LINE__);
+		pr_err("%s:%d: Cannot find LCM init table, cannot skip it!\n",
+			__FILE__, __LINE__);
 		return;
 	}
-	if (len > (sizeof(LCM_DATA)*INIT_SIZE)) {
-		pr_err("%s:%d: LCM init table overflow: %d\n", __FILE__, __LINE__, len);
+	if (len > (sizeof(struct LCM_DATA)*INIT_SIZE)) {
+		pr_err("%s:%d: LCM init table overflow: %d\n",
+			__FILE__, __LINE__, len);
 		return;
 	}
 	DISPMSG("%s:%d: len: %d\n", __FILE__, __LINE__, len);
 
 	tmp = dts;
+	lcm_data = lcm_dts->init;
 	for (i = 0; i < INIT_SIZE; i++) {
-		lcm_dts->init[i].func = (*tmp) & 0xFF;
-		lcm_dts->init[i].type = (*(tmp + 1)) & 0xFF;
-		lcm_dts->init[i].size = (*(tmp + 2)) & 0xFF;
+		lcm_data[i].func = (*tmp) & 0xFF;
+		lcm_data[i].type = (*(tmp + 1)) & 0xFF;
+		lcm_data[i].size = (*(tmp + 2)) & 0xFF;
 		tmp_len = 3;
 
-		DISPMSG("%s:%d: dts: %d, %d, %d\n", __FILE__, __LINE__, *tmp, *(tmp + 1), i);
-		switch (lcm_dts->init[i].func) {
+		DISPMSG("%s:%d: dts: %d, %d, %d\n",
+			__FILE__, __LINE__, *tmp, *(tmp + 1), i);
+		switch (lcm_data[i].func) {
 		case LCM_FUNC_GPIO:
-			memcpy(&(lcm_dts->init[i].data_t1), tmp + 3, lcm_dts->init[i].size);
+			memcpy(&(lcm_data[i].data_t1), tmp + 3,
+				lcm_data[i].size);
 			break;
 
 		case LCM_FUNC_I2C:
-			memcpy(&(lcm_dts->init[i].data_t2), tmp + 3, lcm_dts->init[i].size);
+			memcpy(&(lcm_data[i].data_t2), tmp + 3,
+				lcm_data[i].size);
 			break;
 
 		case LCM_FUNC_UTIL:
-			memcpy(&(lcm_dts->init[i].data_t1), tmp + 3, lcm_dts->init[i].size);
+			memcpy(&(lcm_data[i].data_t1), tmp + 3,
+				lcm_data[i].size);
 			break;
 
 		case LCM_FUNC_CMD:
-			switch (lcm_dts->init[i].type) {
+			switch (lcm_data[i].type) {
 			case LCM_UTIL_WRITE_CMD_V1:
-				memcpy(&(lcm_dts->init[i].data_t5), tmp + 3, lcm_dts->init[i].size);
+				memcpy(&(lcm_data[i].data_t5), tmp + 3,
+					lcm_data[i].size);
 				break;
 
 			case LCM_UTIL_WRITE_CMD_V2:
-				memcpy(&(lcm_dts->init[i].data_t3), tmp + 3, lcm_dts->init[i].size);
+				memcpy(&(lcm_data[i].data_t3), tmp + 3,
+					lcm_data[i].size);
 				break;
 
 			default:
-				pr_err("%s/%d: %d\n", __FILE__, __LINE__, lcm_dts->init[i].type);
+				pr_err("%s/%d: %d\n",
+					__FILE__, __LINE__, lcm_data[i].type);
 				return;
 			}
 			break;
 
 		default:
-			pr_err("%s/%d: %d\n", __FILE__, __LINE__, lcm_dts->init[i].func);
+			pr_err("%s/%d: %d\n",
+				__FILE__, __LINE__, lcm_data[i].func);
 			return;
 		}
-		tmp_len = tmp_len + lcm_dts->init[i].size;
+		tmp_len = tmp_len + lcm_data[i].size;
 
 		if (tmp_len < len) {
 			tmp = tmp + tmp_len;
@@ -525,72 +635,78 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	}
 	lcm_dts->init_size = i + 1;
 	if (lcm_dts->init_size > INIT_SIZE) {
-		pr_err("%s:%d: LCM init table overflow: %d\n", __FILE__, __LINE__, len);
+		pr_err("%s:%d: LCM init table overflow: %d\n",
+			__FILE__, __LINE__, len);
 		return;
 	}
 
 	/* parse LCM compare_id table */
 	len = disp_of_getprop_u8(np, "compare_id", dts);
 	if (len <= 0) {
-		pr_warn("%s:%d: Cannot find LCM compare_id table, skip it!\n", __FILE__, __LINE__);
+		pr_warn("%s:%d: Cannot find LCM compare_id table, skip it!\n",
+			__FILE__, __LINE__);
 	} else {
-		if (len > (sizeof(LCM_DATA)*COMPARE_ID_SIZE)) {
-			pr_err("%s:%d: LCM compare_id table overflow: %d\n", __FILE__, __LINE__,
-			       len);
+		if (len > (sizeof(struct LCM_DATA)*COMPARE_ID_SIZE)) {
+			pr_err("%s:%d: LCM compare_id table overflow: %d\n",
+				__FILE__, __LINE__, len);
 			return;
 		}
 
 		tmp = dts;
+		lcm_data = lcm_dts->compare_id;
 		for (i = 0; i < COMPARE_ID_SIZE; i++) {
-			lcm_dts->compare_id[i].func = (*tmp) & 0xFF;
-			lcm_dts->compare_id[i].type = (*(tmp + 1)) & 0xFF;
-			lcm_dts->compare_id[i].size = (*(tmp + 2)) & 0xFF;
+			lcm_data[i].func = (*tmp) & 0xFF;
+			lcm_data[i].type = (*(tmp + 1)) & 0xFF;
+			lcm_data[i].size = (*(tmp + 2)) & 0xFF;
 			tmp_len = 3;
 
-			switch (lcm_dts->compare_id[i].func) {
+			switch (lcm_data[i].func) {
 			case LCM_FUNC_GPIO:
-				memcpy(&(lcm_dts->compare_id[i].data_t1), tmp + 3, lcm_dts->compare_id[i].size);
+				memcpy(&(lcm_data[i].data_t1), tmp + 3,
+					lcm_data[i].size);
 				break;
 
 			case LCM_FUNC_I2C:
-				memcpy(&(lcm_dts->compare_id[i].data_t2), tmp + 3, lcm_dts->compare_id[i].size);
+				memcpy(&(lcm_data[i].data_t2), tmp + 3,
+					lcm_data[i].size);
 				break;
 
 			case LCM_FUNC_UTIL:
-				memcpy(&(lcm_dts->compare_id[i].data_t1), tmp + 3,
-				       lcm_dts->compare_id[i].size);
+				memcpy(&(lcm_data[i].data_t1), tmp + 3,
+				       lcm_data[i].size);
 				break;
 
 			case LCM_FUNC_CMD:
-				switch (lcm_dts->compare_id[i].type) {
+				switch (lcm_data[i].type) {
 				case LCM_UTIL_WRITE_CMD_V1:
-					memcpy(&(lcm_dts->compare_id[i].data_t5), tmp + 3,
-					       lcm_dts->compare_id[i].size);
+					memcpy(&(lcm_data[i].data_t5), tmp + 3,
+					       lcm_data[i].size);
 					break;
 
 				case LCM_UTIL_WRITE_CMD_V2:
-					memcpy(&(lcm_dts->compare_id[i].data_t3), tmp + 3,
-					       lcm_dts->compare_id[i].size);
+					memcpy(&(lcm_data[i].data_t3), tmp + 3,
+					       lcm_data[i].size);
 					break;
 
 				case LCM_UTIL_READ_CMD_V2:
-					memcpy(&(lcm_dts->compare_id[i].data_t4), tmp + 3,
-					       lcm_dts->compare_id[i].size);
+					memcpy(&(lcm_data[i].data_t4), tmp + 3,
+					       lcm_data[i].size);
 					break;
 
 				default:
-					pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-					       (unsigned int)lcm_dts->compare_id[i].type);
+					pr_err("%s:%d: %d\n",
+						__FILE__, __LINE__,
+						(unsigned int)lcm_data[i].type);
 					return;
 				}
 				break;
 
 			default:
 				pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-				       (unsigned int)lcm_dts->compare_id[i].func);
+				       (unsigned int)lcm_data[i].func);
 				return;
 			}
-			tmp_len = tmp_len + lcm_dts->compare_id[i].size;
+			tmp_len = tmp_len + lcm_data[i].size;
 
 			if (tmp_len < len) {
 				tmp = tmp + tmp_len;
@@ -601,8 +717,8 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		}
 		lcm_dts->compare_id_size = i + 1;
 		if (lcm_dts->compare_id_size > COMPARE_ID_SIZE) {
-			pr_err("%s:%d: LCM compare_id table overflow: %d\n", __FILE__, __LINE__,
-			       len);
+			pr_err("%s:%d: LCM compare_id table overflow: %d\n",
+				__FILE__, __LINE__, len);
 			return;
 		}
 	}
@@ -610,59 +726,65 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	/* parse LCM suspend table */
 	len = disp_of_getprop_u8(np, "suspend", dts);
 	if (len <= 0) {
-		pr_err("%s:%d: Cannot find LCM suspend table, cannot skip it!\n", __FILE__,
-		       __LINE__);
+		pr_err("%s:%d: Cannot find LCM suspend table, cannot skip it!\n",
+			__FILE__, __LINE__);
 		return;
 	}
-	if (len > (sizeof(LCM_DATA)*SUSPEND_SIZE)) {
-		pr_err("%s:%d: LCM suspend table overflow: %d\n", __FILE__, __LINE__, len);
+	if (len > (sizeof(struct LCM_DATA)*SUSPEND_SIZE)) {
+		pr_err("%s:%d: LCM suspend table overflow: %d\n",
+			__FILE__, __LINE__, len);
 		return;
 	}
 
 	tmp = dts;
+	lcm_data = lcm_dts->suspend;
 	for (i = 0; i < SUSPEND_SIZE; i++) {
-		lcm_dts->suspend[i].func = (*tmp) & 0xFF;
-		lcm_dts->suspend[i].type = (*(tmp + 1)) & 0xFF;
-		lcm_dts->suspend[i].size = (*(tmp + 2)) & 0xFF;
+		lcm_data[i].func = (*tmp) & 0xFF;
+		lcm_data[i].type = (*(tmp + 1)) & 0xFF;
+		lcm_data[i].size = (*(tmp + 2)) & 0xFF;
 		tmp_len = 3;
 
-		switch (lcm_dts->suspend[i].func) {
+		switch (lcm_data[i].func) {
 		case LCM_FUNC_GPIO:
-			memcpy(&(lcm_dts->suspend[i].data_t1), tmp + 3, lcm_dts->suspend[i].size);
+			memcpy(&(lcm_data[i].data_t1), tmp + 3,
+				lcm_data[i].size);
 			break;
 
 		case LCM_FUNC_I2C:
-			memcpy(&(lcm_dts->suspend[i].data_t2), tmp + 3, lcm_dts->suspend[i].size);
+			memcpy(&(lcm_data[i].data_t2), tmp + 3,
+				lcm_data[i].size);
 			break;
 
 		case LCM_FUNC_UTIL:
-			memcpy(&(lcm_dts->suspend[i].data_t1), tmp + 3, lcm_dts->suspend[i].size);
+			memcpy(&(lcm_data[i].data_t1), tmp + 3,
+				lcm_data[i].size);
 			break;
 
 		case LCM_FUNC_CMD:
-			switch (lcm_dts->suspend[i].type) {
+			switch (lcm_data[i].type) {
 			case LCM_UTIL_WRITE_CMD_V1:
-				memcpy(&(lcm_dts->suspend[i].data_t5), tmp + 3,
-				       lcm_dts->suspend[i].size);
+				memcpy(&(lcm_data[i].data_t5), tmp + 3,
+				       lcm_data[i].size);
 				break;
 
 			case LCM_UTIL_WRITE_CMD_V2:
-				memcpy(&(lcm_dts->suspend[i].data_t3), tmp + 3,
-				       lcm_dts->suspend[i].size);
+				memcpy(&(lcm_data[i].data_t3), tmp + 3,
+				       lcm_data[i].size);
 				break;
 
 			default:
-				pr_err("%s:%d: %d\n", __FILE__, __LINE__, lcm_dts->suspend[i].type);
+				pr_err("%s:%d: %d\n",
+					__FILE__, __LINE__, lcm_data[i].type);
 				return;
 			}
 			break;
 
 		default:
 			pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-			       (unsigned int)lcm_dts->suspend[i].func);
+			       (unsigned int)lcm_data[i].func);
 			return;
 		}
-		tmp_len = tmp_len + lcm_dts->suspend[i].size;
+		tmp_len = tmp_len + lcm_data[i].size;
 
 		if (tmp_len < len) {
 			tmp = tmp + tmp_len;
@@ -673,62 +795,68 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	}
 	lcm_dts->suspend_size = i + 1;
 	if (lcm_dts->suspend_size > SUSPEND_SIZE) {
-		pr_err("%s:%d: LCM suspend table overflow: %d\n", __FILE__, __LINE__, len);
+		pr_err("%s:%d: LCM suspend table overflow: %d\n",
+			__FILE__, __LINE__, len);
 		return;
 	}
 
 	/* parse LCM backlight table */
 	len = disp_of_getprop_u8(np, "backlight", dts);
 	if (len <= 0) {
-		pr_err("%s:%d: Cannot find LCM backlight table, skip it!\n", __FILE__, __LINE__);
+		pr_err("%s:%d: Cannot find LCM backlight table, skip it!\n",
+			__FILE__, __LINE__);
 	} else {
-		if (len > (sizeof(LCM_DATA)*BACKLIGHT_SIZE)) {
-			pr_err("%s:%d: LCM backlight table overflow: %d\n", __FILE__, __LINE__,
-			       len);
+		if (len > (sizeof(struct LCM_DATA)*BACKLIGHT_SIZE)) {
+			pr_err("%s:%d: LCM backlight table overflow: %d\n",
+				__FILE__, __LINE__,	len);
 			return;
 		}
 
 		tmp = dts;
+		lcm_data = lcm_dts->backlight;
 		for (i = 0; i < BACKLIGHT_SIZE; i++) {
-			lcm_dts->backlight[i].func = (*tmp) & 0xFF;
-			lcm_dts->backlight[i].type = (*(tmp + 1)) & 0xFF;
-			lcm_dts->backlight[i].size = (*(tmp + 2)) & 0xFF;
+			lcm_data[i].func = (*tmp) & 0xFF;
+			lcm_data[i].type = (*(tmp + 1)) & 0xFF;
+			lcm_data[i].size = (*(tmp + 2)) & 0xFF;
 			tmp_len = 3;
 
-			switch (lcm_dts->backlight[i].func) {
+			switch (lcm_data[i].func) {
 			case LCM_FUNC_GPIO:
-				memcpy(&(lcm_dts->backlight[i].data_t1), tmp + 3, lcm_dts->backlight[i].size);
+				memcpy(&(lcm_data[i].data_t1),
+					tmp + 3, lcm_data[i].size);
 				break;
 
 			case LCM_FUNC_I2C:
-				memcpy(&(lcm_dts->backlight[i].data_t2), tmp + 3, lcm_dts->backlight[i].size);
+				memcpy(&(lcm_data[i].data_t2),
+					tmp + 3, lcm_data[i].size);
 				break;
 
 			case LCM_FUNC_UTIL:
-				memcpy(&(lcm_dts->backlight[i].data_t1), tmp + 3,
-				       lcm_dts->backlight[i].size);
+				memcpy(&(lcm_data[i].data_t1), tmp + 3,
+				       lcm_data[i].size);
 				break;
 
 			case LCM_FUNC_CMD:
-				switch (lcm_dts->backlight[i].type) {
+				switch (lcm_data[i].type) {
 				case LCM_UTIL_WRITE_CMD_V2:
-					memcpy(&(lcm_dts->backlight[i].data_t3), tmp + 3,
-					       lcm_dts->backlight[i].size);
+					memcpy(&(lcm_data[i].data_t3), tmp + 3,
+					       lcm_data[i].size);
 					break;
 
 				default:
-					pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-					       lcm_dts->backlight[i].type);
+					pr_err("%s:%d: %d\n",
+						__FILE__, __LINE__,
+						lcm_data[i].type);
 					return;
 				}
 				break;
 
 			default:
 				pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-				       (unsigned int)lcm_dts->backlight[i].func);
+				       (unsigned int)lcm_data[i].func);
 				return;
 			}
-			tmp_len = tmp_len + lcm_dts->backlight[i].size;
+			tmp_len = tmp_len + lcm_data[i].size;
 
 			if (tmp_len < len) {
 				tmp = tmp + tmp_len;
@@ -739,8 +867,8 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		}
 		lcm_dts->backlight_size = i + 1;
 		if (lcm_dts->backlight_size > BACKLIGHT_SIZE) {
-			pr_err("%s:%d: LCM backlight table overflow: %d\n", __FILE__, __LINE__,
-			       len);
+			pr_err("%s:%d: LCM backlight table overflow: %d\n",
+				__FILE__, __LINE__, len);
 			return;
 		}
 	}
@@ -748,58 +876,60 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	/* parse LCM backlight cmdq table */
 	len = disp_of_getprop_u8(np, "backlight_cmdq", dts);
 	if (len <= 0) {
-		pr_err("%s:%d: Cannot find LCM backlight cmdq table, skip it!\n", __FILE__,
-		       __LINE__);
+		pr_err("%s:%d: Cannot find LCM backlight cmdq table, skip it!\n",
+			__FILE__, __LINE__);
 	} else {
-		if (len > (sizeof(LCM_DATA)*BACKLIGHT_CMDQ_SIZE)) {
-			pr_err("%s:%d: LCM backlight cmdq table overflow: %d\n", __FILE__, __LINE__,
-			       len);
+		if (len > (sizeof(struct LCM_DATA)*BACKLIGHT_CMDQ_SIZE)) {
+			pr_err("%s:%d: LCM backlight cmdq table overflow: %d\n",
+				__FILE__, __LINE__, len);
 			return;
 		}
 
 		tmp = dts;
+		lcm_data = lcm_dts->backlight_cmdq;
 		for (i = 0; i < BACKLIGHT_CMDQ_SIZE; i++) {
-			lcm_dts->backlight_cmdq[i].func = (*tmp) & 0xFF;
-			lcm_dts->backlight_cmdq[i].type = (*(tmp + 1)) & 0xFF;
-			lcm_dts->backlight_cmdq[i].size = (*(tmp + 2)) & 0xFF;
+			lcm_data[i].func = (*tmp) & 0xFF;
+			lcm_data[i].type = (*(tmp + 1)) & 0xFF;
+			lcm_data[i].size = (*(tmp + 2)) & 0xFF;
 			tmp_len = 3;
 
-			switch (lcm_dts->backlight_cmdq[i].func) {
+			switch (lcm_data[i].func) {
 			case LCM_FUNC_GPIO:
-				memcpy(&(lcm_dts->backlight_cmdq[i].data_t1), tmp + 3,
-				       lcm_dts->backlight_cmdq[i].size);
+				memcpy(&(lcm_data[i].data_t1), tmp + 3,
+				       lcm_data[i].size);
 				break;
 
 			case LCM_FUNC_I2C:
-				memcpy(&(lcm_dts->backlight_cmdq[i].data_t2), tmp + 3,
-				       lcm_dts->backlight_cmdq[i].size);
+				memcpy(&(lcm_data[i].data_t2),
+					tmp + 3, lcm_data[i].size);
 				break;
 
 			case LCM_FUNC_UTIL:
-				memcpy(&(lcm_dts->backlight_cmdq[i].data_t1), tmp + 3,
-				       lcm_dts->backlight_cmdq[i].size);
+				memcpy(&(lcm_data[i].data_t1),
+					tmp + 3, lcm_data[i].size);
 				break;
 
 			case LCM_FUNC_CMD:
-				switch (lcm_dts->backlight_cmdq[i].type) {
+				switch (lcm_data[i].type) {
 				case LCM_UTIL_WRITE_CMD_V23:
-					memcpy(&(lcm_dts->backlight_cmdq[i].data_t3), tmp + 3,
-					       lcm_dts->backlight_cmdq[i].size);
+					memcpy(&(lcm_data[i].data_t3),
+						tmp + 3, lcm_data[i].size);
 					break;
 
 				default:
-					pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-					       lcm_dts->backlight_cmdq[i].type);
+					pr_err("%s:%d: %d\n",
+						__FILE__, __LINE__,
+						lcm_data[i].type);
 					return;
 				}
 				break;
 
 			default:
 				pr_err("%s:%d: %d\n", __FILE__, __LINE__,
-				       (unsigned int)lcm_dts->backlight_cmdq[i].func);
+				       (unsigned int)lcm_data[i].func);
 				return;
 			}
-			tmp_len = tmp_len + lcm_dts->backlight_cmdq[i].size;
+			tmp_len = tmp_len + lcm_data[i].size;
 
 			if (tmp_len < len) {
 				tmp = tmp + tmp_len;
@@ -810,8 +940,8 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 		}
 		lcm_dts->backlight_cmdq_size = i + 1;
 		if (lcm_dts->backlight_cmdq_size > BACKLIGHT_CMDQ_SIZE) {
-			pr_err("%s:%d: LCM backlight cmdq table overflow: %d\n", __FILE__, __LINE__,
-			       len);
+			DISPWARN("%s:%d: LCM backlight cmdq table overflow: %d\n",
+				__FILE__, __LINE__, len);
 			return;
 		}
 	}
@@ -845,19 +975,20 @@ int check_lcm_node_from_DT(void)
 	return 0;
 }
 
-void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
+void load_lcm_resources_from_DT(struct LCM_DRIVER *lcm_drv)
 {
 	char lcm_node[128] = { 0 };
 	struct device_node *np = NULL;
 	unsigned char *tmp_dts = dts;
-	LCM_DTS *parse_dts = &lcm_dts;
+	struct LCM_DTS *parse_dts = &lcm_dts;
 
 	if (!lcm_drv) {
-		pr_err("%s:%d: Error access to LCM_DRIVER(NULL)\n", __FILE__, __LINE__);
+		pr_err("%s:%d: Error access to LCM_DRIVER(NULL)\n",
+			__FILE__, __LINE__);
 		return;
 	}
 
-	memset((unsigned char *)parse_dts, 0x0, sizeof(LCM_DTS));
+	memset((unsigned char *)parse_dts, 0x0, sizeof(struct LCM_DTS));
 
 	sprintf(lcm_node, "mediatek,lcm_params-%s", lcm_name_list[0]);
 	DISPMSG("LCM PARAMS DT compatible: %s\n", lcm_node);
@@ -884,7 +1015,7 @@ void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
 	else
 		pr_err("LCM set_params not implemented!!!\n");
 }
-#endif
+#endif /* MTK_LCM_DEVICE_TREE_SUPPORT */
 
 void fih_read_panelid(void)
 {
@@ -899,7 +1030,8 @@ void fih_read_panelid(void)
 	DISPMSG("fih panel id = 0x%08x\n", g_fih_panelid);
 }
 
-struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is_lcm_inited)
+struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
+	enum LCM_INTERFACE_ID lcm_id, int is_lcm_inited)
 {
 	int lcmindex = 0;
 	bool isLCMFound = false;
@@ -909,8 +1041,8 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 	bool isLCMDtFound = false;
 #endif
 
-	LCM_DRIVER *lcm_drv = NULL;
-	LCM_PARAMS *lcm_param = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_PARAMS *lcm_param = NULL;
 	struct disp_lcm_handle *plcm = NULL;
 
 	DISPFUNC();
@@ -921,9 +1053,8 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 		lcm_drv = &lcm_common_drv;
 		lcm_drv->name = lcm_name_list[0];
 		if (strcmp(lcm_drv->name, plcm_name)) {
-			DISPPR_ERROR
-			    ("FATAL ERROR!!!LCM Driver defined in kernel(%s) is different with LK(%s)\n",
-			     lcm_drv->name, plcm_name);
+			DISPERR("FATAL ERROR! LCM Driver defined in kernel(%s) is different with LK(%s)\n",
+				lcm_drv->name, plcm_name);
 			return NULL;
 		}
 
@@ -938,7 +1069,7 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 		}
 
 		lcmindex = 0;
-	} else
+	}
 #endif
 	if (_lcm_count() == 0) {
 		DISPPR_ERROR("no lcm driver defined in linux kernel driver\n");
@@ -954,7 +1085,7 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 			lcm_drv = lcm_driver_list[0];
 			if (strcmp(lcm_drv->name, plcm_name)) {
 				DISPPR_ERROR
-				    ("FATAL ERROR!!!LCM Driver defined in kernel(%s) is different with LK(%s)\n",
+				    ("FATAL ERROR! LCM Driver defined in kernel(%s) is different with LK(%s)\n",
 				     lcm_drv->name, plcm_name);
 				return NULL;
 			}
@@ -998,20 +1129,22 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 	}
 
 	if (isLCMFound == false) {
-		DISPPR_ERROR("FATAL ERROR!!!No LCM Driver defined\n");
+		DISPPR_ERROR("FATAL ERROR! No LCM Driver defined\n");
 		return NULL;
 	}
 
-	plcm = kzalloc(sizeof(uint8_t *) * sizeof(struct disp_lcm_handle), GFP_KERNEL);
-	lcm_param = kzalloc(sizeof(uint8_t *) * sizeof(LCM_PARAMS), GFP_KERNEL);
+	plcm = kzalloc(sizeof(uint8_t *) * sizeof(struct disp_lcm_handle),
+		       GFP_KERNEL);
+	lcm_param = kzalloc(sizeof(uint8_t *) * sizeof(struct LCM_PARAMS),
+			    GFP_KERNEL);
 	if (plcm && lcm_param) {
 		plcm->params = lcm_param;
 		plcm->drv = lcm_drv;
 		plcm->is_inited = isLCMInited;
 		plcm->index = lcmindex;
 	} else {
-		DISPPR_ERROR("FATAL ERROR!!!kzalloc plcm and plcm->params failed\n");
-		goto FAIL;
+		DISPERR("FATAL ERROR! kzalloc plcm and plcm->params failed\n");
+		goto fail;
 	}
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
@@ -1019,49 +1152,45 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 		load_lcm_resources_from_DT(plcm->drv);
 #endif
 
-	{
-		fih_read_panelid();
-		plcm->drv->get_params(plcm->params);
-		plcm->lcm_if_id = plcm->params->lcm_if;
+	fih_read_panelid();
+	plcm->drv->get_params(plcm->params);
+	plcm->lcm_if_id = plcm->params->lcm_if;
 
-		/* below code is for lcm driver forward compatible */
-		if (plcm->params->type == LCM_TYPE_DSI
-		    && plcm->params->lcm_if == LCM_INTERFACE_NOTDEFINED)
-			plcm->lcm_if_id = LCM_INTERFACE_DSI0;
-		if (plcm->params->type == LCM_TYPE_DPI
-		    && plcm->params->lcm_if == LCM_INTERFACE_NOTDEFINED)
-			plcm->lcm_if_id = LCM_INTERFACE_DPI0;
-		if (plcm->params->type == LCM_TYPE_DBI
-		    && plcm->params->lcm_if == LCM_INTERFACE_NOTDEFINED)
-			plcm->lcm_if_id = LCM_INTERFACE_DBI0;
+	/* below code is for lcm driver forward compatible */
+	if (plcm->params->type == LCM_TYPE_DSI &&
+	    plcm->params->lcm_if == LCM_INTERFACE_NOTDEFINED)
+		plcm->lcm_if_id = LCM_INTERFACE_DSI0;
+	if (plcm->params->type == LCM_TYPE_DPI &&
+	    plcm->params->lcm_if == LCM_INTERFACE_NOTDEFINED)
+		plcm->lcm_if_id = LCM_INTERFACE_DPI0;
+	if (plcm->params->type == LCM_TYPE_DBI &&
+	    plcm->params->lcm_if == LCM_INTERFACE_NOTDEFINED)
+		plcm->lcm_if_id = LCM_INTERFACE_DBI0;
 
-		if ((lcm_id == LCM_INTERFACE_NOTDEFINED) || lcm_id == plcm->lcm_if_id) {
-			plcm->lcm_original_width = plcm->params->width;
-			plcm->lcm_original_height = plcm->params->height;
-			_dump_lcm_info(plcm);
-			return plcm;
-		}
-
-		DISPPR_ERROR("the specific LCM Interface [%d] didn't define any lcm driver\n",
-			lcm_id);
-		goto FAIL;
+	if ((lcm_id == LCM_INTERFACE_NOTDEFINED) || lcm_id == plcm->lcm_if_id) {
+		plcm->lcm_original_width = plcm->params->width;
+		plcm->lcm_original_height = plcm->params->height;
+		_dump_lcm_info(plcm);
+		return plcm;
 	}
 
-FAIL:
-
+	DISPERR("LCM Interface[%d] didn't define any lcm driver\n", lcm_id);
+fail:
 	kfree(plcm);
 	kfree(lcm_param);
 	return NULL;
 }
 
-struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is_lcm_inited)
+struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name,
+					   enum LCM_INTERFACE_ID lcm_id,
+					   int is_lcm_inited)
 {
 	int lcmindex = 0;
 	bool isLCMFound = false;
 	bool isLCMInited = false;
 
-	LCM_DRIVER *lcm_drv = NULL;
-	LCM_PARAMS *lcm_param = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_PARAMS *lcm_param = NULL;
 	struct disp_lcm_handle *plcm = NULL;
 	int i;
 
@@ -1073,28 +1202,30 @@ struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm
 		return NULL;
 	} else if (_lcm_count() == 2) {
 		if (plcm_name == NULL) {
-#if (CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
+#if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
+	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 			lcm_drv = lcm_driver_list[1];
+#else
+			lcm_drv = NULL;
+#endif
+
 			isLCMFound = true;
 			isLCMInited = false;
 			DISPCHECK("EXT LCM Name NULL\n");
-#else
-			DISPPR_ERROR("no define CONFIG_MTK_DUAL_DISPLAY_SUPPORT\n");
-			return NULL;
-#endif
-
 		} else {
 			for (i = 0; i < _lcm_count(); i++) {
-				if (strcmp(lcm_driver_list[i]->name, plcm_name) == 0) {
+				if (strcmp(lcm_driver_list[i]->name,
+					plcm_name) == 0) {
 					lcm_drv = lcm_driver_list[i];
-					DISPCHECK("EXT_LCM Driver name is %s\n", lcm_drv->name);
+					DISPCHECK("EXT_LCM Driver name is %s\n",
+						  lcm_drv->name);
 					break;
 				}
 			}
 			if (lcm_drv == NULL) {
 				DISPPR_ERROR
-					("FATAL ERROR!!!EXT_LCM Driver can't find, The lk ext lcm name is(%s)\n",
-					 plcm_name);
+					("FATAL ERROR! Cannot find EXT_LCM Driver. The LK ext lcm name is(%s)\n",
+					plcm_name);
 				return NULL;
 			}
 
@@ -1112,46 +1243,44 @@ struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm
 	}
 
 	if (isLCMFound == false) {
-		DISPPR_ERROR("FATAL ERROR!!!No EXT LCM Driver defined\n");
+		DISPPR_ERROR("FATAL ERROR! No EXT LCM Driver defined\n");
 		return NULL;
 	}
 
-	plcm = kzalloc(sizeof(uint8_t *) * sizeof(struct disp_lcm_handle), GFP_KERNEL);
-	lcm_param = kzalloc(sizeof(uint8_t *) * sizeof(LCM_PARAMS), GFP_KERNEL);
+	plcm = kzalloc(sizeof(uint8_t *) * sizeof(struct disp_lcm_handle),
+		       GFP_KERNEL);
+	lcm_param = kzalloc(sizeof(uint8_t *) * sizeof(struct LCM_PARAMS),
+			    GFP_KERNEL);
 	if (plcm && lcm_param) {
 		plcm->params = lcm_param;
 		plcm->drv = lcm_drv;
 		plcm->is_inited = isLCMInited;
 		plcm->index = lcmindex;
 	} else {
-		DISPPR_ERROR("FATAL ERROR!!!kzalloc plcm and plcm->params failed\n");
-		goto FAIL;
+		DISPPR_ERROR("FATAL ERROR! kzalloc plcm and plcm->params failed\n");
+		goto fail;
 	}
 
 
-	{
-		plcm->drv->get_params(plcm->params);
-		plcm->lcm_if_id = plcm->params->lcm_if;
+	plcm->drv->get_params(plcm->params);
+	plcm->lcm_if_id = plcm->params->lcm_if;
 
-		/* below code is for lcm driver forward compatible */
-		if (plcm->params->type == LCM_TYPE_DSI
-		    && plcm->params->lcm_if == LCM_INTERFACE_NOTDEFINED)
-			plcm->lcm_if_id = LCM_INTERFACE_DSI1;
+	/* below code is for lcm driver forward compatible */
+	if (plcm->params->type == LCM_TYPE_DSI
+	    && plcm->params->lcm_if == LCM_INTERFACE_NOTDEFINED)
+		plcm->lcm_if_id = LCM_INTERFACE_DSI1;
 
-		if ((lcm_id == LCM_INTERFACE_NOTDEFINED) || lcm_id == plcm->lcm_if_id) {
-			plcm->lcm_original_width = plcm->params->width;
-			plcm->lcm_original_height = plcm->params->height;
-			_dump_lcm_info(plcm);
-			return plcm;
-		}
-
-		DISPPR_ERROR("the specific EXT LCM Interface [%d] didn't define any lcm driver\n",
-			lcm_id);
-		goto FAIL;
+	if ((lcm_id == LCM_INTERFACE_NOTDEFINED) || lcm_id == plcm->lcm_if_id) {
+		plcm->lcm_original_width = plcm->params->width;
+		plcm->lcm_original_height = plcm->params->height;
+		_dump_lcm_info(plcm);
+		return plcm;
 	}
 
-FAIL:
+	DISPPR_ERROR("EXT LCM Interface [%d] didn't define any lcm driver\n",
+		lcm_id);
 
+fail:
 	kfree(plcm);
 	kfree(lcm_param);
 	return NULL;
@@ -1159,85 +1288,85 @@ FAIL:
 
 int disp_lcm_init(struct disp_lcm_handle *plcm, int force)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
-	if (_is_lcm_inited(plcm)) {
-		lcm_drv = plcm->drv;
 
-		if (lcm_drv->init_power) {
-			if (!disp_lcm_is_inited(plcm) || force) {
-				DISPMSG("lcm init power()\n");
-				lcm_drv->init_power();
-			}
-		}
-
-		if (lcm_drv->init) {
-			if (!disp_lcm_is_inited(plcm) || force) {
-				DISPMSG("lcm init()\n");
-				lcm_drv->init();
-			}
-		} else {
-			DISPPR_ERROR("FATAL ERROR, lcm_drv->init is null\n");
-			return -1;
-		}
-
-		/* ddp_dsi_start(DISP_MODULE_DSI0, NULL); */
-		/* DSI_BIST_Pattern_Test(DISP_MODULE_DSI0,NULL,true, 0x00ffff00); */
-		return 0;
+	if (!_is_lcm_inited(plcm)) {
+		DISPERR("plcm is null\n");
+		return -1;
 	}
-	DISPPR_ERROR("plcm is null\n");
-	return -1;
+
+	lcm_drv = plcm->drv;
+
+	if (lcm_drv->init_power) {
+		if (!disp_lcm_is_inited(plcm) || force) {
+			DISPMSG("lcm init power()\n");
+			lcm_drv->init_power();
+		}
+	}
+
+	if (lcm_drv->init) {
+		if (!disp_lcm_is_inited(plcm) || force) {
+			DISPMSG("lcm init()\n");
+			lcm_drv->init();
+		}
+	} else {
+		DISPPR_ERROR("FATAL ERROR, lcm_drv->init is null\n");
+		return -1;
+	}
+
+	/* ddp_dsi_start(DISP_MODULE_DSI0, NULL); */
+	/* DSI_BIST_Pattern_Test(DISP_MODULE_DSI0,NULL,true, 0x00ffff00); */
+	return 0;
 }
 
-LCM_PARAMS *disp_lcm_get_params(struct disp_lcm_handle *plcm)
+struct LCM_PARAMS *disp_lcm_get_params(struct disp_lcm_handle *plcm)
 {
-	/* DISPFUNC(); */
-
 	if (_is_lcm_inited(plcm))
 		return plcm->params;
-	else
-		return NULL;
+
+	return NULL;
 }
 
-LCM_INTERFACE_ID disp_lcm_get_interface_id(struct disp_lcm_handle *plcm)
+enum LCM_INTERFACE_ID disp_lcm_get_interface_id(struct disp_lcm_handle *plcm)
 {
 	DISPFUNC();
 
 	if (_is_lcm_inited(plcm))
 		return plcm->lcm_if_id;
-	else
-		return LCM_INTERFACE_NOTDEFINED;
+
+	return LCM_INTERFACE_NOTDEFINED;
 }
 
-int disp_lcm_update(struct disp_lcm_handle *plcm, int x, int y, int w, int h, int force)
+int disp_lcm_update(struct disp_lcm_handle *plcm, int x, int y, int w, int h,
+		    int force)
 {
-	LCM_DRIVER *lcm_drv = NULL;
-	/* LCM_INTERFACE_ID lcm_id = LCM_INTERFACE_NOTDEFINED; */
-	/* LCM_PARAMS *plcm_param = NULL; */
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPDBGFUNC();
-	if (_is_lcm_inited(plcm)) {
-		lcm_drv = plcm->drv;
-		if (lcm_drv->update) {
-			lcm_drv->update(x, y, w, h);
-		} else {
-			if (!disp_lcm_is_video_mode(plcm))
-				DISPPR_ERROR("FATAL ERROR, lcm is cmd mode lcm_drv->update is null\n");
-			return -1;
-		}
-
-		return 0;
+	if (!_is_lcm_inited(plcm)) {
+		DISPERR("lcm_drv is null\n");
+		return -1;
 	}
-	DISPPR_ERROR("lcm_drv is null\n");
-	return -1;
+
+	lcm_drv = plcm->drv;
+	if (lcm_drv->update) {
+		lcm_drv->update(x, y, w, h);
+	} else {
+		if (!disp_lcm_is_video_mode(plcm))
+			DISPERR("lcm is cmd mode lcm_drv->update is null\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 /* return 1: esd check fail */
 /* return 0: esd check pass */
 int disp_lcm_esd_check(struct disp_lcm_handle *plcm)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
@@ -1252,20 +1381,18 @@ int disp_lcm_esd_check(struct disp_lcm_handle *plcm)
 	return 0;
 }
 
-
-
 int disp_lcm_esd_recover(struct disp_lcm_handle *plcm)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->esd_recover) {
 			lcm_drv->esd_recover();
+			DISPDBG("use customzie ESD recovery\n");
 		} else {
-			DISPPR_ERROR("FATAL ERROR, lcm_drv->esd_check is null\n");
-			return -1;
+			disp_lcm_init(plcm, 1);
 		}
 
 		return 0;
@@ -1276,7 +1403,7 @@ int disp_lcm_esd_recover(struct disp_lcm_handle *plcm)
 
 int disp_lcm_suspend(struct disp_lcm_handle *plcm)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
@@ -1291,7 +1418,6 @@ int disp_lcm_suspend(struct disp_lcm_handle *plcm)
 		if (lcm_drv->suspend_power)
 			lcm_drv->suspend_power();
 
-
 		return 0;
 	}
 	DISPPR_ERROR("lcm_drv is null\n");
@@ -1300,7 +1426,7 @@ int disp_lcm_suspend(struct disp_lcm_handle *plcm)
 
 int disp_lcm_resume(struct disp_lcm_handle *plcm)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
@@ -1308,7 +1434,6 @@ int disp_lcm_resume(struct disp_lcm_handle *plcm)
 
 		if (lcm_drv->resume_power)
 			lcm_drv->resume_power();
-
 
 		if (lcm_drv->resume) {
 			lcm_drv->resume();
@@ -1325,7 +1450,7 @@ int disp_lcm_resume(struct disp_lcm_handle *plcm)
 
 int disp_lcm_aod(struct disp_lcm_handle *plcm, int enter)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPMSG("%s, enter:%d\n", __func__, enter);
 	if (_is_lcm_inited(plcm)) {
@@ -1345,7 +1470,7 @@ int disp_lcm_aod(struct disp_lcm_handle *plcm, int enter)
 
 int disp_lcm_is_support_adjust_fps(struct disp_lcm_handle *plcm)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
@@ -1360,7 +1485,7 @@ int disp_lcm_is_support_adjust_fps(struct disp_lcm_handle *plcm)
 
 int disp_lcm_adjust_fps(void *cmdq, struct disp_lcm_handle *plcm, int fps)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
@@ -1373,27 +1498,30 @@ int disp_lcm_adjust_fps(void *cmdq, struct disp_lcm_handle *plcm, int fps)
 	return -1;
 }
 
-int disp_lcm_set_backlight(struct disp_lcm_handle *plcm, void *handle, int level)
+int disp_lcm_set_backlight(struct disp_lcm_handle *plcm,
+	void *handle, int level)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
-	if (_is_lcm_inited(plcm)) {
-		lcm_drv = plcm->drv;
-		if (lcm_drv->set_backlight_cmdq) {
-			lcm_drv->set_backlight_cmdq(handle, level);
-		} else {
-			DISPPR_ERROR("FATAL ERROR, lcm_drv->set_backlight is null\n");
-			return -1;
-		}
-
-		return 0;
+	if (!_is_lcm_inited(plcm)) {
+		DISPERR("lcm_drv is null\n");
+		return -1;
 	}
-	DISPPR_ERROR("lcm_drv is null\n");
-	return -1;
+
+	lcm_drv = plcm->drv;
+	if (lcm_drv->set_backlight_cmdq) {
+		lcm_drv->set_backlight_cmdq(handle, level);
+	} else {
+		DISPERR("FATAL ERROR, lcm_drv->set_backlight is null\n");
+		return -1;
+	}
+
+	return 0;
 }
 
-int disp_lcm_ioctl(struct disp_lcm_handle *plcm, LCM_IOCTL ioctl, unsigned int arg)
+int disp_lcm_ioctl(struct disp_lcm_handle *plcm, enum LCM_IOCTL ioctl,
+		   unsigned int arg)
 {
 	return 0;
 }
@@ -1402,14 +1530,14 @@ int disp_lcm_is_inited(struct disp_lcm_handle *plcm)
 {
 	if (_is_lcm_inited(plcm))
 		return plcm->is_inited;
-	else
-		return 0;
+
+	return 0;
 }
 
 unsigned int disp_lcm_ATA(struct disp_lcm_handle *plcm)
 {
 	unsigned int ret = 0;
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
@@ -1431,34 +1559,34 @@ unsigned int disp_lcm_ATA(struct disp_lcm_handle *plcm)
 
 void *disp_lcm_switch_mode(struct disp_lcm_handle *plcm, int mode)
 {
-	LCM_DRIVER *lcm_drv = NULL;
-	LCM_DSI_MODE_SWITCH_CMD *lcm_cmd = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DSI_MODE_SWITCH_CMD *lcm_cmd = NULL;
 
 	/* DISPFUNC(); */
-	if (_is_lcm_inited(plcm)) {
-		if (plcm->params->dsi.switch_mode_enable == 0) {
-			DISPPR_ERROR(" ERROR, Not enable switch in lcm_get_params function\n");
-			return NULL;
-		}
-		lcm_drv = plcm->drv;
-		if (lcm_drv->switch_mode) {
-			lcm_cmd = (LCM_DSI_MODE_SWITCH_CMD *) lcm_drv->switch_mode(mode);
-			lcm_cmd->cmd_if = (unsigned int)(plcm->params->lcm_cmd_if);
-		} else {
-			DISPPR_ERROR("FATAL ERROR, lcm_drv->switch_mode is null\n");
-			return NULL;
-		}
-
-		return (void *)(lcm_cmd);
+	if (!_is_lcm_inited(plcm)) {
+		DISPERR("lcm_drv is null\n");
+		return NULL;
 	}
 
-	DISPPR_ERROR("lcm_drv is null\n");
-	return NULL;
+	if (plcm->params->dsi.switch_mode_enable == 0) {
+		DISPERR("Not enable switch in lcm_get_params function\n");
+		return NULL;
+	}
+
+	lcm_drv = plcm->drv;
+	if (!lcm_drv->switch_mode) {
+		DISPERR("FATAL ERROR, lcm_drv->switch_mode is null\n");
+		return NULL;
+	}
+
+	lcm_cmd = (struct LCM_DSI_MODE_SWITCH_CMD *)lcm_drv->switch_mode(mode);
+	lcm_cmd->cmd_if = (unsigned int)(plcm->params->lcm_cmd_if);
+	return (void *)(lcm_cmd);
 }
 
 int disp_lcm_is_video_mode(struct disp_lcm_handle *plcm)
 {
-	LCM_PARAMS *lcm_param = NULL;
+	struct LCM_PARAMS *lcm_param = NULL;
 	/* LCM_INTERFACE_ID lcm_id = LCM_INTERFACE_NOTDEFINED; */
 
 	/* DISPFUNC(); */
@@ -1497,16 +1625,18 @@ int disp_lcm_is_video_mode(struct disp_lcm_handle *plcm)
 	return -1;
 }
 
-int disp_lcm_set_lcm_cmd(struct disp_lcm_handle *plcm, void *cmdq_handle, unsigned int *lcm_cmd,
-			 unsigned int *lcm_count, unsigned int *lcm_value)
+int disp_lcm_set_lcm_cmd(struct disp_lcm_handle *plcm, void *cmdq_handle,
+			 unsigned int *lcm_cmd, unsigned int *lcm_count,
+			 unsigned int *lcm_value)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	DISPFUNC();
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
 		if (lcm_drv->set_lcm_cmd) {
-			lcm_drv->set_lcm_cmd(cmdq_handle, lcm_cmd, lcm_count, lcm_value);
+			lcm_drv->set_lcm_cmd(cmdq_handle, lcm_cmd, lcm_count,
+					     lcm_value);
 		} else {
 			DISPPR_ERROR("FATAL ERROR, lcm_drv->set_lcm_cmd is null\n");
 			return -1;
@@ -1521,7 +1651,7 @@ int disp_lcm_set_lcm_cmd(struct disp_lcm_handle *plcm, void *cmdq_handle, unsign
 
 int disp_lcm_is_partial_support(struct disp_lcm_handle *plcm)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;
@@ -1532,9 +1662,10 @@ int disp_lcm_is_partial_support(struct disp_lcm_handle *plcm)
 	return 0;
 }
 
-int disp_lcm_validate_roi(struct disp_lcm_handle *plcm, int *x, int *y, int *w, int *h)
+int disp_lcm_validate_roi(struct disp_lcm_handle *plcm, int *x, int *y,
+			  int *w, int *h)
 {
-	LCM_DRIVER *lcm_drv = NULL;
+	struct LCM_DRIVER *lcm_drv = NULL;
 
 	if (_is_lcm_inited(plcm)) {
 		lcm_drv = plcm->drv;

@@ -39,17 +39,18 @@ int ovl_stop(enum DISP_MODULE_ENUM module, void *handle);
 int ovl_reset(enum DISP_MODULE_ENUM module, void *handle);
 
 /* set region of interest */
-int ovl_roi(enum DISP_MODULE_ENUM module, unsigned int bgW, unsigned int bgH, /* region size */
+int ovl_roi(enum DISP_MODULE_ENUM module, unsigned int bgW, unsigned int bgH,
 	    unsigned int bgColor, /* border color */ void *handle);
 
 /* switch layer on/off */
-int ovl_layer_switch(enum DISP_MODULE_ENUM module, unsigned layer, unsigned int en, void *handle);
+int ovl_layer_switch(enum DISP_MODULE_ENUM module, unsigned int layer,
+		     unsigned int en, void *handle);
 /* get ovl input address */
-void ovl_get_address(enum DISP_MODULE_ENUM module, unsigned long *add);
+void ovl_get_address(enum DISP_MODULE_ENUM module, unsigned long *addr);
 
-int ovl_3d_config(enum DISP_MODULE_ENUM module,
-		  unsigned int layer_id,
-		  unsigned int en_3d, unsigned int landscape, unsigned int r_first, void *handle);
+int ovl_3d_config(enum DISP_MODULE_ENUM module, unsigned int layer_id,
+		  unsigned int en_3d, unsigned int landscape,
+		  unsigned int r_first, void *handle);
 
 void ovl_dump_analysis(enum DISP_MODULE_ENUM module);
 void ovl_dump_reg(enum DISP_MODULE_ENUM module);
@@ -59,10 +60,10 @@ unsigned int ovl_to_index(enum DISP_MODULE_ENUM module);
 void ovl_get_info(enum DISP_MODULE_ENUM module, void *data);
 unsigned int ddp_ovl_get_cur_addr(bool rdma_mode, int layerid);
 enum DISP_MODULE_ENUM ovl_index_to_mod_for_debug(int index);
-unsigned long ovl_layer_num_for_debug(enum DISP_MODULE_ENUM module);
+int ovl_layer_num_for_debug(enum DISP_MODULE_ENUM module);
 
 void ovl_set_dbg_mode(bool mode);
 unsigned int ovl_set_bg_color(unsigned int bg_color);
 unsigned int ovl_set_dim_color(unsigned int dim_color);
 
-#endif
+#endif /* _DDP_OVL_H_ */

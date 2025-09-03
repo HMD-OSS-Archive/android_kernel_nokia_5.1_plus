@@ -56,11 +56,11 @@ extern void check_cam_clk_sts(void);
 extern void cam_mtcmos_check(void);
 /*ram console api*/
 /*
-*[0] bus protect reg
-*[1] pwr_status
-*[2] pwr_status 2
-*[others] local function use
-*/
+ *[0] bus protect reg
+ *[1] pwr_status
+ *[2] pwr_status 2
+ *[others] local function use
+ */
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void aee_rr_rec_clk(int id, u32 val);
 #endif

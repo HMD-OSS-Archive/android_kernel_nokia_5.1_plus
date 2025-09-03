@@ -24,7 +24,7 @@
 #include <linux/slab.h>         /* needed by kmalloc */
 #include <linux/poll.h>         /* needed by poll */
 #include <linux/mutex.h>
-#include <linux/sched.h>
+#include <linux/sched/types.h>
 #include <linux/interrupt.h>
 #include <linux/suspend.h>
 #include <linux/timer.h>
@@ -293,7 +293,8 @@ static int dump_kthread(void *data)
 						  dump_package->rw_idx);
 			pcm_dump = (struct pcm_dump_t *)data_buf;
 			pr_debug("pcm_dump = %p size = %d\n", pcm_dump, size);
-
+			if (pcm_dump == NULL)
+				break;
 			while (size > 0) {
 				if (size < FRAME_BUF_SIZE)
 					writedata = size;
@@ -329,7 +330,7 @@ static int dump_kthread(void *data)
 void audio_ipi_client_playback_init(void)
 {
 	aud_wake_lock_init(&playback_pcm_dump_wake_lock,
-		"playback_pcm_dump_wake_lock");
+			   "playback_pcm_dump_wake_lock");
 	dump_workqueue[DUMP_DECODE] = create_workqueue("dump_decode_pcm");
 	if (dump_workqueue[DUMP_DECODE] == NULL)
 		pr_notice("dump_workqueue[DUMP_DECODE] = %p\n",

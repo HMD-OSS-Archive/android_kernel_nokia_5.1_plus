@@ -13,14 +13,19 @@
 
 bat_gm30: battery{
 	compatible = "mediatek,bat_gm30";
-	DIFFERENCE_FULLOCV_ITH = <(200)>;	/*	Charging termination current.*/
-	SHUTDOWN_1_TIME = <(30)>;	/*	If ui_soc shows 1% more than X minites, system will shutdown.*/
-	KEEP_100_PERCENT = <(1)>;	/*	The ui_soc will keep 100% until SOC drop X percents after unplugged.*/
+	/* Charging termination current.*/
+	DIFFERENCE_FULLOCV_ITH = <(200)>;
+	/*If ui_soc shows 1% more than X minites, system will shutdown.*/
+	SHUTDOWN_1_TIME = <(30)>;
+	/*The ui_soc will keep 100% until SOC drop X percents after unplugged.*/
+	KEEP_100_PERCENT = <(1)>;
 	R_FG_VALUE = <(10)>;	//<(5)> for current sensing resistor /*	R_sense resistance.*/
-	EMBEDDED_SEL = <(1)>;	/*	Configures whether using embedded battery or not.*/
+	/*	Configures whether using embedded battery or not.*/
+	EMBEDDED_SEL = <(1)>;
 	PMIC_SHUTDOWN_CURRENT = <(20)>;	/*	System shutdown current.*/
 	FG_METER_RESISTANCE = <(75)>;	/*	The resistance of PCB*/
-	CAR_TUNE_VALUE = <(100)>;	/*	Tune value for current measurement.*/
+	/*	Tune value for current measurement.*/
+	CAR_TUNE_VALUE = <(100)>;
 	TEMPERATURE_T0 = <(50)>;	/*	Battery temperature T0*/
 	TEMPERATURE_T1 = <(25)>;	/*	Battery temperature T1*/
 	TEMPERATURE_T2 = <(10)>;	/*	Battery temperature T2*/
@@ -31,10 +36,11 @@ bat_gm30: battery{
 	g_FG_PSEUDO100_T2 = <(95)>;	/*	Pseudo 100% percentage at T2.*/
 	g_FG_PSEUDO100_T3 = <(90)>;	/*	Pseudo 100% percentage at T3.*/
 	g_FG_PSEUDO100_T4 = <(80)>;	/*	Pseudo 100% percentage at T4.*/
-	Q_MAX_SYS_VOLTAGE_BAT0 = <(3350)>;	/*	System shut down voltage.*/
-	Q_MAX_SYS_VOLTAGE_BAT1 = <(3350)>;	/*	System shut down voltage.*/
-	Q_MAX_SYS_VOLTAGE_BAT2 = <(3350)>;	/*	System shut down voltage.*/
-	Q_MAX_SYS_VOLTAGE_BAT3 = <(3350)>;	/*	System shut down voltage.*/
+	/*	System shut down voltage.*/
+	Q_MAX_SYS_VOLTAGE_BAT0 = <(3350)>;
+	Q_MAX_SYS_VOLTAGE_BAT1 = <(3350)>;
+	Q_MAX_SYS_VOLTAGE_BAT2 = <(3350)>;
+	Q_MAX_SYS_VOLTAGE_BAT3 = <(3350)>;
 
 #include "mt6771_battery_table_ext.dtsi"
 

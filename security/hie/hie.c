@@ -13,20 +13,22 @@
 
 #define DEBUG 1
 
-#include <linux/bio.h>
 #include <linux/module.h>
+#include <linux/blk_types.h>
+#include <linux/fs.h>
+#include <linux/bio.h>
 #include <linux/printk.h>
 #include <linux/key.h>
 #include <linux/key-type.h>
 #include <keys/user-type.h>
 #include <linux/debugfs.h>
 #include <linux/hie.h>
-#include <linux/blk_types.h>
 #include <linux/preempt.h>
-#include <linux/fs.h>
 
 #ifdef CONFIG_MTK_PLATFORM
-#include <mt-plat/aee.h>
+//#include <mt-plat/aee.h>
+/*temp for build :aee_kernel_warning*/
+#define aee_kernel_warning(...)
 #else
 #define aee_kernel_warning(...)
 #endif
@@ -35,6 +37,9 @@ static DEFINE_SPINLOCK(hie_dev_list_lock);
 static LIST_HEAD(hie_dev_list);
 static DEFINE_SPINLOCK(hie_fs_list_lock);
 static LIST_HEAD(hie_fs_list);
+
+static int hie_key_payload(struct bio_crypt_ctx *ctx,
+	const unsigned char **key);
 
 static struct hie_dev *hie_default_dev;
 static struct hie_fs *hie_default_fs;
@@ -48,7 +53,7 @@ u64 hie_dbg_ino;
 u64 hie_dbg_sector;
 #endif
 
-int hie_debug(unsigned mask)
+int hie_debug(unsigned int mask)
 {
 #ifdef CONFIG_HIE_DEBUG
 	return (hie_dbg & mask);
@@ -66,11 +71,11 @@ int hie_debug_ino(unsigned long ino)
 #endif
 }
 
-int hie_is_ready(void)
+bool hie_is_capable(const struct super_block *sb)
 {
-	return (!IS_ERR_OR_NULL(hie_default_dev));
+	return blk_queue_inline_crypt(bdev_get_queue(sb->s_bdev));
 }
-EXPORT_SYMBOL_GPL(hie_is_ready);
+EXPORT_SYMBOL_GPL(hie_is_capable);
 
 int hie_is_dummy(void)
 {
@@ -103,8 +108,6 @@ int hie_register_device(struct hie_dev *dev)
 	if (IS_ERR_OR_NULL(hie_default_dev))
 		hie_default_dev = dev;
 
-	dev->kh = NULL;
-
 	return 0;
 }
 EXPORT_SYMBOL_GPL(hie_register_device);
@@ -128,6 +131,8 @@ int hie_register_fs(struct hie_fs *fs)
 EXPORT_SYMBOL_GPL(hie_register_fs);
 
 #ifdef CONFIG_HIE_DEBUG
+#define __rw_str(bio) ((bio_data_dir(bio) == READ) ? "R" : "W")
+
 static const char *get_page_name_nolock(struct page *p, char *buf, int len,
 	unsigned long *ino)
 {
@@ -218,8 +223,8 @@ static void hie_dump_bio(struct bio *bio, const char *prefix)
 
 	iv = bio_bc_iv_get(bio);
 
-	pr_debug("HIE: %s: bio: %p %s, flag: %x, size: %d, file: %s, ino: %ld, iv: %lu\n",
-		prefix, bio, (bio->bi_rw & WRITE) ? "W" : "R",
+	pr_info("HIE: %s: bio: %p %s, flag: %x, size: %d, file: %s, ino: %ld, iv: %lu\n",
+		prefix, bio, __rw_str(bio),
 		bio->bi_crypt_ctx.bc_flags,
 		size, ptr?ptr:"", ino, iv);
 }
@@ -241,9 +246,9 @@ int hie_dump_req(struct request *req, const char *prefix)
 #endif
 
 #if defined(CONFIG_HIE_DUMMY_CRYPT) && !defined(CONFIG_HIE_NO_CRYPT)
-static void hie_xor(void *buf, unsigned length, u32 key)
+static void hie_xor(void *buf, unsigned int length, u32 key)
 {
-	unsigned i;
+	unsigned int i;
 
 	u32 *p = (u32 *)buf;
 
@@ -263,7 +268,7 @@ static void hie_dummy_crypt_set_key(struct request *req, u32 key)
 }
 
 static unsigned long hie_dummy_crypt_bio(const char *prefix, struct bio *bio,
-	unsigned long max, unsigned blksize, u64 *iv)
+	unsigned long max, unsigned int blksize, u64 *iv)
 {
 	unsigned long flags;
 	struct bio_vec bv;
@@ -295,19 +300,19 @@ static unsigned long hie_dummy_crypt_bio(const char *prefix, struct bio *bio,
 			ptr = get_page_name(bv.bv_page, path, 255, &ino);
 
 		if (hie_debug(HIE_DBG_CRY)) {
-			pr_debug("HIE: %s: %s bio: %p, base: %p %s len: %d, file: %s, ino: %ld, sec: %lu, iv: %llx, pgidx: %u\n",
+			pr_info("HIE: %s: %s bio: %p, base: %p %s len: %d, file: %s, ino: %ld, sec: %lu, iv: %llx, pgidx: %u\n",
 			  __func__, prefix, bio, data,
-			  (bio->bi_rw & WRITE) ? "W" : "R", bv.bv_len,
+			  __rw_str(bio), bv.bv_len,
 			  ptr, ino, (unsigned long)iter.bi_sector, *iv,
 			  (unsigned int)bv.bv_page->index);
 
-			print_hex_dump(KERN_ERR, "before crypt: ",
+			print_hex_dump(KERN_DEBUG, "before crypt: ",
 				DUMP_PREFIX_OFFSET, 32, 1, data, 32, 0);
 		}
 #endif
 		remain = len;
 
-		for (i = 0; i < len; i += blksize)	{
+		for (i = 0; i < len; i += blksize) {
 			key = bio->bi_crypt_ctx.dummy_crypt_key;
 
 			if (iv && *iv) {
@@ -326,7 +331,7 @@ static unsigned long hie_dummy_crypt_bio(const char *prefix, struct bio *bio,
 
 #ifdef CONFIG_HIE_DEBUG
 		if (hie_debug(HIE_DBG_CRY))
-			print_hex_dump(KERN_ERR, "after crypt: ",
+			print_hex_dump(KERN_DEBUG, "after crypt: ",
 				DUMP_PREFIX_OFFSET, 32, 1, data, 32, 0);
 #endif
 		flush_dcache_page(bv.bv_page);
@@ -349,7 +354,7 @@ static int hie_dummy_crypt_req(const char *prefix, struct request *req,
 	blksize = queue_physical_block_size(req->q);
 
 	if (hie_debug(HIE_DBG_CRY)) {
-		pr_debug("HIE: %s: %s req: %p, req_iv: %llx\n",
+		pr_info("HIE: %s: %s req: %p, req_iv: %llx\n",
 		  __func__, prefix, req, iv);
 	}
 
@@ -361,9 +366,9 @@ static int hie_dummy_crypt_req(const char *prefix, struct request *req,
 			u64 bio_iv;
 
 			bio_iv = bio_bc_iv_get(bio);
-			pr_debug("HIE: %s: %s req: %p, req_iv: %llx, bio: %p, %s, bio_iv: %llu\n",
+			pr_info("HIE: %s: %s req: %p, req_iv: %llx, bio: %p, %s, bio_iv: %llu\n",
 			  __func__, prefix, req, iv, bio,
-			  (bio->bi_rw & WRITE) ? "W" : "R",
+			  __rw_str(bio),
 			  bio_iv);
 		}
 #endif
@@ -403,21 +408,19 @@ int hie_req_end_size(struct request *req, unsigned long bytes)
 static int hie_req_verify(struct request *req, struct hie_dev *dev,
 	unsigned int *crypt_mode)
 {
-	struct bio *bio;
-	struct key *keyring_key;
+	struct bio *bio, *bio_head;
 	unsigned int key_size;
 	unsigned int mode;
 	unsigned int last_mode;
 	unsigned int flag;
-	unsigned long iv = BC_INVALD_IV;
+	unsigned long iv = BC_INVALID_IV;
 	unsigned long count = 0;
 
 	if (!req->bio)
 		return -ENOENT;
 
-	bio = req->bio;
-	keyring_key = bio->bi_crypt_ctx.bc_keyring_key;
-	key_size = bio->bi_crypt_ctx.bc_key_size;
+	bio = bio_head = req->bio;
+	key_size = bio_bc_key_size(bio);
 	mode = last_mode = bio->bi_crypt_ctx.bc_flags & dev->mode;
 	flag = bio->bi_crypt_ctx.bc_flags;
 
@@ -426,10 +429,9 @@ static int hie_req_verify(struct request *req, struct hie_dev *dev,
 
 	__rq_for_each_bio(bio, req) {
 		if ((!bio_encrypted(bio)) ||
-			(keyring_key != bio->bi_crypt_ctx.bc_keyring_key) ||
-			(key_size != bio->bi_crypt_ctx.bc_key_size)) {
-			pr_info("%s: inconsistent context. bio: %p, key_size: %d, key: %p, req: %p.\n",
-				__func__, bio, key_size, keyring_key, req);
+			!hie_key_verify(bio_head, bio)) {
+			pr_info("%s: inconsistent keys. bio: %p, key_size: %d, req: %p.\n",
+				__func__, bio, key_size, req);
 			return -EINVAL;
 		}
 		mode = bio->bi_crypt_ctx.bc_flags & dev->mode;
@@ -450,10 +452,12 @@ static int hie_req_verify(struct request *req, struct hie_dev *dev,
 			pr_info("%s: %s: inconsistent flag %x, expected: %x, bio: %p, req: %p\n",
 				__func__, dev->name,
 				bio->bi_crypt_ctx.bc_flags, flag, bio, req);
+			hie_dump_req(req, __func__);
+			aee_kernel_warning("HIE", "inconsistent flags");
 			return -EINVAL;
 		}
 
-		if (iv != BC_INVALD_IV) {
+		if (iv != BC_INVALID_IV) {
 			struct bio_vec bv;
 			struct bvec_iter iter;
 			unsigned long bio_iv;
@@ -479,38 +483,16 @@ static int hie_req_verify(struct request *req, struct hie_dev *dev,
 	return 0;
 }
 
-static int hie_key_payload(struct bio_crypt_ctx *ctx, const char *data,
-	const unsigned char **key)
-{
-	int ret = -EINVAL;
-	unsigned long flags;
-	struct hie_fs *fs, *n;
-
-	spin_lock_irqsave(&hie_fs_list_lock, flags);
-	list_for_each_entry_safe(fs, n, &hie_fs_list, list) {
-		if (fs->key_payload) {
-			ret = fs->key_payload(ctx, data, key);
-			if (ret != -EINVAL || ret >= 0)
-				break;
-		}
-	}
-	spin_unlock_irqrestore(&hie_fs_list_lock, flags);
-
-	return ret;
-}
-
 static int hie_req_key_act(struct hie_dev *dev, struct request *req,
 	hie_act act, void *priv)
 {
-	struct key *keyring_key = NULL;
 	const unsigned char *key = NULL;
-	const struct user_key_payload *ukp;
 	struct bio *bio = req->bio;
 	unsigned int mode = 0;
 	int key_size = 0;
 	int ret;
 
-	if (!hie_is_ready())
+	if (!hie_is_capable(bio_bc_sb(bio)))
 		return -ENODEV;
 
 	if (!hie_request_crypted(req))
@@ -522,19 +504,13 @@ static int hie_req_key_act(struct hie_dev *dev, struct request *req,
 	if (hie_req_verify(req, dev, &mode))
 		return -EINVAL;
 
-	key_size = bio->bi_crypt_ctx.bc_key_size;
-	keyring_key = bio->bi_crypt_ctx.bc_keyring_key;
-try_lock_key:
-	ret = down_read_trylock(&keyring_key->sem);
-	if (!ret)
-		goto try_lock_key;
+	key_size = bio_bc_key_size(bio);
 
-	ukp = user_key_payload(keyring_key);
-	ret = hie_key_payload(&bio->bi_crypt_ctx, ukp->data, &key);
+	ret = hie_key_payload(&bio->bi_crypt_ctx, &key);
 
 	if (ret == -EINVAL) {
-		pr_info("HIE: %s: key payload was not recognized by fs: %p\n",
-			__func__, ukp->data);
+		pr_info("HIE: %s: key payload was not recognized\n",
+			__func__);
 		ret = -ENOKEY;
 	} else if (ret >= 0 && ret != key_size) {
 		pr_info("HIE: %s: key size mismatch, ctx: %d, payload: %d\n",
@@ -554,7 +530,7 @@ try_lock_key:
 #else
 	hie_dummy_crypt_set_key(req, 0xFFFFFFFF);
 #endif
-	if (bio->bi_rw & WRITE)
+	if (bio_data_dir(bio) == WRITE)
 		ret = hie_dummy_crypt_req("<req>", req, 0);
 #else
 	if (act)
@@ -564,17 +540,60 @@ try_lock_key:
 
 #ifdef CONFIG_HIE_DEBUG
 	if (key && hie_debug(HIE_DBG_KEY)) {
-		pr_debug("HIE: %s: master key\n", __func__);
-		print_hex_dump(KERN_ERR, "fs-key: ", DUMP_PREFIX_ADDRESS,
+		pr_info("HIE: %s: master key\n", __func__);
+		print_hex_dump(KERN_DEBUG, "fs-key: ", DUMP_PREFIX_ADDRESS,
 			16, 1, key, key_size, 0);
 	}
 #endif
 
 out:
-	if (keyring_key)
-		up_read(&keyring_key->sem);
+	return ret;
+}
+
+static int hie_key_payload(struct bio_crypt_ctx *ctx,
+	const unsigned char **key)
+{
+	int ret = -EINVAL;
+	unsigned long flags;
+	struct hie_fs *fs, *n;
+
+	spin_lock_irqsave(&hie_fs_list_lock, flags);
+	list_for_each_entry_safe(fs, n, &hie_fs_list, list) {
+		if (fs->key_payload) {
+			ret = fs->key_payload(ctx, key);
+			if (ret != -EINVAL || ret >= 0)
+				break;
+		}
+	}
+	spin_unlock_irqrestore(&hie_fs_list_lock, flags);
 
 	return ret;
+}
+
+bool hie_key_verify(struct bio *bio1, struct bio *bio2)
+{
+	const unsigned char *key1 = NULL;
+	const unsigned char *key2 = NULL;
+	int ret;
+
+	/* compare key size */
+	if (bio_bc_key_size(bio1) !=
+		bio_bc_key_size(bio2))
+		return false;
+
+	/* compare keys */
+	ret = hie_key_payload(&bio1->bi_crypt_ctx, &key1);
+	if (ret < 0)
+		return false;
+
+	ret = hie_key_payload(&bio2->bi_crypt_ctx, &key2);
+	if (ret < 0)
+		return false;
+
+	if (memcmp(key1, key2, bio_bc_key_size(bio1)))
+		return false;
+
+	return true;
 }
 
 struct hie_key_info {
@@ -601,7 +620,7 @@ int hie_decrypt(struct hie_dev *dev, struct request *req, void *priv)
 	ret = hie_req_key_act(dev, req, dev->decrypt, priv);
 #ifdef CONFIG_HIE_DEBUG
 	if (hie_debug(HIE_DBG_HIE))
-		pr_debug("HIE: %s: req: %p, ret=%d\n", __func__, req, ret);
+		pr_info("HIE: %s: req: %p, ret=%d\n", __func__, req, ret);
 #endif
 	return ret;
 }
@@ -614,7 +633,7 @@ int hie_encrypt(struct hie_dev *dev, struct request *req, void *priv)
 	ret = hie_req_key_act(dev, req, dev->encrypt, priv);
 #ifdef CONFIG_HIE_DEBUG
 	if (hie_debug(HIE_DBG_HIE))
-		pr_debug("HIE: %s: req: %p, ret=%d\n", __func__, req, ret);
+		pr_info("HIE: %s: req: %p, ret=%d\n", __func__, req, ret);
 #endif
 	return ret;
 }
@@ -626,7 +645,7 @@ EXPORT_SYMBOL(hie_encrypt);
  * @bio:    target bio
  * RETURNS:
  *   0, the inode has enabled encryption, and it's encryption info is
- *      successfuly attached to the bio.
+ *      successfully attached to the bio.
  *   -EINVAL, the inode has not enabled encryption, or there's no matching
  *            file system.
  */
@@ -656,7 +675,7 @@ EXPORT_SYMBOL(hie_set_bio_crypt_context);
  * @bio:    target sdio->bio
  * RETURNS:
  *   0, the inode has enabled encryption, and it's encryption info is
- *      successfuly attached to the bio.
+ *      successfully attached to the bio.
  *   -EINVAL, the inode has not enabled encryption, or there's no matching
  *            file system.
  */
@@ -673,7 +692,6 @@ int hie_set_dio_crypt_context(struct inode *inode, struct bio *bio,
 }
 EXPORT_SYMBOL(hie_set_dio_crypt_context);
 
-
 /**
  * hie_get_iv - get initialization vector(iv.) from the request.
  *     The iv. is the file logical block number translated from
@@ -689,7 +707,7 @@ u64 hie_get_iv(struct request *req)
 {
 	u64 ino;
 	u64 iv;
-	unsigned bz_bits;
+	unsigned int bz_bits;
 	struct bio *bio = req->bio;
 
 	if (!req->q)
@@ -701,10 +719,10 @@ u64 hie_get_iv(struct request *req)
 	if (!bio_bcf_test(bio, BC_IV_PAGE_IDX))
 		return 0;
 
-	ino = bio_bc_ino(bio);
+	ino = bio_bc_inode(bio);
 	iv = bio_bc_iv_get(bio);
 
-	WARN_ON(iv == BC_INVALD_IV);
+	WARN_ON(iv == BC_INVALID_IV);
 
 	bz_bits = blksize_bits(queue_physical_block_size(req->q));
 
@@ -725,202 +743,6 @@ u64 hie_get_iv(struct request *req)
 	return iv;
 }
 EXPORT_SYMBOL(hie_get_iv);
-
-int hie_kh_register(struct hie_dev *dev, unsigned int key_bits, unsigned int key_slot)
-{
-	int size;
-
-	if (dev->kh) {
-		pr_info("kh: already registered, dev 0x%p\n", dev);
-		return -1;
-	}
-
-	if (key_bits % (sizeof(unsigned int) * BITS_PER_LONG)) {
-		pr_info("kh: key_bits %u shall be multiple of %u\n",
-			key_bits, BITS_PER_LONG);
-	}
-
-	size = ((key_bits / BITS_PER_BYTE) / sizeof(unsigned long)) * key_slot;
-
-	pr_info("kh: key_bits=%u, key_slot=%u, size=%u bytes\n",
-		key_bits, key_slot, size);
-
-	dev->kh = kzalloc(size, GFP_KERNEL);
-
-	size = key_slot * sizeof(unsigned long);
-
-	dev->kh_last_access = kzalloc(size, GFP_KERNEL);
-
-	if (dev->kh && dev->kh_last_access) {
-		dev->kh_num_slot = key_slot;
-		dev->kh_unit_per_key = (key_bits / BITS_PER_BYTE) / sizeof(unsigned long);
-		dev->kh_active_slot = 0;
-		pr_info("kh: register ok, dev=0x%p, unit_per_key=%d\n",
-			dev, dev->kh_unit_per_key);
-		return 0;
-	}
-
-	pr_info("kh: register fail, dev=0x%p\n", dev);
-
-	return -1;
-}
-
-static unsigned int hie_kh_get_free_slot(struct hie_dev *dev)
-{
-	int i, min_slot;
-	unsigned long min_time = LONG_MAX;
-
-	if (dev->kh_active_slot < dev->kh_num_slot) {
-		dev->kh_active_slot++;
-#ifdef CONFIG_HIE_DEBUG
-		if (hie_debug(HIE_DBG_KH))
-			pr_info("kh: new, slot=%d\n", (dev->kh_active_slot - 1));
-#endif
-		return (dev->kh_active_slot - 1);
-	}
-
-	min_slot = dev->kh_active_slot;
-
-	for (i = 0; i < dev->kh_active_slot; i++) {
-		if (dev->kh_last_access[i] < min_time) {
-			min_time = dev->kh_last_access[i];
-			min_slot = i;
-		}
-	}
-
-#ifdef CONFIG_HIE_DEBUG
-	if (hie_debug(HIE_DBG_KH))
-		pr_info("kh: vic, slot=%d, min_time=%lu\n", min_slot, min_time);
-#endif
-
-	return min_slot;
-}
-
-int hie_kh_get_hint(struct hie_dev *dev, const char *key, int *need_update)
-{
-	int i, j, matched, matched_slot;
-	unsigned long *ptr_kh, *ptr_key;
-
-	if (!dev->kh || !need_update) {
-#ifdef CONFIG_HIE_DEBUG
-		if (hie_debug(HIE_DBG_KH))
-			pr_info("kh: get, err, key=0x%lx\n", *(unsigned long *)key);
-#endif
-		return -1;
-	}
-
-	/* round 1: simple match */
-
-	matched = 0;
-	matched_slot = 0;
-	ptr_kh = (unsigned long *)dev->kh;
-	ptr_key = (unsigned long *)key;
-
-	for (i = 0; i < dev->kh_active_slot; i++) {
-
-		if (*ptr_kh == *ptr_key) {
-			matched_slot = i;
-			matched++;
-		}
-
-		ptr_kh += dev->kh_unit_per_key;
-	}
-
-	if (matched == 1) {
-
-		/* fully match rest part to ensure 100% matched */
-
-		ptr_kh = (unsigned long *)dev->kh;
-		ptr_kh += (dev->kh_unit_per_key * matched_slot);
-
-		for (i = 0; i < dev->kh_unit_per_key - 1; i++) {
-
-			ptr_kh++;
-			ptr_key++;
-
-			if (*ptr_kh != *ptr_key) {
-
-				matched = 0;
-				break;
-			}
-		}
-
-		if (matched) {
-			*need_update = 0;
-			dev->kh_last_access[matched_slot] = jiffies;
-#ifdef CONFIG_HIE_DEBUG
-			if (hie_debug(HIE_DBG_KH))
-				pr_info("kh: get, 1, %d, key=0x%lx\n", matched_slot, *(unsigned long *)key);
-#endif
-			return matched_slot;
-		}
-	}
-
-	/* round 2: full match if simple match finds multiple targets */
-
-	if (matched) {
-
-		matched = 0;
-
-		for (i = 0; i < dev->kh_active_slot; i++) {
-
-			ptr_kh = (unsigned long *)dev->kh;
-			ptr_kh += (i * dev->kh_unit_per_key);
-			ptr_key = (unsigned long *)key;
-
-			for (j = 0; j < dev->kh_unit_per_key; j++) {
-				if (*ptr_kh++ != *ptr_key++)
-					break;
-			}
-
-			if (j == dev->kh_unit_per_key) {
-				*need_update = 0;
-				dev->kh_last_access[i] = jiffies;
-#ifdef CONFIG_HIE_DEBUG
-				if (hie_debug(HIE_DBG_KH))
-					pr_info("kh: get, 2, %d, key=0x%lx\n", i, *(unsigned long *)key);
-#endif
-				return i;
-			}
-		}
-	}
-
-	/* nothing matched, add new hint */
-
-	j = hie_kh_get_free_slot(dev);
-	ptr_kh = (unsigned long *)dev->kh;
-	ptr_kh += (j * dev->kh_unit_per_key);
-	ptr_key = (unsigned long *)key;
-
-	for (i = 0; i < dev->kh_unit_per_key; i++)
-		*ptr_kh++ = *ptr_key++;
-
-	dev->kh_last_access[j] = jiffies;
-
-	*need_update = 1;
-
-#ifdef CONFIG_HIE_DEBUG
-	if (hie_debug(HIE_DBG_KH))
-		pr_info("kh: get, n, %d, key=0x%lx\n", j, *(unsigned long *)key);
-#endif
-
-	return j;
-}
-
-int hie_kh_reset(struct hie_dev *dev)
-{
-	if (!dev->kh)
-		return -1;
-
-	dev->kh_active_slot = 0;
-
-#ifdef CONFIG_HIE_DEBUG
-	if (hie_debug(HIE_DBG_KH))
-		pr_info("kh: rst, dev=0x%p\n", dev);
-#endif
-
-	return 0;
-}
 
 #ifdef CONFIG_HIE_DEBUG
 static void *hie_seq_start(struct seq_file *seq, loff_t *pos)
@@ -952,7 +774,7 @@ static void hie_seq_stop(struct seq_file *seq, void *v)
 
 static struct {
 	const char *name;
-	unsigned flag;
+	unsigned int flag;
 } crypt_type[] = {
 	{"AES_128_XTS", BC_AES_128_XTS},
 	{"AES_192_XTS", BC_AES_192_XTS},
@@ -993,7 +815,7 @@ static int hie_seq_status_show(struct seq_file *seq, void *v)
 	else if (hie_is_dummy()) {
 		seq_puts(seq, "dummy-crpyt");
 #ifdef CONFIG_HIE_DUMMY_CRYPT_KEY_SWITCH
-		seq_puts(seq, " (key swtich)");
+		seq_puts(seq, " (key switch)");
 #endif
 #ifdef CONFIG_HIE_DUMMY_CRYPT_IV
 		seq_puts(seq, " (iv.)");

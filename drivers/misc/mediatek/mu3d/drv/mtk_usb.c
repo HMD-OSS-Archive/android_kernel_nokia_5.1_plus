@@ -23,7 +23,6 @@
 #include "mtk-phy-asic.h"
 /*#include <mach/mt_typedefs.h>*/
 #endif
-#include <linux/phy/mediatek/mtk_usb_phy.h>
 
 #ifdef CONFIG_PHY_MTK_SSUSB
 #include "mtk-ssusb-hal.h"
@@ -67,7 +66,7 @@ struct timespec connect_timestamp = { 0, 0 };
 
 void set_connect_timestamp(void)
 {
-	connect_timestamp = CURRENT_TIME;
+	connect_timestamp = current_kernel_time();
 	pr_debug("set timestamp = %llu\n", timespec_to_ns(&connect_timestamp));
 }
 
@@ -96,12 +95,72 @@ void connection_work(struct work_struct *data)
 	struct mt_usb_work *work =
 		container_of(data, struct mt_usb_work, dwork.work);
 
-	if (!is_usb_rdy())
-		os_printk(K_INFO, "%s, !is_usb_rdy\n", __func__);
+	/* delay 100ms if user space is not ready to set usb function */
+	if (!is_usb_rdy()) {
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
+		int delay = 50;
+
+		if (__ratelimit(&ratelimit))
+			os_printk(K_INFO, "%s, !is_usb_rdy, delay %d ms\n", __func__, delay);
+
+		/* to DISCONNECT stage to avoid stage transition while usb is ready */
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+		if (in_uart_mode) {
+			os_printk(K_INFO, "%s, Uart mode. directly return\n", __func__);
+			goto exit;
+		}
+#endif
+#ifndef CONFIG_FPGA_EARLY_PORTING
+		if (!mt_usb_is_device()) {
+			os_printk(K_INFO, "%s, Host mode. directly return\n", __func__);
+			goto exit;
+		}
+#endif
+
+		if (connection_work_dev_status != OFF) {
+			connection_work_dev_status = OFF;
+#ifndef CONFIG_USBIF_COMPLIANCE
+			clr_connect_timestamp();
+#endif
+
+			/*FIXME: we should use usb_gadget_disconnect() & usb_udc_stop().  like usb_udc_softconn_store().
+			 * But have no time to think how to handle. However i think it is the correct way.
+			 */
+			musb_stop(musb);
+
+			if (musb->usb_wakelock.active)
+				__pm_relax(&musb->usb_wakelock);
+
+#ifdef VCORE_OPS_DEV
+			vcore_op(0);
+#endif
+			os_printk(K_INFO, "%s ----Disconnect----\n", __func__);
+		}
+
+		queue_delayed_work(musb->st_wq, &work->dwork,
+				msecs_to_jiffies(delay));
+		return;
+	}
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!usb_phy_check_in_uart_mode()) {
 #endif
+
+#ifndef CONFIG_FPGA_EARLY_PORTING
+		if (!mt_usb_is_device()) {
+			connection_work_dev_status = OFF;
+#ifdef CONFIG_PHY_MTK_SSUSB
+			if (musb->is_clk_on)
+				phy_power_off(musb->mtk_phy);
+#else
+			usb_fake_powerdown(musb->is_clk_on);
+#endif
+			musb->is_clk_on = 0;
+			os_printk(K_INFO, "%s, Host mode. directly return\n", __func__);
+			goto exit;
+		}
+#endif
+
 		is_usb_cable = __usb_cable_connected(work->ops);
 
 		os_printk(K_INFO, "%s musb %s, cable %s\n", __func__,
@@ -116,8 +175,8 @@ void connection_work(struct work_struct *data)
 			set_connect_timestamp();
 #endif
 
-			if (!wake_lock_active(&musb->usb_wakelock))
-				wake_lock(&musb->usb_wakelock);
+			if (!musb->usb_wakelock.active)
+				__pm_stay_awake(&musb->usb_wakelock);
 
 			/* FIXME: Should use usb_udc_start() & usb_gadget_connect(), like usb_udc_softconn_store().
 			 * But have no time to think how to handle. However i think it is the correct way.
@@ -140,8 +199,8 @@ void connection_work(struct work_struct *data)
 			 */
 			musb_stop(musb);
 
-			if (wake_lock_active(&musb->usb_wakelock))
-				wake_unlock(&musb->usb_wakelock);
+			if (musb->usb_wakelock.active)
+				__pm_relax(&musb->usb_wakelock);
 
 #ifdef VCORE_OPS_DEV
 			vcore_op(0);
@@ -153,10 +212,10 @@ void connection_work(struct work_struct *data)
 			 */
 			/* if( (is_usb_cable == true) && !wake_lock_active(&musb->usb_wakelock)) { */
 			/* os_printk(K_INFO, "%s Boot wakelock\n", __func__); */
-			/* wake_lock(&musb->usb_wakelock); */
+			/* __pm_stay_awake(&musb->usb_wakelock); */
 			/* } else if( (is_usb_cable == false) && wake_lock_active(&musb->usb_wakelock)) { */
 			/* os_printk(K_INFO, "%s Boot unwakelock\n", __func__); */
-			/* wake_unlock(&musb->usb_wakelock); */
+			/* __pm_relax(&musb->usb_wakelock); */
 			/* } */
 
 			os_printk(K_INFO, "%s ----directly return----\n", __func__);
@@ -172,6 +231,9 @@ void connection_work(struct work_struct *data)
 	}
 #endif
 
+#ifndef CONFIG_FPGA_EARLY_PORTING
+exit:
+#endif
 	/* free mt_usb_work */
 	kfree(work);
 }
@@ -223,51 +285,13 @@ void mt_usb_reconnect(void)
 	os_printk(K_INFO, "%s\n", __func__);
 	issue_connection_work(CONNECTION_OPS_CHECK);
 }
-
-static void power_down_work(struct work_struct *data)
-{
-	struct mt_usb_work *work =
-		container_of(data, struct mt_usb_work, dwork.work);
-
-	os_printk(K_INFO, "force_usb_off\n");
-	musb_power_down(_mu3d_musb);
-	/* free mt_usb_work */
-	kfree(work);
-}
-
-void mt_usb_dev_off(void)
-{
-	struct mt_usb_work *work;
-
-	if (!_mu3d_musb) {
-		os_printk(K_INFO, "_mu3d_musb = NULL\n");
-		return;
-	}
-
-	work = kzalloc(sizeof(struct mt_usb_work), GFP_ATOMIC);
-	if (!work)
-		return;
-
-	INIT_DELAYED_WORK(&work->dwork, power_down_work);
-	/* force usb off*/
-	queue_delayed_work(_mu3d_musb->st_wq, &work->dwork, 0);
-}
-
-struct workqueue_struct *mt_usb_get_workqueue(void)
-{
-	if (_mu3d_musb)
-		return _mu3d_musb->st_wq;
-	else
-		return NULL;
-}
-
 /* build time force on */
 #if defined(CONFIG_FPGA_EARLY_PORTING)
 #define BYPASS_PMIC_LINKAGE
 #endif
 
 /* to avoid build error due to PMIC module not ready */
-#ifndef CONFIG_MTK_SMART_BATTERY
+#ifndef CONFIG_MTK_CHARGER
 #define BYPASS_PMIC_LINKAGE
 #endif
 
@@ -382,23 +406,23 @@ static void do_mu3d_test_connect_work(struct work_struct *work)
 }
 void mt_usb_connect_test(int start)
 {
-	static struct wake_lock device_test_wakelock;
+	static struct wakeup_source device_test_wakelock;
 	static int wake_lock_inited;
 
 	if (!wake_lock_inited) {
 		os_printk(K_WARNIN, "%s wake_lock_init\n", __func__);
-		wake_lock_init(&device_test_wakelock, WAKE_LOCK_SUSPEND, "device.test.lock");
+		wakeup_source_init(&device_test_wakelock, "device.test.lock");
 		wake_lock_inited = 1;
 	}
 
 	if (start) {
-		wake_lock(&device_test_wakelock);
+		__pm_stay_awake(&device_test_wakelock);
 		mu3d_test_connect = 1;
 		INIT_DELAYED_WORK(&mu3d_test_connect_work, do_mu3d_test_connect_work);
 		schedule_delayed_work(&mu3d_test_connect_work, 0);
 	} else {
 		mu3d_test_connect = 0;
-		wake_unlock(&device_test_wakelock);
+		__pm_relax(&device_test_wakelock);
 	}
 }
 
@@ -429,16 +453,16 @@ static bool __usb_cable_connected(int ops)
 		if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
 			connected = true;
 
+		/* connected according to CONNECTION_OPS */
+		if (ops != CONNECTION_OPS_CHECK)
+			connected = CONNECTION_OPS_CONN ? true : false;
+
 		/* VBUS CHECK to avoid type miss-judge */
 		vbus_exist = mu3d_hal_is_vbus_exist();
 		os_printk(K_INFO, "%s vbus_exist=%d type=%d ops=%d\n",
 				__func__, vbus_exist, chg_type, ops);
 		if (!vbus_exist)
 			connected = false;
-
-		/* connected according to CONNECTION_OPS */
-		if (ops != CONNECTION_OPS_CHECK)
-			connected = (ops == CONNECTION_OPS_CONN ? true : false);
 	}
 
 	/* CMODE CHECK */
@@ -468,7 +492,7 @@ void musb_sync_with_bat(struct musb *musb, int usb_state)
 	os_printk(K_DEBUG, "musb_sync_with_bat\n");
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#if defined(CONFIG_MTK_SMART_BATTERY)
+#if defined(CONFIG_MTK_CHARGER)
 	BATTERY_SetUSBState(usb_state);
 	wake_up_bat();
 #endif

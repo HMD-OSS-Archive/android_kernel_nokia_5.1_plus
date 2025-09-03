@@ -21,29 +21,36 @@
 #include <helio-dvfsrc-opp.h>
 #include <mtk_spm_vcore_dvfs.h>
 #include <mt-plat/mtk_devinfo.h>
+
+#if defined(CONFIG_MTK_DRAMC)
 #include <mtk_dramc.h>
+#endif
+
+__weak int __spm_get_dram_type(void) { return 0; }
 
 #define VCORE_OPP_EFUSE_NUM     (2)
 
 __weak int spm_vcorefs_pwarp_cmd(void) { return 0; }
-__weak int get_ddr_type(void) { return TYPE_LPDDR4X; }
 
 /* SOC v1 Voltage (10uv)*/
-static unsigned int vcore_opp_L4_2CH[VCORE_DVFS_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
+static unsigned int
+vcore_opp_L4_2CH[VCORE_DVFS_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
 	{ 800000, 800000 },
 	{ 775000, 750000 },
 	{ 775000, 750000 },
 	{ 775000, 750000 },
 };
 
-static unsigned int vcore_opp_L4_2CH_CASE2[VCORE_DVFS_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
+static unsigned int
+vcore_opp_L4_2CH_CASE2[VCORE_DVFS_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
 	{ 800000, 800000 },
 	{ 800000, 800000 },
 	{ 775000, 750000 },
 	{ 775000, 750000 },
 };
 
-static unsigned int vcore_opp_L3_1CH[VCORE_DVFS_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
+static unsigned int
+vcore_opp_L3_1CH[VCORE_DVFS_OPP_NUM][VCORE_OPP_EFUSE_NUM] = {
 	{ 800000, 800000 },
 	{ 800000, 800000 },
 	{ 775000, 750000 },
@@ -132,7 +139,7 @@ unsigned int update_vcore_opp_uv(unsigned int opp, unsigned int vcore_uv)
 static int get_soc_efuse(void)
 {
 	pr_info("[VcoreFS]efuse=0x%x soc_efuse=0x%x\n",
-		get_devinfo_with_index(65), ((get_devinfo_with_index(65) >> 12) & 0x3));
+	get_devinfo_with_index(65), ((get_devinfo_with_index(65) >> 12) & 0x3));
 	return ((get_devinfo_with_index(65) >> 12) & 0x3);
 }
 
@@ -142,8 +149,9 @@ static void build_vcore_opp_table(unsigned int ddr_type, unsigned int soc_efuse)
 
 	if (soc_efuse > 1) {
 		pr_info("WRONG VCORE EFUSE(%d)\n", soc_efuse);
+		/* set to default table */
 		for (i = 0; i < VCORE_DVFS_OPP_NUM; i++)
-			vcore_opp_table[i] = *(vcore_opp[i]); /* set to default table */
+			vcore_opp_table[i] = *(vcore_opp[i]);
 		return;
 	}
 
@@ -161,7 +169,8 @@ static void build_vcore_opp_table(unsigned int ddr_type, unsigned int soc_efuse)
 		vcore_dvfs_to_ddr_opp[1] = DDR_OPP_0;
 		vcore_dvfs_to_ddr_opp[2] = DDR_OPP_1;
 		vcore_dvfs_to_ddr_opp[3] = DDR_OPP_2;
-	} else if (ddr_type == SPMFW_LP4X_2CH_3733) {
+	} else if (ddr_type == SPMFW_LP4X_2CH_3733 ||
+		   ddr_type == SPMFW_LP4_2CH_2400) {
 		vcore_opp = &vcore_opp_L4_2CH_CASE2[0];
 		vcore_opp_efuse_idx[0] = 0; /* 0.8V, no corner tightening*/
 		vcore_opp_efuse_idx[1] = 0; /* 0.8V, no corner tightening*/
@@ -197,36 +206,13 @@ static void build_vcore_opp_table(unsigned int ddr_type, unsigned int soc_efuse)
 	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++)
 		vcore_opp_table[i] = *(vcore_opp[i] + vcore_opp_efuse_idx[i]);
 
-	/* vcore setting for QEA project */
-#if defined(CONFIG_ARM64) && \
-	defined(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES)
-
-	pr_info("[VcoreFS]flavor name: %s\n",
-		CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
-
-	i = sizeof(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
-	if ((i > 19) &&
-	    strncmp(&CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES[i - 19],
-		"k71v1_64_bsp_vcore", 18) == 0) {
-		pr_info("[VcoreFS]: QEA flavor !!!\n");
-		if (ddr_type == SPMFW_LP4X_2CH_3200) {
-			vcore_opp_table[0] = 756250;
-			vcore_opp_table[1] = 687500;
-			vcore_opp_table[2] = 687500;
-			vcore_opp_table[3] = 687500;
-		} else {
-			vcore_opp_table[0] = 756250;
-			vcore_opp_table[1] = 756250;
-			vcore_opp_table[2] = 687500;
-			vcore_opp_table[3] = 687500;
-		}
-	}
-#endif
 	for (i = VCORE_DVFS_OPP_NUM - 2; i >= 0; i--)
-		vcore_opp_table[i] = max(vcore_opp_table[i], vcore_opp_table[i + 1]);
+		vcore_opp_table[i] =
+			max(vcore_opp_table[i], vcore_opp_table[i + 1]);
 
 	pr_info("[VcoreFS]table(d=%d, ef=%d): %d, %d, %d, %d\n",
-		ddr_type, soc_efuse, vcore_opp_table[0], vcore_opp_table[1], vcore_opp_table[2], vcore_opp_table[3]);
+		ddr_type, soc_efuse, vcore_opp_table[0], vcore_opp_table[1],
+		vcore_opp_table[2], vcore_opp_table[3]);
 	pr_info("[VcoreFS]vcore opp tbl: %d, %d, %d, %d\n",
 		vcore_dvfs_to_vcore_opp[0], vcore_dvfs_to_vcore_opp[1],
 		vcore_dvfs_to_vcore_opp[2], vcore_dvfs_to_vcore_opp[3]);
@@ -340,7 +326,7 @@ static int vcore_opp_procfs_init(void)
 
 	for (i = 0; i < ARRAY_SIZE(det_entries_vcore); i++) {
 		if (!proc_create(det_entries_vcore[i].name,
-					S_IRUGO | S_IWUSR | S_IWGRP, dir,
+					0644, dir,
 					det_entries_vcore[i].fops)) {
 			pr_info("%s: Failed to create /proc/vcore_opp/%s\n",
 					__func__, det_entries_vcore[i].name);

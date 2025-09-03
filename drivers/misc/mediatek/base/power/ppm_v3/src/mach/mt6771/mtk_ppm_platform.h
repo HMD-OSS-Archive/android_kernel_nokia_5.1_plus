@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-#include "mach/mtk_ppm_api.h"
+#include "mtk_ppm_api.h"
 #include "mach/mtk_cpufreq_api.h"
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
@@ -46,10 +46,12 @@ extern "C" {
 
 
 #define PPM_COBRA_TBL_SRAM_ADDR	(0x0011B800)
-#define PPM_COBRA_TBL_SRAM_SIZE	(sizeof(struct ppm_cobra_basic_pwr_data)*TOTAL_CORE_NUM*COBRA_OPP_NUM)
+#define PPM_COBRA_TBL_SRAM_SIZE	 \
+	(sizeof(struct ppm_cobra_basic_pwr_data)*TOTAL_CORE_NUM*COBRA_OPP_NUM)
 #ifdef PPM_SSPM_SUPPORT
 /* online core to SSPM */
-#define PPM_ONLINE_CORE_SRAM_ADDR	(PPM_COBRA_TBL_SRAM_ADDR + PPM_COBRA_TBL_SRAM_SIZE)
+#define PPM_ONLINE_CORE_SRAM_ADDR \
+		(PPM_COBRA_TBL_SRAM_ADDR + PPM_COBRA_TBL_SRAM_SIZE)
 #endif
 
 /* other policy settings */
@@ -91,7 +93,8 @@ struct ppm_cobra_delta_data {
 };
 
 struct ppm_cobra_data {
-	struct ppm_cobra_basic_pwr_data basic_pwr_tbl[TOTAL_CORE_NUM][DVFS_OPP_NUM];
+	struct ppm_cobra_basic_pwr_data
+		basic_pwr_tbl[TOTAL_CORE_NUM][DVFS_OPP_NUM];
 };
 
 struct ppm_cobra_lookup {
@@ -112,8 +115,9 @@ extern int cobra_init_done;
 /*==============================================================*/
 /* APIs								*/
 /*==============================================================*/
-extern unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
-					unsigned int cluster_num, unsigned int percentage);
+extern unsigned int ppm_calc_total_power(
+			struct ppm_cluster_status *cluster_status,
+			unsigned int cluster_num, unsigned int percentage);
 extern int ppm_platform_init(void);
 
 /* COBRA algo */
@@ -122,9 +126,11 @@ extern void ppm_cobra_update_freq_limit(unsigned int cluster, int limit);
 extern void ppm_cobra_update_limit(void *user_req);
 extern void ppm_cobra_init(void);
 extern void ppm_cobra_dump_tbl(struct seq_file *m);
-extern void ppm_cobra_lookup_get_result(struct seq_file *m, enum ppm_cobra_lookup_type type);
+extern void ppm_cobra_lookup_get_result
+			(struct seq_file *m, enum ppm_cobra_lookup_type type);
 
-unsigned int __attribute__((weak)) mt_cpufreq_get_cur_phy_freq_no_lock(unsigned int id)
+unsigned int __attribute__((weak)) mt_cpufreq_get_cur_phy_freq_no_lock
+					(unsigned int id)
 {
 	return 0;
 }

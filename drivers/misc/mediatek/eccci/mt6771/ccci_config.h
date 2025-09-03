@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2016 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 #ifndef __ECCCI_INTERNAL_OPTION__
 #define __ECCCI_INTERNAL_OPTION__
@@ -26,15 +26,20 @@
 #define SKB_POOL_SIZE_4K    (256)
 #define SKB_POOL_SIZE_1_5K  (256)
 #define SKB_POOL_SIZE_16    (64)
-#define BM_POOL_SIZE        (SKB_POOL_SIZE_4K+SKB_POOL_SIZE_1_5K+SKB_POOL_SIZE_16)
-#define RELOAD_TH           (3)	/*reload pool if pool size dropped below 1/RELOAD_TH */
+#define BM_POOL_SIZE  \
+(SKB_POOL_SIZE_4K+SKB_POOL_SIZE_1_5K+SKB_POOL_SIZE_16)
+/*reload pool if pool size dropped below 1/RELOAD_TH */
+#define RELOAD_TH           (3)
 
 /* EE dump cunstomization */
 #define CCCI_EE_SIZE_CCIF_SRAM (72) /* SRAM size we dump into smem */
-#define CCCI_EE_OFFSET_CCIF_SRAM (1024 - CCCI_EE_SIZE_CCIF_SRAM) /* CCIF dump offset in MD SS debug region */
-#define CCCI_EE_OFFSET_EPON_MD1 (0x1C24) /* flag to tell WDT is triggered by EPON or not, in MD SS debug region */
+/* CCIF dump offset in MD SS debug region */
+#define CCCI_EE_OFFSET_CCIF_SRAM (1024 - CCCI_EE_SIZE_CCIF_SRAM)
+/* flag to tell WDT is triggered by EPON or not, in MD SS debug region */
+#define CCCI_EE_OFFSET_EPON_MD1 (0x1C24)
 #define CCCI_EE_OFFSET_EPON_MD3 (0x464)
-#define CCCI_EE_OFFSET_EPOF_MD1 (7*1024+0x234) /* flag to enable MD power off checking or not, in MD SS debug region */
+/* flag to enable MD power off checking or not, in MD SS debug region */
+#define CCCI_EE_OFFSET_EPOF_MD1 (7*1024+0x234)
 #define CCCI_EE_SMEM_TOTAL_SIZE (64*1024)
 #define CCCI_SMEM_SIZE_RUNTIME_AP (0x800) /* AP runtime data size */
 #define CCCI_SMEM_SIZE_RUNTIME_MD (0x800) /* MD runtime data size */
@@ -48,6 +53,7 @@
 #define FEATURE_SCP_CCCI_SUPPORT
 /*#define ENABLE_EMI_PROTECTION*/
 #define ENABLE_32K_CLK_LESS
+#define FEATURE_CLK_BUF
 /*#define CCCI_LOG_LEVEL     1*/
 
 #endif

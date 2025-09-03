@@ -1,14 +1,15 @@
 menu "Storage Hardware Inline Encryption"
 
 config HIE
-	bool  "Hardware-Inline-Encryption (HIE)"
+	bool  "enable Hardware-Inline-Encryption"
 	default n
 	select KEYS
 	help
 	  This driver provides an interface for storage driver to
 	  retrieve file-oriented encrypt keys from file system.
 	  The storage driver must register hardware encryption
-	  capability to HIE.
+	  capability to HIE(Hardware-Inline-Encryption).
+	  It is must to Hardware file-oriented encrypt.
 
 config HIE_DEBUG
 	bool  "HIE debug"
@@ -57,6 +58,7 @@ config HIE_DUMMY_CRYPT_KEY_SWITCH
 	  XOR the buffer with real keys. Used to verify the
 	  correctness of key passing from the file system to
 	  the block layer, and finally to the HIE driver.
+	  It is must to dummy test
 
 config HIE_DUMMY_CRYPT_IV
 	bool "HIE dummy crypt with iv"

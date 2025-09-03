@@ -230,6 +230,40 @@ static struct dram_pwr_conf dram_def_pwr_conf[] = {
 /***************************************************************************
  *  API
  ***************************************************************************/
+char *swpm_power_rail_to_string(enum power_rail p)
+{
+	char *s;
+
+	switch (p) {
+	case VPROC12:
+		s = "VPROC12";
+		break;
+	case VPROC11:
+		s = "VPROC11";
+		break;
+	case VGPU:
+		s = "VGPU";
+		break;
+	case VCORE:
+		s = "VCORE";
+		break;
+	case VDRAM1:
+		s = "VDRAM1";
+		break;
+	case VIO18_DDR:
+		s = "VIO18_DDR";
+		break;
+	case VIO18_DRAM:
+		s = "VIO18_DRAM";
+		break;
+	default:
+		s = "None";
+		break;
+	}
+
+	return s;
+}
+
 int swpm_platform_init(void)
 {
 	int ret = 0;
@@ -250,6 +284,7 @@ int swpm_platform_init(void)
 void swpm_send_init_ipi(unsigned int addr, unsigned int size,
 	unsigned int ch_num)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	struct qos_data qos_d;
 
 	qos_d.cmd = QOS_IPI_SWPM_INIT;
@@ -257,5 +292,18 @@ void swpm_send_init_ipi(unsigned int addr, unsigned int size,
 	qos_d.u.swpm_init.dram_size = size;
 	qos_d.u.swpm_init.dram_ch_num = ch_num;
 	qos_ipi_to_sspm_command(&qos_d, 4);
+#endif
+}
+
+void swpm_set_enable(unsigned int type, unsigned int enable)
+{
+}
+
+void swpm_set_update_cnt(unsigned int type, unsigned int cnt)
+{
+}
+
+void swpm_update_lkg_table(void)
+{
 }
 

@@ -35,13 +35,10 @@
 #include "private/tmem_error.h"
 #include "private/tmem_utils.h"
 #include "private/tmem_priv.h"
-#include "private/ut_entry.h"
-#if defined(CONFIG_MTK_SECURE_MEM_SUPPORT)
-#include "private/secmem_ext.h"
-#endif
+#include "private/tmem_entry.h"
 
-#include "private/ut_tests.h"
 #include "private/ut_cmd.h"
+#include "tee_impl/tee_invoke.h"
 
 static int tmem_open(struct inode *inode, struct file *file)
 {
@@ -103,8 +100,16 @@ static unsigned int get_ion_heap_mask_id(enum TRUSTED_MEM_TYPE mem_type)
 		return ION_HEAP_MULTIMEDIA_PROT_MASK;
 	case TRUSTED_MEM_WFD:
 		return ION_HEAP_MULTIMEDIA_WFD_MASK;
-	case TRUSTED_MEM_SVP_VIRT_2D_FR:
+	case TRUSTED_MEM_2D_FR:
 		return ION_HEAP_MULTIMEDIA_2D_FR_MASK;
+	case TRUSTED_MEM_HAPP:
+		return ION_HEAP_MULTIMEDIA_HAPP_MASK;
+	case TRUSTED_MEM_HAPP_EXTRA:
+		return ION_HEAP_MULTIMEDIA_HAPP_EXTRA_MASK;
+	case TRUSTED_MEM_SDSP:
+		return ION_HEAP_MULTIMEDIA_SDSP_MASK;
+	case TRUSTED_MEM_SDSP_SHARED:
+		return ION_HEAP_MULTIMEDIA_SDSP_SHARED_MASK;
 	default:
 		return ION_HEAP_MULTIMEDIA_SEC_MASK;
 	}
@@ -341,15 +346,13 @@ static void trusted_mem_create_proc_entry(void)
 	proc_create("tmem0", 0664, NULL, &tmem_fops);
 }
 
-#ifdef TCORE_UT_FWK_SUPPORT
+#ifdef TCORE_UT_TESTS_SUPPORT
 #ifdef CONFIG_MTK_ENG_BUILD
-#define UT_MULTITHREAD_TEST_DEFAULT_WAIT_COMPLETION_TIMEOUT_MS (300000)
-#define UT_SATURATION_STRESS_ROUNDS (1)
+#define UT_MULTITHREAD_TEST_DEFAULT_WAIT_COMPLETION_TIMEOUT_MS (900000)
 #define UT_SATURATION_STRESS_PMEM_MIN_CHUNK_SIZE (SIZE_8M)
 #else
 #define UT_MULTITHREAD_TEST_DEFAULT_WAIT_COMPLETION_TIMEOUT_MS (5000)
-#define UT_SATURATION_STRESS_ROUNDS (5)
-#define UT_SATURATION_STRESS_PMEM_MIN_CHUNK_SIZE (SIZE_4K)
+#define UT_SATURATION_STRESS_PMEM_MIN_CHUNK_SIZE (SIZE_2M)
 #endif
 
 static unsigned int ut_multithread_wait_completion_timeout_ms =
@@ -363,16 +366,6 @@ module_param_named(wait_comp_ms, ut_multithread_wait_completion_timeout_ms,
 		   uint, 0644);
 MODULE_PARM_DESC(ut_multithread_wait_completion_timeout_ms,
 		 "set wait completion timeout in ms for multithread UT tests");
-
-static unsigned int ut_saturation_stress_rounds = UT_SATURATION_STRESS_ROUNDS;
-int get_saturation_stress_test_rounds(void)
-{
-	return ut_saturation_stress_rounds;
-}
-
-module_param_named(stress_rounds, ut_saturation_stress_rounds, uint, 0644);
-MODULE_PARM_DESC(ut_saturation_stress_rounds,
-		 "set rounds in ms for saturation stress tests");
 
 static unsigned int ut_saturation_stress_pmem_min_chunk_size =
 	UT_SATURATION_STRESS_PMEM_MIN_CHUNK_SIZE;

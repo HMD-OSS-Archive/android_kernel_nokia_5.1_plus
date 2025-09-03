@@ -16,11 +16,8 @@
 #include <linux/io.h>
 //20180331add fver patches for AB partition BEGIN
 #include <asm/setup.h>
-//FIH,Michael 20180331add fver patches for AB partition END
-#include "../misc/mediatek/pmic/mt6370/inc/mt6370_pmu_bled.h"
-
 //20180331add fver patches for AB partition END
-
+#include "../misc/mediatek/pmic/mt6370/inc/mt6370_pmu_bled.h"
 #define FALSE 	0
 #define TRUE 	1
 
@@ -45,7 +42,7 @@ extern unsigned short fih_get_memory_type(void);
 extern unsigned short fih_get_memory_vendor(void); 
 extern unsigned long long fih_get_emmc_size(void);
 extern unsigned long long fih_get_emmc_usersize(void);
-extern unsigned int fih_get_ramtest_result(void); //sunjie +
+extern unsigned int fih_get_ramtest_result(void); //sun +
 extern unsigned short fih_get_simslot(void);
 extern uint32_t mt6370_max_bled_brightness_get(void);
 extern int mt6370_max_bled_brightness_set(uint32_t fs_curr);
@@ -91,11 +88,11 @@ static int sim_card_slot = 2;
 
 #define FIH_PROC_DIR   "AllHWList"
 #define FIH_PROC_PATH  "AllHWList/draminfo"
-#define FIH_PROC_TESTRESULT_PATH  "dramtest_result" //"AllHWList/dramtest_result"//HCLai add for memory test in RUNIN
+#define FIH_PROC_TESTRESULT_PATH  "dramtest_result" //"AllHWList/dramtest_result"// add for memory test in RUNIN
 #define FIH_PROC_SIZE  32
 
 static char fih_proc_data[FIH_PROC_SIZE] = "";
-static char fih_proc_test_result[FIH_PROC_SIZE] = {0};//HCLai add for memory test in RUNIN
+static char fih_proc_test_result[FIH_PROC_SIZE] = {0};// add for memory test in RUNIN
 
 #define FIH_MEM_ST_HEAD  0x6400000  /* HFME */
 #define FIH_MEM_ST_TAIL  0x1400000  /* EMFT */
@@ -131,7 +128,7 @@ static void fih_dram_setup_MEM(void)
 		dram.mfr_id = 0;
 		dram.ddr_type = 0;
 		dram.size_mb = 0;
-		dram.test_result = 0;//HCLai add for memory test in RUNIN
+		dram.test_result = 0;// add for memory test in RUNIN
 		dram.tail = FIH_MEM_ST_TAIL;
 	}
 	else
@@ -148,7 +145,7 @@ static void fih_dram_setup_MEM(void)
 		dram.mfr_id = 0;
 		dram.ddr_type = 0;
 		dram.size_mb = 0;
-		dram.test_result = 0;//HCLai add for memory test in RUNIN
+		dram.test_result = 0;// add for memory test in RUNIN
 		dram.tail = FIH_MEM_ST_TAIL;
 	}
 
@@ -177,7 +174,7 @@ static void fih_dram_setup_MEM(void)
 	printk("BBox::UPD;101::%s\n", buf);
 	// add for memory test in RUNIN END
 }
-//sunjie + for runin
+//sun + for runin
 
 //static int draminfo_test_result_wtite(struct file *flip,const char __user *buf,size_t count,loff_t *f_pos)
 static ssize_t draminfo_test_result_wtite(struct file *flip,const char __user *buf,size_t count,loff_t *f_pos)
@@ -215,32 +212,32 @@ static int __init  slot_suffix_param(char *line)
         return 1;
 }
 __setup("androidboot.slot_suffix=", slot_suffix_param);
-//20180331add fver patches for AB partition END
+//20180331 add fver patches for AB partition END
 
 /**************************************************************************/
 static int fver_show(struct seq_file *s, void *unused)
 {
 	struct file *fver_filp = NULL;
-//20180331add fver patches for AB partition BEGIN
+//20180331 add fver patches for AB partition BEGIN
 	char str_fver[128];
-//20180331add fver patches for AB partition END
+//20180331 add fver patches for AB partition END
 	mm_segment_t oldfs;
 	loff_t pos = 0;
 
-//20180331add fver patches for AB partition BEGIN
+//20180331 add fver patches for AB partition BEGIN
 	memset(str_fver, 0, 128);
 	strcpy(str_fver, fver_BLOCK);
 	strcat(str_fver, slot_suffix);
-//20180331add fver patches for AB partition END
+//20180331 add fver patches for AB partition END
 
 	if(!fver_open_times)
 	{
 		oldfs = get_fs();
 		set_fs(KERNEL_DS);
-//20180331add fver patches for AB partition BEGIN
+//20180331 add fver patches for AB partition BEGIN
 		//fver_filp = filp_open(fver_BLOCK, O_RDONLY, 0);
 		fver_filp = filp_open(str_fver, O_RDONLY, 0);
-//20180331add fver patches for AB partition END
+//20180331 add fver patches for AB partition END
 
 		if(!IS_ERR(fver_filp))
 		{
@@ -253,12 +250,12 @@ static int fver_show(struct seq_file *s, void *unused)
 		}
 		else
 		{
-//20180331add fver patches for AB partition BEGIN
+//20180331 add fver patches for AB partition BEGIN
 			//printk("[dw]open %s fail\n", fver_BLOCK);
 			printk("[dw]open %s fail\n", str_fver);
 	                set_fs(oldfs);
 			return 0;
-//20180331add fver patches for AB partition END
+//20180331 add fver patches for AB partition END
 		}
 
 	}
@@ -1446,11 +1443,107 @@ static int wifi_show(struct seq_file *s, void *unused)
 	return 0;
 }
 
+int atoh(char *hex_string)
+{
+    int ret=0;
+
+    if (!hex_string)
+        return ret;
+    
+    switch (hex_string[0]) {
+        //0~9
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            ret = ret + (hex_string[0]-48) * 16;
+            break;
+            
+        //A~F
+        case 'A':
+        case 'B':
+        case 'C':
+        case 'D':
+        case 'E':
+        case 'F':
+            ret = ret + (hex_string[0]-55) * 16;
+            break;
+            
+        //a~f
+        case 'a':
+        case 'b':
+        case 'c':
+        case 'd':
+        case 'e':
+        case 'f': 
+            ret = ret + (hex_string[0]-87) * 16;
+            break;
+
+        default: 
+            break;
+    }
+
+    switch (hex_string[1]) {
+        //0~9
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            ret = ret + (hex_string[1]-48);
+            break;
+            
+        //A~F
+        case 'A':
+        case 'B':
+        case 'C':
+        case 'D':
+        case 'E':
+        case 'F':
+            ret = ret + (hex_string[1]-55);
+            break;
+            
+        //a~f
+        case 'a':
+        case 'b':
+        case 'c':
+        case 'd':
+        case 'e':
+        case 'f': 
+            ret = ret + (hex_string[1]-87);
+            break;
+
+        default:
+            break;
+    }
+
+    return ret;
+}
+
 static ssize_t wifi_write(struct file *flip, const char __user *buf, size_t count, loff_t *f_pos)
 {
 	char temp[25] = {'\0'};
-
-    ssize_t ret;
+	ssize_t ret;
+	struct file *wifimac_filp = NULL;
+	mm_segment_t oldfs;
+	loff_t pos = 0;
+	int offset = 4;
+	char wifi_mac[6] = {'\0'};
+	char token_temp[2]= {'\0'};
+	ssize_t ptr_wifi_mac = 0;
+	int i= 0 ;
+	int step = 2;
 
 	printk("[dw]wifi_write enter\n");
 
@@ -1459,12 +1552,60 @@ static ssize_t wifi_write(struct file *flip, const char __user *buf, size_t coun
 
 	printk("[dw]wifi_write = %s*\n", temp);
 
-	memset(str_wifimac, 0, sizeof(str_wifimac));
-	strcpy(str_wifimac, temp);
+	if (temp[2] == ':' )
+		step = 3;
+
+	for (i=0;i<6;i++) {
+		token_temp[0] = temp[i*step];
+		token_temp[1] = temp[i*step+1];
+		wifi_mac[i] = atoh(token_temp);
+		printk("[dw]token_temp = %s  wifi_mac[%d]=%d\n", token_temp, i, wifi_mac[i]);
+	}
+
+	printk("[dw]wifi_mac = %s\n", wifi_mac);
 
     ret=count;
 
-    return 0;
+	//write WIFI MAC address into nvram partition
+	if (1)
+	{
+		oldfs = get_fs();
+		set_fs(KERNEL_DS);
+		wifimac_filp = filp_open(wifimac_BLOCK, O_RDWR , 0);
+
+		if(!IS_ERR(wifimac_filp))
+		{
+			if (wifimac_filp->f_pos != offset) {
+				if (wifimac_filp->f_op->llseek) {
+					if (wifimac_filp->f_op->llseek(wifimac_filp, offset, 0) != offset) {
+						printk("[nvram_write] : failed to seek!!\n");
+						//break;
+					}
+				} else {
+					wifimac_filp->f_pos = offset;
+				}
+			}
+
+			pos = (loff_t)offset;
+
+			vfs_write(wifimac_filp, wifi_mac, sizeof(wifi_mac), &pos);
+			filp_close(wifimac_filp, NULL);
+			wifimac_open_times++;
+		}
+		else
+		{
+			printk("[dw]write %s fail\n", wifimac_BLOCK);
+		}
+
+		set_fs(oldfs);
+	}
+	else
+	{
+		//Nothing to do.
+	}
+
+
+	return ret;
 }
 
 static int bt_mac_show(struct seq_file *s, void *unused)
@@ -1938,7 +2079,7 @@ static const struct file_operations lcm_info_fops = {
         .release     = single_release,
 };
 
-// add audio [
+//  add audio [
 static const struct file_operations AUDIO_para_info_fops = {
         .open        = audio_info_open,
 		.write		 = audio_info_write,
@@ -1948,12 +2089,12 @@ static const struct file_operations AUDIO_para_info_fops = {
 };
 // add audio ]
 
-// + for RUNIN
+//sun + for RUNIN
 static struct file_operations draminfo_test_result_ops = {
 	.owner   = THIS_MODULE,
 	.open    = draminfo_test_result_open,	
 	.read    = seq_read,
-	.write		 = draminfo_test_result_wtite,  /*sunjie +*/
+	.write		 = draminfo_test_result_wtite,  /*sun +*/
 	.llseek  = seq_lseek,
 	.release = single_release
 };
@@ -2376,7 +2517,7 @@ static int __init proc_info_module_init(void)
 		printk("[dw]creat proc %s fail\n", HWMODEL_PROC);
 
 	fih_dram_setup_MEM();
-	entry = proc_create(FIH_PROC_TESTRESULT_PATH, 0777, entry_C, &draminfo_test_result_ops); //sunjie + for runin
+	entry = proc_create(FIH_PROC_TESTRESULT_PATH, 0777, entry_C, &draminfo_test_result_ops); //sun + for runin
 	if(entry == NULL)
 		printk("creat AllHWList/dramtest_result proc %s fail\n", RAMRESULT_PROC);
 		

@@ -92,7 +92,9 @@ enum CMDQ_ENG_ENUM {
 	CMDQ_ENG_MDP_TDSHP1,		/* 59 */
 	CMDQ_ENG_MDP_WROT1,		/* 60 */
 
-	CMDQ_MAX_ENGINE_COUNT		/* ALWAYS keep at the end */
+	CMDQ_ENG_INORDER,		/* 61 */
+
+	CMDQ_MAX_ENGINE_COUNT	/* ALWAYS keep at the end */
 };
 
 #define CMDQ_ENG_WPE_GROUP_BITS	((1LL << CMDQ_ENG_WPEI) |	\
@@ -121,22 +123,22 @@ enum CMDQ_ENG_ENUM {
 				 (1LL << CMDQ_ENG_MDP_WROT0) |	\
 				 (1LL << CMDQ_ENG_MDP_WDMA))
 
-#define CMDQ_ENG_DISP_GROUP_BITS	((1LL << CMDQ_ENG_DISP_UFOE) |		\
-					 (1LL << CMDQ_ENG_DISP_AAL) |		\
-					 (1LL << CMDQ_ENG_DISP_COLOR0) |	\
-					 (1LL << CMDQ_ENG_DISP_RDMA0) |		\
-					 (1LL << CMDQ_ENG_DISP_RDMA1) |		\
-					 (1LL << CMDQ_ENG_DISP_WDMA0) |		\
-					 (1LL << CMDQ_ENG_DISP_WDMA1) |		\
-					 (1LL << CMDQ_ENG_DISP_OVL0) |		\
-					 (1LL << CMDQ_ENG_DISP_OVL1) |		\
-					 (1LL << CMDQ_ENG_DISP_OVL2) |		\
-					 (1LL << CMDQ_ENG_DISP_2L_OVL0) |	\
-					 (1LL << CMDQ_ENG_DISP_2L_OVL1) |	\
-					 (1LL << CMDQ_ENG_DISP_2L_OVL2) |	\
-					 (1LL << CMDQ_ENG_DISP_GAMMA) |		\
-					 (1LL << CMDQ_ENG_DISP_DSI0_VDO) |	\
-					 (1LL << CMDQ_ENG_DISP_DSI0_CMD) |	\
+#define CMDQ_ENG_DISP_GROUP_BITS ((1LL << CMDQ_ENG_DISP_UFOE) |	\
+	(1LL << CMDQ_ENG_DISP_AAL) |		\
+	(1LL << CMDQ_ENG_DISP_COLOR0) |		\
+	(1LL << CMDQ_ENG_DISP_RDMA0) |		\
+	(1LL << CMDQ_ENG_DISP_RDMA1) |		\
+	(1LL << CMDQ_ENG_DISP_WDMA0) |		\
+	(1LL << CMDQ_ENG_DISP_WDMA1) |		\
+	(1LL << CMDQ_ENG_DISP_OVL0) |		\
+	(1LL << CMDQ_ENG_DISP_OVL1) |		\
+	(1LL << CMDQ_ENG_DISP_OVL2) |		\
+	(1LL << CMDQ_ENG_DISP_2L_OVL0) |	\
+	(1LL << CMDQ_ENG_DISP_2L_OVL1) |	\
+	(1LL << CMDQ_ENG_DISP_2L_OVL2) |	\
+	(1LL << CMDQ_ENG_DISP_GAMMA) |		\
+	(1LL << CMDQ_ENG_DISP_DSI0_VDO) |	\
+	(1LL << CMDQ_ENG_DISP_DSI0_CMD) |	\
 					 (1LL << CMDQ_ENG_DISP_DSI0))
 
 #define CMDQ_ENG_VENC_GROUP_BITS	((1LL << CMDQ_ENG_VIDEO_ENC))

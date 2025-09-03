@@ -24,8 +24,8 @@
 #include <linux/sched_clock.h>
 #include <linux/vmalloc.h>
 #include <linux/dma-mapping.h>
-#include "mach/mtk_freqhopping.h"
-#include "mach/mtk_fhreg.h"
+#include "mtk_freqhopping.h"
+#include "mtk_fhreg.h"
 #include "sync_write.h"
 #include "mtk_freqhopping_drv.h"
 #ifdef HP_EN_REG_SEMAPHORE_PROTECT
@@ -62,14 +62,17 @@ static void __iomem *g_apmixed_base;
 /*********************************/
 /* FHCTL PLL Setting ID */
 /*********************************/
-#define PLL_SETTING_IDX__USER	(0x9)	/* Magic number, no any special indication */
-#define PLL_SETTING_IDX__DEF    (0x1)	/* Default Setting, Magic number, indicate table position 1. */
+/* Magic number, no any special indication */
+#define PLL_SETTING_IDX__USER	(0x9)
+/* Default Setting, Magic number, indicate table position 1. */
+#define PLL_SETTING_IDX__DEF    (0x1)
 
 
 /*********************************/
 /* Track the status of all FHCTL PLL */
 /*********************************/
-static struct fh_pll_t g_fh_pll[FH_PLL_NUM] = { };	/* init during run time. */
+/* init during run time. */
+static struct fh_pll_t g_fh_pll[FH_PLL_NUM] = { };
 
 
 /*********************************/
@@ -78,15 +81,18 @@ static struct fh_pll_t g_fh_pll[FH_PLL_NUM] = { };	/* init during run time. */
 static const char *g_pll_name[FH_PLL_NUM] = {
 	"ARMPLL1",
 	"ARMPLL2",
-	"NOTSUPPORT", /* ARMPLL3 cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	/* ARMPLL3 cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	"NOTSUPPORT",
 	"CCIPLL",
 	"GPUPLL",
 	"MPLL",
-	"NOTSUPPORT", /* MEMPLL cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	/* MEMPLL cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	"NOTSUPPORT",
 	"MAINPLL",
 	"MSDCPLL",
 	"MMPLL",
-	"NOTSUPPORT", /* VDECPLL cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	/* VDECPLL cannot do hoppping from EM due to DDS CON1 doesn't exists */
+	"NOTSUPPORT",
 	"TVDPLL"
 };
 
@@ -120,7 +126,8 @@ static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
 	/* FH PLL0 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 /* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
 	/* FH PLL1 */
@@ -128,78 +135,93 @@ static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
 	 {0, 0, 0, 0, 0, 0},
 	 /* SSC Slope [dys]:0.015625 [dts]:1.808000 [slope]:0.096619 Mhz/us */
 	 /* double slope = ((DYS[dy]*26)/DTS[df])*0.43; Test by from Yulia */
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -2%(lowbnd) */
+	 /* Default 0%(upbnd) ~ -2%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
 	/* FH PLL2 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 /* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
 	/* FH PLL3 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 /* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
 	/* FH PLL4 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 /* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
 	/* FH PLL5 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 2, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 /* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 2, UNINIT_DDS},
 	 },
 
 	/* FH PLL6 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 /* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
 	/* FH PLL7 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 /* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
 	/* FH PLL8 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 /* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	 /* FH PLL9 */
+	/* FH PLL9 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 /* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	 /* FH PLL10 */
+	/* FH PLL10 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 /* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
 	 },
 
-	 /* FH PLL11 */
+	/* FH PLL11 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
-	 }
+	 /* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},
+	}
 };
 
+
+/*********************************/
+/* MISC Macro                    */
+/*********************************/
+#define FH_BUG_ON(x) /* remove from kernel-4.9 */
 
 /***********************************/
 /*FHCTL HP CON Register */
 /***********************************/
-/* [MT6763] not used */
-/*static const int pllid_to_hp_con[] = { 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 6, 7, 8 };*/
 
-static struct freqhopping_ssc mt_ssc_fhpll_userdefined[FH_PLL_NUM];	/* freq, dt, df, upbnd, lowbnd, dds */
+/* freq, dt, df, upbnd, lowbnd, dds */
+static struct freqhopping_ssc mt_ssc_fhpll_userdefined[FH_PLL_NUM];
 
 /*************************************/
 /* FHCTL Register table              */
@@ -234,7 +256,8 @@ static void mt_fh_hal_default_conf(void)
 		if (g_pll_ssc_init_tbl[id] == FH_SSC_DEF_ENABLE_SSC) {
 			FH_MSG("[Default ENABLE SSC] PLL_ID:%d", id);
 			g_fh_pll[id].fh_status = FH_FH_ENABLE_SSC;
-			freqhopping_config(id, PLL_SETTING_IDX__DEF, true);	/* MAINPLL */
+			/* MAINPLL */
+			freqhopping_config(id, PLL_SETTING_IDX__DEF, true);
 		} else {
 			g_fh_pll[id].fh_status = FH_FH_DISABLE;
 		}
@@ -298,7 +321,8 @@ static void fh_sync_ncpo_to_fhctl_dds(enum FH_PLL_ID pll_id)
 
 }
 
-static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *setting)
+static void __enable_ssc(unsigned int pll_id,
+	const struct freqhopping_ssc *setting)
 {
 	unsigned long flags = 0;
 	const unsigned long reg_cfg = g_reg_cfg[pll_id];
@@ -306,10 +330,10 @@ static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *sett
 	const unsigned long reg_dds = g_reg_dds[pll_id];
 
 	FH_MSG_DEBUG("%s: %x~%x df:%d dt:%d dds:%x",
-		     __func__, setting->lowbnd, setting->upbnd, setting->df, setting->dt,
-		     setting->dds);
+		     __func__, setting->lowbnd,
+		     setting->upbnd, setting->df, setting->dt, setting->dds);
 
-	mb();/* prevent reg setting value not sync */
+	mb();			/* prevent reg setting value not sync */
 
 	g_fh_pll[pll_id].fh_status = FH_FH_ENABLE_SSC;
 
@@ -324,11 +348,12 @@ static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *sett
 
 	/* TODO: Not setting upper due to they are all 0? */
 	fh_write32(reg_updnlmt,
-		   (PERCENT_TO_DDSLMT((fh_read32(reg_dds) & MASK22b), setting->lowbnd) << 16));
+		   (PERCENT_TO_DDSLMT((fh_read32(reg_dds) & MASK22b),
+		   setting->lowbnd) << 16));
 
 	/* Switch to FHCTL */
 	fh_switch2fhctl(pll_id, 1);
-	mb();/* prevent reg setting value not sync */
+	mb();			/* prevent reg setting value not sync */
 
 
 	/* Enable SSC */
@@ -340,7 +365,8 @@ static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *sett
 	/* spin_unlock(&g_fh_lock); */
 }
 
-static void __disable_ssc(unsigned int pll_id, const struct freqhopping_ssc *ssc_setting)
+static void __disable_ssc(unsigned int pll_id,
+	const struct freqhopping_ssc *ssc_setting)
 {
 	unsigned long flags = 0;
 	unsigned long reg_cfg = g_reg_cfg[pll_id];
@@ -354,7 +380,7 @@ static void __disable_ssc(unsigned int pll_id, const struct freqhopping_ssc *ssc
 	/* Set the relative registers */
 	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);
 	fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);
-	mb();/* prevent reg setting value not sync */
+	mb();			/* prevent reg setting value not sync */
 	fh_switch2fhctl(pll_id, 0);
 	g_fh_pll[pll_id].fh_status = FH_FH_DISABLE;
 
@@ -365,14 +391,16 @@ static void __disable_ssc(unsigned int pll_id, const struct freqhopping_ssc *ssc
 }
 
 /* Just to use special index pattern to find right setting. */
-static noinline int __freq_to_index(enum FH_PLL_ID pll_id, int setting_idx_pattern)
+static noinline int __freq_to_index(enum FH_PLL_ID pll_id,
+int setting_idx_pattern)
 {
 	unsigned int retVal = 0;
 	unsigned int i = PLL_SETTING_IDX__DEF;	/* start from 1 */
 	const unsigned int size = ARRAY_SIZE(g_pll_ssc_setting_tbl[pll_id]);
 
 	while (i < size) {
-		if (setting_idx_pattern == g_pll_ssc_setting_tbl[pll_id][i].idx_pattern) {
+		if (setting_idx_pattern ==
+			g_pll_ssc_setting_tbl[pll_id][i].idx_pattern) {
 			retVal = i;
 			break;
 		}
@@ -417,27 +445,32 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl *fh_ctl, bool enable)
 			if (pfh_pll->user_defined == true) {
 				FH_MSG("Apply user defined setting");
 
-				pSSC_setting = &mt_ssc_fhpll_userdefined[fh_ctl->pll_id];
+				pSSC_setting =
+					&mt_ssc_fhpll_userdefined
+					[fh_ctl->pll_id];
 				pfh_pll->setting_id = PLL_SETTING_IDX__USER;
 			} else {
 				if (pfh_pll->setting_idx_pattern != 0) {
-					ssc_setting_id = pfh_pll->setting_id =
+					ssc_setting_id =
+					    pfh_pll->setting_id =
 					    __freq_to_index(fh_ctl->pll_id,
-							    pfh_pll->setting_idx_pattern);
+						pfh_pll->setting_idx_pattern);
 				} else {
 					ssc_setting_id = 0;
 				}
 
 				if (ssc_setting_id == 0) {
-					FH_MSG("!!! No corresponding setting found !!!");
-
+					FH_MSG("!!! No corresponding ");
+					FH_MSG("setting found !!!");
 					/* just disable FH & exit */
-					__disable_ssc(fh_ctl->pll_id, pSSC_setting);
+					__disable_ssc(fh_ctl->pll_id,
+					pSSC_setting);
 					goto Exit;
 				}
 
 				pSSC_setting =
-				    &g_pll_ssc_setting_tbl[fh_ctl->pll_id][ssc_setting_id];
+				    &g_pll_ssc_setting_tbl[fh_ctl->pll_id]
+				    [ssc_setting_id];
 
 			}	/* user defined */
 
@@ -461,7 +494,9 @@ Exit:
 	return retVal;
 }
 
-static void wait_dds_stable(unsigned int target_dds, unsigned long reg_mon, unsigned int wait_count)
+static void wait_dds_stable(unsigned int target_dds,
+	unsigned long reg_mon,
+	unsigned int wait_count)
 {
 	unsigned int fh_dds;
 	unsigned int i = 0;
@@ -480,12 +515,13 @@ static void wait_dds_stable(unsigned int target_dds, unsigned long reg_mon, unsi
 	}
 	if (i >= wait_count) {
 		/* Has something wrong during hopping */
-		FH_MSG("[Warning]wait_dds_stable()  target_dds = 0x%x, fh_dds = 0x%x, i = %d",
-		       target_dds, fh_dds, i);
+		FH_MSG("[Warning]%s() target_dds = 0x%x, fh_dds = 0x%x, i = %d",
+		__func__, target_dds, fh_dds, i);
 	}
 }
 
-/* Please add lock between the API for protecting FHCLT register atomic operation.
+/* Please add lock between the
+ *     API for protecting FHCLT register atomic operation.
  *     spin_lock(&g_fh_lock);
  *     mt_fh_hal_hopping();
  *     spin_unlock(&g_fh_lock);
@@ -497,7 +533,7 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 	FH_MSG_DEBUG("%s for pll %d:", __func__, pll_id);
 
 	if (pll_id == FH_MEM_PLLID) {
-		/* [MT6763] dram should use MPLL instead of MEMPLL*/
+		/* [MT6763] dram should use MPLL instead of MEMPLL */
 		FH_MSG_DEBUG("Do not support MEMPLL on MT6763");
 		return 0;
 	}
@@ -518,21 +554,22 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 		unsigned long reg_cfg = g_reg_cfg[pll_id];
 
 		fh_set_field(reg_cfg, FH_SFSTRX_EN, 1);	/* enable dvfs mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 1);	/* enable hopping control */
+		/* enable hopping control */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 1);
 	}
 
 	/* for slope setting. */
 
 	fh_write32(REG_FHCTL_SLOPE0, 0x6003c97);
-	/*ToDo: SLOPE1 is for MEMPLL. Do we need to set this register?*/
-	/*fh_write32(REG_FHCTL_SLOPE1, 0x6003c97);*/
+	/*ToDo: SLOPE1 is for MEMPLL. Do we need to set this register? */
+	/*fh_write32(REG_FHCTL_SLOPE1, 0x6003c97); */
 
 
 	/* FH_MSG("2. enable DVFS and Hopping control"); */
 
 	/* 3. switch to hopping control */
 	fh_switch2fhctl(pll_id, 1);
-	mb(); /* prevent reg setting value not sync */
+	mb();			/* prevent reg setting value not sync */
 
 	/* FH_MSG("3. switch to hopping control"); */
 
@@ -545,7 +582,8 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 		/* FH_MSG("4. set DFS DDS"); */
 		FH_MSG_DEBUG("[After DVFS] FHCTL%d_DDS: 0x%08x", pll_id,
 			     (fh_read32(dvfs_req) & MASK22b));
-		FH_MSG_DEBUG("FHCTL%d_DVFS: 0x%08x", pll_id, (fh_read32(dvfs_req) & MASK22b));
+		FH_MSG_DEBUG("FHCTL%d_DVFS: 0x%08x", pll_id,
+			(fh_read32(dvfs_req) & MASK22b));
 	}
 
 	/* 4.1 ensure jump to target DDS */
@@ -560,23 +598,26 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 
 
 		if (pll_id == FH_MEM_PLLID) {
-			/* [MT6763] dram should use MPLL instead MEMPLL*/
+			/* [MT6763] dram should use MPLL instead MEMPLL */
 			FH_MSG_DEBUG("Only support MPLL SSC on MT6763");
 		} else {
 			reg_pll_con1 = g_reg_pll_con1[pll_id];
 			reg_dvfs = g_reg_dvfs[pll_id];
-			FH_MSG_DEBUG("PLL_CON1: 0x%08x", (fh_read32(reg_pll_con1)&MASK22b));
+			FH_MSG_DEBUG("PLL_CON1: 0x%08x",
+				(fh_read32(reg_pll_con1) & MASK22b));
 
 			fh_write32(reg_pll_con1,
-				(fh_read32(g_reg_mon[pll_id])&MASK22b)
-				|(fh_read32(reg_pll_con1)&0xFFC00000)|(BIT32));
-			FH_MSG_DEBUG("PLL_CON1: 0x%08x", (fh_read32(reg_pll_con1)&MASK22b));
+				(fh_read32(g_reg_mon[pll_id]) & MASK22b)
+				   | (fh_read32(reg_pll_con1) &
+				   0xFFC00000) | (BIT32));
+			FH_MSG_DEBUG("PLL_CON1: 0x%08x",
+				(fh_read32(reg_pll_con1) & MASK22b));
 		}
 	}
 
 	/* 6. switch to register control */
 	fh_switch2fhctl(pll_id, 0);
-	mb(); /* prevent reg setting value not sync */
+	mb();			/* prevent reg setting value not sync */
 
 	/* FH_MSG("6. switch to register control"); */
 
@@ -586,8 +627,8 @@ static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 }
 
 /*
-* armpll dfs mdoe
-*/
+ * armpll dfs mdoe
+ */
 static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 {
 	/* unsigned long flags = 0; */
@@ -601,7 +642,8 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	}
 
 	if (dds > MAX_DDS) {
-		FH_MSG("[ERROR] Overflow! [%s] [pll_id]:%d [dds]:0x%x", __func__, pll, dds);
+		FH_MSG("[ERROR] Overflow! [%s] [pll_id]:%d [dds]:0x%x",
+			__func__, pll, dds);
 		/* Check dds overflow (21 bit) */
 		WARN_ON(1);
 	}
@@ -616,7 +658,8 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 			     (fh_read32(g_reg_pll_con1[pll]) & MASK22b));
 		break;
 	default:
-		FH_MSG("[ERROR] %s [pll_id]:%d is not ARMPLLX. ", __func__, pll);
+		FH_MSG("[ERROR] %s [pll_id]:%d is not ARMPLLX. ",
+			__func__, pll);
 		WARN_ON(1);
 		return 1;
 	};
@@ -624,22 +667,23 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	reg_cfg = g_reg_cfg[pll];
 
 	/* TODO: provelock issue spin_lock(&g_fh_lock); */
-	/*spin_lock(&g_fh_lock);*/
+	/*spin_lock(&g_fh_lock); */
 	spin_lock_irqsave(&g_fh_lock, flags);
 
 #if 0
-	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0); /* disable SSC mode */
-	fh_set_field(reg_cfg, FH_SFSTRX_EN, 0); /* disable dvfs mode */
-	fh_set_field(reg_cfg, FH_FHCTLX_EN, 0); /* disable hopping control */
+	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
+	fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
+	fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
 #else
 	if (g_fh_pll[pll].fh_status == FH_FH_ENABLE_SSC) {
 		unsigned int pll_dds = 0;
 		unsigned int fh_dds = 0;
 
 		/* only when SSC is enable, turn off ARMPLL hopping */
-		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0); /* disable SSC mode */
-		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0); /* disable dvfs mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0); /* disable hopping control */
+		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
+		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
+		/* disable hopping control */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);
 
 		pll_dds = (fh_read32(g_reg_dds[pll])) & MASK22b;
 		fh_dds = (fh_read32(g_reg_mon[pll])) & MASK22b;
@@ -653,157 +697,54 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	mt_fh_hal_hopping(pll, dds);
 
 #if 0
-	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0); /* disable SSC mode */
-	fh_set_field(reg_cfg, FH_SFSTRX_EN, 0); /* disable dvfs mode */
-	fh_set_field(reg_cfg, FH_FHCTLX_EN, 0); /* disable hopping control */
+	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
+	fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
+	fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
 #else
 	if (g_fh_pll[pll].fh_status == FH_FH_ENABLE_SSC) {
 
 		const struct freqhopping_ssc *p_setting =
 		    &g_pll_ssc_setting_tbl[pll][PLL_SETTING_IDX__DEF];
 
-		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0); /* disable SSC mode */
-		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0); /* disable dvfs mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0); /* disable hopping control */
+		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
+		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
+		/* disable hopping control */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);
 
 		fh_sync_ncpo_to_fhctl_dds(pll);
 
 		FH_MSG_DEBUG("Enable armpll SSC mode");
-		FH_MSG_DEBUG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll])&MASK22b));
+		FH_MSG_DEBUG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll]) &
+			MASK22b));
 
 		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
 		fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p_setting->dt);
 
 		fh_write32(g_reg_updnlmt[pll],
-		    (PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll])&MASK22b), p_setting->lowbnd) << 16));
+			   (PERCENT_TO_DDSLMT
+			    ((fh_read32(g_reg_dds[pll]) & MASK22b),
+			    p_setting->lowbnd) << 16));
 		FH_MSG_DEBUG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll]));
 
 		fh_switch2fhctl(pll, 1);
 
-		fh_set_field(reg_cfg, FH_FRDDSX_EN, 1); /* enable SSC mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 1); /* enable hopping control */
+		fh_set_field(reg_cfg, FH_FRDDSX_EN, 1);	/* enable SSC mode */
+		/* enable hopping control */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 1);
 
 		FH_MSG_DEBUG("CFG: 0x%08x", fh_read32(reg_cfg));
 	}
 #endif
 
-	/*spin_unlock(&g_fh_lock);*/
+	/*spin_unlock(&g_fh_lock); */
 	spin_unlock_irqrestore(&g_fh_lock, flags);
 
-	return 0;
-}
-
-static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
-{
-	/* unsigned long flags = 0; */
-	const unsigned int pll_id = FH_MM_PLLID;
-	const unsigned long reg_cfg = g_reg_cfg[pll_id];
-	unsigned long flags = 0;
-
-	if (g_initialize == 0) {
-		FH_MSG("(Warning) %s FHCTL isn't ready. ", __func__);
-		return -1;
-	}
-
-	if (target_dds > MAX_DDS) {
-		FH_MSG("[ERROR] Overflow! [%s] [pll_id]:%d [dds]:0x%x", __func__, pll_id,
-		       target_dds);
-		/* Check dds overflow (21 bit) */
-		WARN_ON(1);
-	}
-
-	FH_MSG("%s, current dds(MMPLL_CON1): 0x%x, target dds %d",
-	       __func__, (fh_read32(g_reg_pll_con1[pll_id]) & MASK22b), target_dds);
-
-	spin_lock_irqsave(&g_fh_lock, flags);
-
-	if (g_fh_pll[pll_id].fh_status == FH_FH_ENABLE_SSC) {
-		unsigned int pll_dds = 0;
-		unsigned int fh_dds = 0;
-
-		/* only when SSC is enable, turn off MEMPLL hopping */
-		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
-		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
-
-		pll_dds = (fh_read32(g_reg_dds[pll_id])) & MASK22b;
-		fh_dds = (fh_read32(g_reg_mon[pll_id])) & MASK22b;
-
-		FH_MSG(">p:f< %x:%x", pll_dds, fh_dds);
-
-		wait_dds_stable(pll_dds, g_reg_mon[pll_id], 100);
-	}
-
-
-	FH_MSG("target dds: 0x%x", target_dds);
-	mt_fh_hal_hopping(pll_id, target_dds);
-
-	if (g_fh_pll[pll_id].fh_status == FH_FH_ENABLE_SSC) {
-		const struct freqhopping_ssc *p_setting =
-		    &g_pll_ssc_setting_tbl[pll_id][PLL_SETTING_IDX__DEF];
-
-		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
-		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
-
-		fh_sync_ncpo_to_fhctl_dds(pll_id);
-
-		FH_MSG("Enable GPU PLL SSC mode");
-		FH_MSG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id]) & MASK22b));
-
-		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
-		fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p_setting->dt);
-
-		fh_write32(g_reg_updnlmt[pll_id],
-			   (PERCENT_TO_DDSLMT
-			    ((fh_read32(g_reg_dds[pll_id]) & MASK22b), p_setting->lowbnd) << 16));
-		FH_MSG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll_id]));
-
-		fh_switch2fhctl(pll_id, 1);
-
-		fh_set_field(reg_cfg, FH_FRDDSX_EN, 1);	/* enable SSC mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 1);	/* enable hopping control */
-
-		FH_MSG("CFG: 0x%08x", fh_read32(reg_cfg));
-
-	}
-	spin_unlock_irqrestore(&g_fh_lock, flags);
-
-	return 0;
-}
-
-static int mt_fh_hal_dfs_vencpll(unsigned int target_freq)
-{
-	FH_BUG_ON(1);
-	return 0;
-}
-
-static int mt_fh_hal_l2h_dvfs_mempll(void)
-{
-	FH_BUG_ON(1);
-	return 0;
-}
-
-static int mt_fh_hal_h2l_dvfs_mempll(void)
-{
-	FH_BUG_ON(1);
-	return 0;
-}
-
-static int mt_fh_hal_dram_overclock(int clk)
-{
-	FH_BUG_ON(1);
-	return 0;
-}
-
-static int mt_fh_hal_get_dramc(void)
-{
-	FH_BUG_ON(1);
 	return 0;
 }
 
 /* General purpose PLL hopping and SSC enable API. */
-static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_dds)
+static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id,
+unsigned int target_dds)
 {
 	const unsigned long reg_cfg = g_reg_cfg[pll_id];
 	unsigned long flags = 0;
@@ -815,20 +756,22 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 	}
 
 	if (target_dds > MAX_DDS) {
-		FH_MSG("[ERROR] Overflow! [%s] [pll_id]:%d [dds]:0x%x", __func__, pll_id,
-		       target_dds);
+		FH_MSG("[ERROR] Overflow! [%s] [pll_id]:%d [dds]:0x%x",
+		       __func__, pll_id, target_dds);
 		/* Check dds overflow (22 bit) */
 		WARN_ON(1);
 	}
 
-	/* [Bianco Only] All new platform should confirm again!!! */
+	/* [63 Only] All new platform should confirm again!!! */
 	switch (pll_id) {
 	case FH_PLL0:
 	case FH_PLL1:
 	case FH_PLL2:
 		break;
-	case FH_MEM_PLLID: /* [MT6763 Only] dram should use MPLL instead of MEMPLL */
-		FH_MSG("ERROR! The [PLL_ID]:%d was forbidden hopping by Bianco FHCTL.", pll_id);
+		/* [63 Only] dram should use MPLL instead of MEMPLL */
+	case FH_MEM_PLLID:
+		FH_MSG("ERROR! The [PLL_ID]:%d was forbidden hopping 63.",
+			pll_id);
 		WARN_ON(1);
 		break;
 	default:
@@ -836,7 +779,9 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 	}
 
 	FH_MSG("%s, [Pll_ID]:%d [current dds(CON1)]:0x%x, [target dds]:%d",
-	       __func__, pll_id, (fh_read32(g_reg_pll_con1[pll_id]) & MASK22b), target_dds);
+	       __func__, pll_id,
+	       (fh_read32(g_reg_pll_con1[pll_id]) & MASK22b),
+	       target_dds);
 
 	spin_lock_irqsave(&g_fh_lock, flags);
 
@@ -847,7 +792,8 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 		/* only when SSC is enable, turn off MEMPLL hopping */
 		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
 		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
+		/* disable hopping control */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);
 
 		pll_dds = (fh_read32(g_reg_dds[pll_id])) & MASK22b;
 		fh_dds = (fh_read32(g_reg_mon[pll_id])) & MASK22b;
@@ -865,25 +811,27 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 
 		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
 		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
+		/* disable hopping control */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);
 
 		fh_sync_ncpo_to_fhctl_dds(pll_id);
 
-		/* FH_MSG("Enable PLL SSC mode"); */
-		/* FH_MSG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id]) & MASK22b)); */
+
 
 		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
 		fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p_setting->dt);
 
 		fh_write32(g_reg_updnlmt[pll_id],
 			   (PERCENT_TO_DDSLMT
-			    ((fh_read32(g_reg_dds[pll_id]) & MASK22b), p_setting->lowbnd) << 16));
-		/* FH_MSG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll_id])); */
+			    ((fh_read32(g_reg_dds[pll_id]) & MASK22b),
+			    p_setting->lowbnd) << 16));
+
 
 		fh_switch2fhctl(pll_id, 1);
 
 		fh_set_field(reg_cfg, FH_FRDDSX_EN, 1);	/* enable SSC mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 1);	/* enable hopping control */
+		/* enable hopping control */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 1);
 
 		/* FH_MSG("CFG: 0x%08x", fh_read32(reg_cfg)); */
 
@@ -894,113 +842,6 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_
 
 }
 
-static void mt_fh_hal_popod_save(void)
-{
-	/* MAINPLL Only, This is legacy function. Nobody know what purpose is. */
-	const unsigned int pll_id = FH_MAIN_PLLID;
-
-	FH_MSG_DEBUG("EN: %s", __func__);
-	FH_BUG_ON(1); /* [MT6763] should not using for Bianco */
-
-	/* disable maipll SSC mode */
-	if (g_fh_pll[pll_id].fh_status == FH_FH_ENABLE_SSC) {
-		unsigned int fh_dds = 0;
-		unsigned int pll_dds = 0;
-		const unsigned long reg_cfg = g_reg_cfg[pll_id];
-
-		/* only when SSC is enable, turn off MAINPLL hopping */
-		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
-		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
-
-		pll_dds = (fh_read32(g_reg_dds[pll_id])) & MASK22b;
-		fh_dds = (fh_read32(g_reg_mon[pll_id])) & MASK22b;
-
-		FH_MSG("Org pll_dds:%x fh_dds:%x", pll_dds, fh_dds);
-
-		wait_dds_stable(pll_dds, g_reg_mon[pll_id], 100);
-
-
-		/* write back to ncpo, only for MAINPLL. */
-		fh_write32(g_reg_pll_con1[pll_id],
-			   (fh_read32(g_reg_dds[pll_id]) & MASK22b) |
-			   ((fh_read32(g_reg_pll_con1[pll_id]) & 0xFFC00000)) | (BIT32));
-
-		FH_MSG("MAINPLL_CON1: 0x%08x", (fh_read32(g_reg_pll_con1[pll_id]) & MASK22b));
-
-		/* switch to register control */
-		fh_switch2fhctl(pll_id, 0);
-
-		mb(); /* prevent reg setting value not sync */
-	}
-}
-
-
-static void mt_fh_hal_popod_restore(void)
-{
-	/* MAINPLL Only, This is legacy function. Nobody know what purpose is. */
-	const unsigned int pll_id = FH_MAIN_PLLID;
-
-	FH_MSG_DEBUG("EN: %s", __func__);
-	FH_BUG_ON(1); /* [MT6763] should not using for Bianco */
-
-	/* enable maipll SSC mode */
-	if (g_fh_pll[pll_id].fh_status == FH_FH_ENABLE_SSC) {
-
-		/* Default setting index is 2 */
-		const struct freqhopping_ssc *p_setting =
-		    &g_pll_ssc_setting_tbl[pll_id][PLL_SETTING_IDX__DEF];
-		const unsigned long reg_cfg = g_reg_cfg[pll_id];
-
-		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
-		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
-
-		fh_sync_ncpo_to_fhctl_dds(pll_id);
-
-		FH_MSG("Enable mainpll SSC mode");
-		FH_MSG("sync ncpo to DDS of FHCTL");
-		FH_MSG("FHCTL1_DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id]) & MASK22b));
-
-		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
-		fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p_setting->dt);
-
-		fh_write32(g_reg_updnlmt[pll_id],
-			   (PERCENT_TO_DDSLMT
-			    ((fh_read32(g_reg_dds[pll_id]) & MASK22b), p_setting->lowbnd) << 16));
-		FH_MSG("REG_FHCTL2_UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll_id]));
-
-		fh_switch2fhctl(pll_id, 1);
-
-		fh_set_field(reg_cfg, FH_FRDDSX_EN, 1);	/* enable SSC mode */
-		fh_set_field(reg_cfg, FH_FHCTLX_EN, 1);	/* enable hopping control */
-
-		FH_MSG("REG_FHCTL2_CFG: 0x%08x", fh_read32(reg_cfg));
-	}
-}
-
-static int fh_dvfs_proc_read(struct seq_file *m, void *v)
-{
-	int i = 0;
-
-	FH_MSG("EN: %s", __func__);
-
-	seq_puts(m, "DVFS:\r\n");
-	seq_puts(m, "CFG: 0x3 is SSC mode;  0x5 is DVFS mode \r\n");
-	for (i = 0; i < FH_PLL_NUM; ++i) {
-		seq_printf(m, "FHCTL%d:   CFG:0x%08x    DVFS:0x%08x\r\n",
-			   i, fh_read32(g_reg_cfg[i]), fh_read32(g_reg_dvfs[i]));
-	}
-	return 0;
-}
-
-static int fh_dvfs_proc_write(struct file *file, const char *buffer, unsigned long count,
-			      void *data)
-{
-	/* Legacy API interface*/
-	return 0;
-}
-
 /* #define UINT_MAX (unsigned int)(-1) */
 static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 {
@@ -1009,16 +850,21 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 	static unsigned int dds_min[FH_PLL_NUM] = { 0 };
 
 	if (g_initialize != 1) {
-		FH_MSG("[ERROR] %s fhctl didn't init. Please check!!!", __func__);
+		FH_MSG(
+			"[ERROR] %s fhctl didn't init. Please check!!!",
+			__func__);
 		return -1;
 	}
 
 	FH_MSG("EN: %s", __func__);
 
 	for (i = 0; i < FH_PLL_NUM; ++i) {
-		FH_MSG_DEBUG("REG ADDR (%d) : 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx",
-			i, g_reg_mon[i], g_reg_cfg[i], g_reg_updnlmt[i],
-			g_reg_dvfs[i], g_reg_dds[i], g_reg_pll_con0[i], g_reg_pll_con1[i]);
+		FH_MSG_DEBUG(
+		"REG ADDR (%d): 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx 0x%lx",
+		i, g_reg_mon[i], g_reg_cfg[i],
+		g_reg_updnlmt[i], g_reg_dvfs[i],
+		g_reg_dds[i], g_reg_pll_con0[i],
+		g_reg_pll_con1[i]);
 	}
 
 	for (i = 0; i < FH_PLL_NUM; ++i) {
@@ -1032,8 +878,10 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 
 		seq_printf(m, "FHCTL%d CFG, UPDNLMT, DVFS, DDS, MON\r\n", i);
 		seq_printf(m, "0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\r\n",
-			   fh_read32(g_reg_cfg[i]), fh_read32(g_reg_updnlmt[i]),
-			   fh_read32(g_reg_dvfs[i]), fh_read32(g_reg_dds[i]), mon);
+			   fh_read32(g_reg_cfg[i]),
+			   fh_read32(g_reg_updnlmt[i]),
+			   fh_read32(g_reg_dvfs[i]),
+			   fh_read32(g_reg_dds[i]), mon);
 
 		if (dds > dds_max[i])
 			dds_max[i] = dds;
@@ -1042,8 +890,10 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 	}
 
 	FH_MSG_DEBUG("Dumping flags");
-	seq_printf(m, "\r\nFHCTL_HP_EN:\r\n0x%08x\r\n", fh_read32(REG_FHCTL_HP_EN));
-	seq_printf(m, "\r\nFHCTL_CLK_CON:\r\n0x%08x\r\n", fh_read32(REG_FHCTL_CLK_CON));
+	seq_printf(m, "\r\nFHCTL_HP_EN:\r\n0x%08x\r\n",
+		fh_read32(REG_FHCTL_HP_EN));
+	seq_printf(m, "\r\nFHCTL_CLK_CON:\r\n0x%08x\r\n",
+		fh_read32(REG_FHCTL_CLK_CON));
 
 	FH_MSG_DEBUG("Dumping CON0");
 	seq_puts(m, "\r\nPLL_CON0 :\r\n");
@@ -1052,7 +902,8 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 		if (g_reg_pll_con0[i] == REG_PLL_NOT_SUPPORT)
 			seq_printf(m, "PLL%d;not support", i);
 		else
-			seq_printf(m, "PLL%d;0x%08x ", i, fh_read32(g_reg_pll_con0[i]));
+			seq_printf(m, "PLL%d;0x%08x ",
+			i, fh_read32(g_reg_pll_con0[i]));
 	}
 
 	FH_MSG_DEBUG("Dumping CON1");
@@ -1062,13 +913,15 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 		if (g_reg_pll_con1[i] == REG_PLL_NOT_SUPPORT)
 			seq_printf(m, "PLL%d;not support", i);
 		else
-			seq_printf(m, "PLL%d;0x%08x ", i, fh_read32(g_reg_pll_con1[i]));
+			seq_printf(m, "PLL%d;0x%08x ",
+			i, fh_read32(g_reg_pll_con1[i]));
 	}
 
 	seq_puts(m, "\r\nRecorded dds range\r\n");
 
 	for (i = 0; i < FH_PLL_NUM; ++i)
-		seq_printf(m, "Pll%d dds max 0x%06x, min 0x%06x\r\n", i, dds_max[i], dds_min[i]);
+		seq_printf(m, "Pll%d dds max 0x%06x, min 0x%06x\r\n",
+		i, dds_max[i], dds_min[i]);
 
 	return 0;
 }
@@ -1085,7 +938,6 @@ static void __reg_tbl_init(void)
 		REG_FHCTL0_DDS, REG_FHCTL1_DDS, REG_FHCTL2_DDS, REG_FHCTL3_DDS,
 		REG_FHCTL4_DDS, REG_FHCTL5_DDS, REG_FHCTL6_DDS, REG_FHCTL7_DDS,
 		REG_FHCTL8_DDS, REG_FHCTL9_DDS, REG_FHCTL10_DDS, REG_FHCTL11_DDS
-
 	};
 
 	const unsigned long reg_cfg[] = {
@@ -1095,33 +947,46 @@ static void __reg_tbl_init(void)
 	};
 
 	const unsigned long reg_updnlmt[] = {
-		REG_FHCTL0_UPDNLMT, REG_FHCTL1_UPDNLMT, REG_FHCTL2_UPDNLMT, REG_FHCTL3_UPDNLMT,
-		REG_FHCTL4_UPDNLMT, REG_FHCTL5_UPDNLMT, REG_FHCTL6_UPDNLMT, REG_FHCTL7_UPDNLMT,
-		REG_FHCTL8_UPDNLMT, REG_FHCTL9_UPDNLMT, REG_FHCTL10_UPDNLMT, REG_FHCTL11_UPDNLMT
+		REG_FHCTL0_UPDNLMT, REG_FHCTL1_UPDNLMT, REG_FHCTL2_UPDNLMT,
+		REG_FHCTL3_UPDNLMT,
+		REG_FHCTL4_UPDNLMT, REG_FHCTL5_UPDNLMT, REG_FHCTL6_UPDNLMT,
+		REG_FHCTL7_UPDNLMT,
+		REG_FHCTL8_UPDNLMT, REG_FHCTL9_UPDNLMT, REG_FHCTL10_UPDNLMT,
+		REG_FHCTL11_UPDNLMT
 	};
 
 	const unsigned long reg_mon[] = {
 		REG_FHCTL0_MON, REG_FHCTL1_MON, REG_FHCTL2_MON, REG_FHCTL3_MON,
 		REG_FHCTL4_MON, REG_FHCTL5_MON, REG_FHCTL6_MON, REG_FHCTL7_MON,
-		REG_FHCTL8_MON, REG_FHCTL9_MON, REG_FHCTL10_MON, REG_FHCTL11_MON
+		REG_FHCTL8_MON, REG_FHCTL9_MON, REG_FHCTL10_MON,
+		REG_FHCTL11_MON
 	};
 
 	const unsigned long reg_dvfs[] = {
-		REG_FHCTL0_DVFS, REG_FHCTL1_DVFS, REG_FHCTL2_DVFS, REG_FHCTL3_DVFS,
-		REG_FHCTL4_DVFS, REG_FHCTL5_DVFS, REG_FHCTL6_DVFS, REG_FHCTL7_DVFS,
-		REG_FHCTL8_DVFS, REG_FHCTL9_DVFS, REG_FHCTL10_DVFS, REG_FHCTL11_DVFS
+		REG_FHCTL0_DVFS, REG_FHCTL1_DVFS, REG_FHCTL2_DVFS,
+		REG_FHCTL3_DVFS,
+		REG_FHCTL4_DVFS, REG_FHCTL5_DVFS, REG_FHCTL6_DVFS,
+		REG_FHCTL7_DVFS,
+		REG_FHCTL8_DVFS, REG_FHCTL9_DVFS, REG_FHCTL10_DVFS,
+		REG_FHCTL11_DVFS
 	};
 
 	const unsigned long reg_pll_con0[] = {
-		REG_FH_PLL0_CON0, REG_FH_PLL1_CON0, REG_FH_PLL2_CON0, REG_FH_PLL3_CON0,
-		REG_FH_PLL4_CON0, REG_FH_PLL5_CON0, REG_FH_PLL6_CON0, REG_FH_PLL7_CON0,
-		REG_FH_PLL8_CON0, REG_FH_PLL9_CON0, REG_FH_PLL10_CON0, REG_FH_PLL11_CON0
+		REG_FH_PLL0_CON0, REG_FH_PLL1_CON0, REG_FH_PLL2_CON0,
+		REG_FH_PLL3_CON0,
+		REG_FH_PLL4_CON0, REG_FH_PLL5_CON0, REG_FH_PLL6_CON0,
+		REG_FH_PLL7_CON0,
+		REG_FH_PLL8_CON0, REG_FH_PLL9_CON0, REG_FH_PLL10_CON0,
+		REG_FH_PLL11_CON0
 	};
 
 	const unsigned long reg_pll_con1[] = {
-		REG_FH_PLL0_CON1, REG_FH_PLL1_CON1, REG_FH_PLL2_CON1, REG_FH_PLL3_CON1,
-		REG_FH_PLL4_CON1, REG_FH_PLL5_CON1, REG_FH_PLL6_CON1, REG_FH_PLL7_CON1,
-		REG_FH_PLL8_CON1, REG_FH_PLL9_CON1, REG_FH_PLL10_CON1, REG_FH_PLL11_CON1
+		REG_FH_PLL0_CON1, REG_FH_PLL1_CON1, REG_FH_PLL2_CON1,
+		REG_FH_PLL3_CON1,
+		REG_FH_PLL4_CON1, REG_FH_PLL5_CON1, REG_FH_PLL6_CON1,
+		REG_FH_PLL7_CON1,
+		REG_FH_PLL8_CON1, REG_FH_PLL9_CON1, REG_FH_PLL10_CON1,
+		REG_FH_PLL11_CON1
 	};
 
     /****************************************/
@@ -1178,7 +1043,7 @@ static void __global_var_init(void)
 }
 
 /* TODO: __init void mt_freqhopping_init(void) */
-static void mt_fh_hal_init(void)
+static int mt_fh_hal_init(void)
 {
 	int i = 0;
 	unsigned long flags = 0;
@@ -1186,7 +1051,7 @@ static void mt_fh_hal_init(void)
 	FH_MSG_DEBUG("EN: %s", __func__);
 
 	if (g_initialize == 1)
-		return;
+		return 0;
 
 	/* Init relevant register base address by device tree */
 	__reg_base_addr_init();
@@ -1209,27 +1074,32 @@ static void mt_fh_hal_init(void)
 		fh_set_field(REG_FHCTL_RST_CON, mask, 1);
 
 		g_fh_pll[i].setting_id = 0;
-		fh_write32(g_reg_cfg[i], 0x00000000);	/* No SSC and FH enabled */
-		fh_write32(g_reg_updnlmt[i], 0x00000000);	/* clear all the settings */
-		fh_write32(g_reg_dds[i], 0x00000000);	/* clear all the settings */
+		/* No SSC and FH enabled */
+		fh_write32(g_reg_cfg[i], 0x00000000);
+		/* clear all the settings */
+		fh_write32(g_reg_updnlmt[i], 0x00000000);
+		/* clear all the settings */
+		fh_write32(g_reg_dds[i], 0x00000000);
 
 		spin_unlock_irqrestore(&g_fh_lock, flags);
 	}
 
 	g_initialize = 1;
 
-	FH_MSG("mt_fh_hal_init done");
+	FH_MSG("%s done", __func__);
+
+	return 0;
 }
 
 static void mt_fh_hal_lock(unsigned long *flags)
 {
-	/*spin_lock(&g_fh_lock);*/
+	/*spin_lock(&g_fh_lock); */
 	spin_lock_irqsave(&g_fh_lock, *flags);
 }
 
 static void mt_fh_hal_unlock(unsigned long *flags)
 {
-	/*spin_unlock(&g_fh_lock);*/
+	/*spin_unlock(&g_fh_lock); */
 	spin_unlock_irqrestore(&g_fh_lock, *flags);
 }
 
@@ -1238,23 +1108,16 @@ static int mt_fh_hal_get_init(void)
 	return g_initialize;
 }
 
-static int mt_fh_hal_is_support_DFS_mode(void)
-{
-	return true;
-}
-
 /* TODO: module_init(mt_freqhopping_init); */
 /* TODO: module_exit(cpufreq_exit); */
 
 /* Engineer mode will use the proc msg to create UI!!! */
-static int __fh_debug_proc_read(struct seq_file *m, void *v, struct fh_pll_t *pll)
+static int __fh_debug_proc_read(struct seq_file *m,
+void *v, struct fh_pll_t *pll)
 {
 	int id;
 
 	FH_MSG("EN: %s", __func__);
-
-	/* [WWK] Should remove PLL name to save porting time. */
-	/* [WWK] Could print ENG ID and PLL mapping */
 
 	seq_puts(m, "\r\n[freqhopping debug flag]\r\n");
 	seq_puts(m, "[1st Status] FH_FH_UNINIT:0, FH_FH_DISABLE: 1, FH_FH_ENABLE_SSC:2 \r\n");
@@ -1319,20 +1182,23 @@ static int fh_ioctl_dvfs_ssc(unsigned int ctlid, void *arg)
 	switch (ctlid) {
 	case FH_DCTL_CMD_DVFS:	/* < PLL DVFS */
 		{
-			mt_fh_hal_hopping(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+			mt_fh_hal_hopping(fh_ctl->pll_id,
+				fh_ctl->ssc_setting.dds);
 		}
 		break;
 	case FH_DCTL_CMD_DVFS_SSC_ENABLE:	/* PLL DVFS and enable SSC */
 		{
 			__disable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
-			mt_fh_hal_hopping(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+			mt_fh_hal_hopping(fh_ctl->pll_id,
+				fh_ctl->ssc_setting.dds);
 			__enable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
 		}
 		break;
 	case FH_DCTL_CMD_DVFS_SSC_DISABLE:	/* PLL DVFS and disable SSC */
 		{
 			__disable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
-			mt_fh_hal_hopping(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+			mt_fh_hal_hopping(fh_ctl->pll_id,
+				fh_ctl->ssc_setting.dds);
 		}
 		break;
 	case FH_DCTL_CMD_SSC_ENABLE:	/* SSC enable */
@@ -1347,7 +1213,8 @@ static int fh_ioctl_dvfs_ssc(unsigned int ctlid, void *arg)
 		break;
 	case FH_DCTL_CMD_GENERAL_DFS:
 		{
-			mt_fh_hal_general_pll_dfs(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+			mt_fh_hal_general_pll_dfs(fh_ctl->pll_id,
+				fh_ctl->ssc_setting.dds);
 		}
 		break;
 	default:
@@ -1363,7 +1230,8 @@ static void __ioctl(unsigned int ctlid, void *arg)
 	switch (ctlid) {
 	case FH_IO_PROC_READ:
 		{
-			struct FH_IO_PROC_READ_T *tmp = (struct FH_IO_PROC_READ_T *)(arg);
+			struct FH_IO_PROC_READ_T *tmp =
+				(struct FH_IO_PROC_READ_T *)(arg);
 
 			__fh_debug_proc_read(tmp->m, tmp->v, tmp->pll);
 		}
@@ -1387,29 +1255,32 @@ static void __ioctl(unsigned int ctlid, void *arg)
 
 static struct mt_fh_hal_driver g_fh_hal_drv = {
 	.fh_pll = g_fh_pll,
-	.fh_usrdef = mt_ssc_fhpll_userdefined,
+	//.fh_usrdef = mt_ssc_fhpll_userdefined,
+	//.fh_pll_set = mt_fh_pll_struct_set,
+	//.fh_pll_get = mt_fh_pll_struct_get,
+	//.fh_usrdef = mt_fh_usrdef_set,
 	.pll_cnt = FH_PLL_NUM,
-	.proc.dumpregs_read = fh_dumpregs_proc_read,
-	.proc.dvfs_read = fh_dvfs_proc_read,
-	.proc.dvfs_write = fh_dvfs_proc_write,
+	.mt_fh_hal_dumpregs_read = fh_dumpregs_proc_read,
+	//.proc.dvfs_read = fh_dvfs_proc_read,
+	//.proc.dvfs_write = fh_dvfs_proc_write,
 	.mt_fh_hal_init = mt_fh_hal_init,
 	.mt_fh_hal_ctrl = __freqhopping_ctrl,
 	.mt_fh_lock = mt_fh_hal_lock,
 	.mt_fh_unlock = mt_fh_hal_unlock,
 	.mt_fh_get_init = mt_fh_hal_get_init,
-	.mt_fh_popod_restore = mt_fh_hal_popod_restore,
-	.mt_fh_popod_save = mt_fh_hal_popod_save,
-	.mt_l2h_mempll = NULL,
-	.mt_h2l_mempll = NULL,
+	//.mt_fh_popod_restore = mt_fh_hal_popod_restore,
+	//.mt_fh_popod_save = mt_fh_hal_popod_save,
+	//.mt_l2h_mempll = NULL,
+	//.mt_h2l_mempll = NULL,
 	.mt_dfs_armpll = mt_fh_hal_dfs_armpll,
-	.mt_dfs_mmpll = mt_fh_hal_dfs_mmpll,
-	.mt_dfs_vencpll = mt_fh_hal_dfs_vencpll,	/* TODO: should set to NULL */
-	.mt_is_support_DFS_mode = mt_fh_hal_is_support_DFS_mode,
-	.mt_l2h_dvfs_mempll = mt_fh_hal_l2h_dvfs_mempll,	/* TODO: should set to NULL */
-	.mt_h2l_dvfs_mempll = mt_fh_hal_h2l_dvfs_mempll,	/* TODO: should set to NULL */
-	.mt_dram_overclock = mt_fh_hal_dram_overclock,
-	.mt_get_dramc = mt_fh_hal_get_dramc,
-	.mt_fh_default_conf = mt_fh_hal_default_conf,
+	//.mt_dfs_mmpll = mt_fh_hal_dfs_mmpll,
+	//.mt_dfs_vencpll = mt_fh_hal_dfs_vencpll,
+	//.mt_is_support_DFS_mode = mt_fh_hal_is_support_DFS_mode,
+	//.mt_l2h_dvfs_mempll = mt_fh_hal_l2h_dvfs_mempll,
+	//.mt_h2l_dvfs_mempll = mt_fh_hal_h2l_dvfs_mempll,
+	//.mt_dram_overclock = mt_fh_hal_dram_overclock,
+	//.mt_get_dramc = mt_fh_hal_get_dramc,
+	.mt_fh_hal_default_conf = mt_fh_hal_default_conf,
 	.mt_dfs_general_pll = mt_fh_hal_general_pll_dfs,
 	.ioctl = __ioctl
 };
@@ -1460,13 +1331,15 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 
 	return 0;
 }
+
 /*TODO: init in hal. Should find a proper place*/
+#if 0
 static int __init mt_fh_driver_init(void)
 {
 	mt_freqhopping_init();
 	return 0;
 }
-
 arch_initcall(mt_fh_driver_init);
+#endif
 
 /* TODO: module_exit(cpufreq_exit); */

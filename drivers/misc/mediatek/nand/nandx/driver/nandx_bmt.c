@@ -333,7 +333,7 @@ static int find_available_block(struct bmt_handler *bmt, bool start_from_end)
 	u32 i, block;
 	int direct, retry;
 
-	pr_debug("Try to find_available_block\n");
+	pr_debug("Try to find available block\n");
 
 	block = start_from_end ? (bmt->dev_info->block_num - 1) :
 	    bmt->start_block;

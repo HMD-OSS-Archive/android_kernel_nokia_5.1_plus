@@ -46,7 +46,8 @@ void ddp_check_path(enum DDP_SCENARIO_ENUM scenario);
 
 
 enum DISP_MODULE_ENUM ddp_get_dst_module(enum DDP_SCENARIO_ENUM scenario);
-int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario, enum DISP_MODULE_ENUM dst_module);
+int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario,
+		       enum DISP_MODULE_ENUM dst_module);
 
 int *ddp_get_scenario_list(enum DDP_SCENARIO_ENUM ddp_scenario);
 
@@ -60,10 +61,12 @@ int ddp_insert_config_allow_rec(void *handle);
 int ddp_insert_config_dirty_rec(void *handle);
 
 int disp_get_dst_module(enum DDP_SCENARIO_ENUM scenario);
-int ddp_is_module_in_scenario(enum DDP_SCENARIO_ENUM ddp_scenario, enum DISP_MODULE_ENUM module);
+int ddp_is_module_in_scenario(enum DDP_SCENARIO_ENUM ddp_scenario,
+			      enum DISP_MODULE_ENUM module);
 int ddp_path_init(void);
-int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg, struct OVL_CONFIG_STRUCT *ovl_cfg,
-					int dst_w, int dst_h);
+int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg,
+				  struct OVL_CONFIG_STRUCT *ovl_cfg,
+				  int dst_w, int dst_h);
 int ddp_get_module_num_l(int *module_list);
 char *ddp_get_mode_name(enum DDP_MODE ddp_mode);
 bool ddp_path_need_mmsys_sw_reset(enum DISP_MODULE_ENUM module);

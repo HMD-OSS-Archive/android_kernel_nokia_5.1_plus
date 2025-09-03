@@ -1,9 +1,9 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic_wrap/$(CONFIG_MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
-ccflags-y += -I$(srctree)/drivers/power/mediatek/battery
-ccflags-y += -I$(srctree)/drivers/power/mediatek/charger
-ccflags-y += -I$(srctree)/drivers/power/mediatek/misc
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
 
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
@@ -24,10 +24,12 @@ obj-$(CONFIG_MTK_PMIC_CHIP_MT6358)	+= pmic.o pmic_common.o \
 		pmic_initial_setting.o \
 		pmic_api.o \
 		pmic_auxadc.o \
-		pmic_throttling_dlpt.o \
 		regulator_codegen.o \
 		pmic_lp_api.o \
 		pmic_efuse.o \
+		pmic_throttling_dlpt.o \
+
+		#TODO
 		#pmic_bif.o \
 
 ifndef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT

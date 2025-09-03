@@ -1,7 +1,7 @@
-/*******************************************************************************
+/******************************************************************************
  * mtk_pwm_prv.h PWM Drvier
  *
- * Copyright (c) 2017, Media Teck.inc
+ * Copyright (c) 2018, Media Teck.inc
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public Licence,
@@ -13,7 +13,7 @@
  * more details.
  *
  *
- ********************************************************************************
+ ******************************************************************************
  */
 
 #ifndef __MT_PWM_PRV_H__
@@ -26,8 +26,8 @@ extern void __iomem *pwm_base;
 #define PWM_BASE pwm_base
 
 /***********************************
-* PWM register address             *
-************************************/
+ * PWM register address
+ ************************************/
 #define PWM_ENABLE (PWM_BASE+0x0000)
 
 #define PWM_3DLCM	(PWM_BASE+0x1D0)

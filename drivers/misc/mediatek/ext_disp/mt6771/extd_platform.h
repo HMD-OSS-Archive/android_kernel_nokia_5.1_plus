@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -21,11 +21,15 @@
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
 
+
+#define EXTD_SHADOW_REGISTER_SUPPORT
+
+/* #define EXTD_SMART_OVL_SUPPORT */
 /* #define EXTD_DEBUG_SUPPORT */
 
 /* /#define EXTD_DBG_USE_INNER_BUF */
 
-#define HW_OVERLAY_COUNT  2
+/* #define EXTD_DUAL_PIPE_SWITCH_SUPPORT */
 
 #define EXTD_OVERLAY_CNT  2
 
@@ -33,17 +37,14 @@
 
 #define DISP_MODULE_RDMA DISP_MODULE_RDMA1
 
-#define MM_MHL_DVFS
+/* #define MM_MHL_DVFS */
 #define MHL_DYNAMIC_VSYNC_OFFSET
 
-#undef MTK_AUDIO_MULTI_CHANNEL_SUPPORT
+#define MTK_AUDIO_MULTI_CHANNEL_SUPPORT
 #define FIX_EXTD_TO_OVL_PATH EXTD_OVERLAY_CNT
 
-#define MHL_RESOLUTION_LIMIT_1080P_30
+#define CONFIG_IO_DRIVING
 
-/* #define CONFIG_IO_DRIVING */
-
-/* ANX7805 use this define */
 /* #define DP_EINT_GPIO_NUMBER 98 */
 
 #endif

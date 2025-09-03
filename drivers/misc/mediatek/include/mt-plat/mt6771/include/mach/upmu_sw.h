@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2017 MediaTek Inc.
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*/
+ * Copyright (C) 2018 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 #ifndef _MT_PMIC_UPMU_SW_H_
 #define _MT_PMIC_UPMU_SW_H_
 
@@ -46,9 +46,9 @@
 #define FG_TIME_NO INT_FG_TIME_H
 #define FG_BAT_PLUGOUT_NO INT_BATON_BAT_OUT
 
-/* ==============================================================================
+/* =============================================================================
  * Low battery level define
- * ==============================================================================
+ * =============================================================================
  */
 #define LOW_BATTERY_LEVEL enum LOW_BATTERY_LEVEL_TAG
 #define LOW_BATTERY_PRIO enum LOW_BATTERY_PRIO_TAG
@@ -71,14 +71,14 @@ enum LOW_BATTERY_PRIO_TAG {
 	LOW_BATTERY_PRIO_BACKLIGHT = 8
 };
 
-extern void (*low_battery_callback)(LOW_BATTERY_LEVEL);
-extern void register_low_battery_notify(void (*low_battery_callback) (LOW_BATTERY_LEVEL),
-					LOW_BATTERY_PRIO prio_val);
+extern void register_low_battery_notify(
+			void (*low_battery_callback)(LOW_BATTERY_LEVEL tag),
+			LOW_BATTERY_PRIO prio_val);
 
 
-/* ==============================================================================
+/* =============================================================================
  * Battery OC level define
- * ==============================================================================
+ * =============================================================================
  */
 #define BATTERY_OC_LEVEL enum BATTERY_OC_LEVEL_TAG
 #define BATTERY_OC_PRIO enum BATTERY_OC_PRIO_TAG
@@ -97,13 +97,13 @@ enum BATTERY_OC_PRIO_TAG {
 	BATTERY_OC_PRIO_FLASHLIGHT = 5
 };
 
-extern void (*battery_oc_callback)(BATTERY_OC_LEVEL);
-extern void register_battery_oc_notify(void (*battery_oc_callback) (BATTERY_OC_LEVEL),
-				       BATTERY_OC_PRIO prio_val);
+extern void register_battery_oc_notify(
+			void (*battery_oc_callback)(BATTERY_OC_LEVEL tag),
+			BATTERY_OC_PRIO prio_val);
 
-/* ==============================================================================
+/* =============================================================================
  * Battery percent define
- * ==============================================================================
+ * =============================================================================
  */
 #define BATTERY_PERCENT_LEVEL enum BATTERY_PERCENT_LEVEL_TAG
 #define BATTERY_PERCENT_PRIO enum BATTERY_PERCENT_PRIO_TAG
@@ -125,14 +125,14 @@ enum BATTERY_PERCENT_PRIO_TAG {
 	BATTERY_PERCENT_PRIO_BACKLIGHT = 8
 };
 
-extern void (*battery_percent_callback)(BATTERY_PERCENT_LEVEL);
 extern void
-register_battery_percent_notify(void (*battery_percent_callback) (BATTERY_PERCENT_LEVEL),
-				BATTERY_PERCENT_PRIO prio_val);
+register_battery_percent_notify(
+		void (*battery_percent_callback)(BATTERY_PERCENT_LEVEL tag),
+		BATTERY_PERCENT_PRIO prio_val);
 
-/*==============================================================================
+/*=============================================================================
  * DLPT define
- *==============================================================================
+ *=============================================================================
  */
 #define DLPT_PRIO enum DLPT_PRIO_TAG
 
@@ -149,18 +149,17 @@ enum DLPT_PRIO_TAG {
 	DLPT_PRIO_BACKLIGHT = 9
 };
 
-extern void (*dlpt_callback)(unsigned int);
-extern void register_dlpt_notify(void (*dlpt_callback)(unsigned int), DLPT_PRIO prio_val);
+extern void register_dlpt_notify(
+		void (*dlpt_callback)(unsigned int val), DLPT_PRIO prio_val);
 extern const PMU_FLAG_TABLE_ENTRY pmu_flags_table[];
 
 extern unsigned short is_battery_remove;
 extern unsigned short is_wdt_reboot_pmic;
 extern unsigned short is_wdt_reboot_pmic_chk;
-extern unsigned int g_pmic_pad_vbif28_vol;
 
-/*==============================================================================
+/*=============================================================================
  * PMIC IRQ ENUM define
- *==============================================================================
+ *=============================================================================
  */
 enum PMIC_IRQ_ENUM {
 	INT_VPROC11_OC,
@@ -334,18 +333,18 @@ enum PMIC_IRQ_ENUM {
 	INT_ENUM_MAX,
 };
 
-/*==============================================================================
+/*=============================================================================
  * PMIC auxadc define
- *==============================================================================
+ *=============================================================================
  */
 extern signed int g_I_SENSE_offset;
 extern void pmic_auxadc_init(void);
 extern void pmic_auxadc_lock(void);
 extern void pmic_auxadc_unlock(void);
 extern void mt_power_off(void);
-/*==============================================================================
+/*=============================================================================
  * PMIC fg define
- *==============================================================================
+ *=============================================================================
  */
 extern unsigned int bat_get_ui_percentage(void);
 extern signed int fgauge_read_v_by_d(int d_val);

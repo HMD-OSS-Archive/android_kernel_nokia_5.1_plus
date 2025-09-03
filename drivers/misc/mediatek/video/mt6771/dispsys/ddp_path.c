@@ -28,7 +28,7 @@
 #include "ddp_path.h"
 
 
-/*#pragma GCC optimize("O0")*/
+/* #pragma GCC optimize("O0") */
 
 #define BIT_NUM (8)
 
@@ -59,8 +59,8 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 #ifdef DISP_COLOR_ON
 		DISP_MODULE_COLOR0,
 #endif
-		DISP_MODULE_CCORR0, DISP_MODULE_AAL0, DISP_MODULE_GAMMA0, DISP_MODULE_DITHER0,
-		DISP_MODULE_PWM0, DISP_MODULE_DSI0,
+		DISP_MODULE_CCORR0, DISP_MODULE_AAL0, DISP_MODULE_GAMMA0,
+		DISP_MODULE_DITHER0, DISP_MODULE_PWM0, DISP_MODULE_DSI0,
 		-1,
 	},
 
@@ -78,8 +78,8 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 #ifdef DISP_COLOR_ON
 		DISP_MODULE_COLOR0,
 #endif
-		DISP_MODULE_CCORR0, DISP_MODULE_AAL0, DISP_MODULE_GAMMA0, DISP_MODULE_DITHER0,
-		DISP_MODULE_PWM0, DISP_MODULE_DSI0,
+		DISP_MODULE_CCORR0, DISP_MODULE_AAL0, DISP_MODULE_GAMMA0,
+		DISP_MODULE_DITHER0, DISP_MODULE_PWM0, DISP_MODULE_DSI0,
 		-1,
 	},
 
@@ -92,12 +92,13 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 
 	/* DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP */
 	{
-		DISP_MODULE_OVL1_2L, DISP_MODULE_RDMA0, DISP_MODULE_RDMA_VIRTUAL0,
+		DISP_MODULE_OVL1_2L, DISP_MODULE_RDMA0,
+		DISP_MODULE_RDMA_VIRTUAL0,
 #ifdef DISP_COLOR_ON
 		DISP_MODULE_COLOR0,
 #endif
-		DISP_MODULE_CCORR0, DISP_MODULE_AAL0, DISP_MODULE_GAMMA0, DISP_MODULE_DITHER0,
-		DISP_MODULE_PWM0, DISP_MODULE_DSI0,
+		DISP_MODULE_CCORR0, DISP_MODULE_AAL0, DISP_MODULE_GAMMA0,
+		DISP_MODULE_DITHER0, DISP_MODULE_PWM0, DISP_MODULE_DSI0,
 		-1,
 	},
 
@@ -117,8 +118,8 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 #ifdef DISP_COLOR_ON
 		DISP_MODULE_COLOR0,
 #endif
-		DISP_MODULE_CCORR0, DISP_MODULE_AAL0, DISP_MODULE_GAMMA0, DISP_MODULE_DITHER0,
-		DISP_MODULE_PWM0, DISP_MODULE_DSI0,
+		DISP_MODULE_CCORR0, DISP_MODULE_AAL0, DISP_MODULE_GAMMA0,
+		DISP_MODULE_DITHER0, DISP_MODULE_PWM0, DISP_MODULE_DSI0,
 		-1,
 	},
 
@@ -153,91 +154,204 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 /* 1st para is mout's input, 2nd para is mout's output */
 static struct mout_s mout_map[] = {
 	/* OVL_MOUT */
-	{DISP_MODULE_OVL0,
-		{{DISP_MODULE_RDMA0, 1 << 0}, {DISP_MODULE_WDMA_VIRTUAL0, 1 << 2},
-		 {DISP_MODULE_OVL0_2L, 1 << 4}, {DISP_MODULE_RSZ0, 1 << 5}, {-1, 0} },
-		0, 0}, /* bit1: mdp_wrot, bit3: mdp_rsz */
+	[0] = {
+		DISP_MODULE_OVL0,
+		{
+			{DISP_MODULE_RDMA0, 1 << 0},
+			{DISP_MODULE_WDMA_VIRTUAL0, 1 << 2},
+			{DISP_MODULE_OVL0_2L, 1 << 4},
+			{DISP_MODULE_RSZ0, 1 << 5},
+			{-1, 0}
+		},
+		0, 0
+	}, /* bit1: mdp_wrot, bit3: mdp_rsz */
 
-	{DISP_MODULE_OVL0_2L,
-		{{DISP_MODULE_RDMA0, 1 << 0}, {DISP_MODULE_WDMA_VIRTUAL0, 1 << 2},
-		 {DISP_MODULE_OVL1_2L, 1 << 4}, {DISP_MODULE_RSZ0, 1 << 5}, {-1, 0} },
-		0, 0},
+	[1] = {
+		DISP_MODULE_OVL0_2L,
+		{
+			{DISP_MODULE_RDMA0, 1 << 0},
+			{DISP_MODULE_WDMA_VIRTUAL0, 1 << 2},
+			{DISP_MODULE_OVL1_2L, 1 << 4},
+			{DISP_MODULE_RSZ0, 1 << 5},
+			{-1, 0}
+		},
+		0, 0
+	},
 
-	{DISP_MODULE_OVL1_2L,
-		{{DISP_MODULE_RDMA0, 1 << 0}, {DISP_MODULE_WDMA_VIRTUAL0, 1 << 2},
-		 {DISP_MODULE_RDMA1, 1 << 4}, {DISP_MODULE_RSZ0, 1 << 5}, {-1, 0} },
-		0, 0},
+	[2] = {
+		DISP_MODULE_OVL1_2L,
+		{
+			{DISP_MODULE_RDMA0, 1 << 0},
+			{DISP_MODULE_WDMA_VIRTUAL0, 1 << 2},
+			{DISP_MODULE_RDMA1, 1 << 4},
+			{DISP_MODULE_RSZ0, 1 << 5},
+			{-1, 0}
+		},
+		0, 0
+	},
 
 	/* DITHER0_MOUT */
-	{DISP_MODULE_DITHER0,
-		{{DISP_MODULE_DSI0, 1 << 0}, {DISP_MODULE_DPI_VIRTUAL, 1 << 2},
-		 {DISP_MODULE_WDMA_VIRTUAL1, 1 << 3}, {-1, 0} },
-		0, 0},
+	[3] = {
+		DISP_MODULE_DITHER0,
+		{
+			{DISP_MODULE_DSI0, 1 << 0},
+			{DISP_MODULE_DPI_VIRTUAL, 1 << 2},
+			{DISP_MODULE_WDMA_VIRTUAL1, 1 << 3},
+			{-1, 0}
+		},
+		0, 0
+	},
 
-	/* RSZ_MOUT */
-	{DISP_MODULE_RSZ0,
-		{{DISP_MODULE_OVL0, 1 << 0}, {DISP_MODULE_OVL0_2L, 1 << 1},
-		 {DISP_MODULE_OVL1_2L, 1 << 2}, {DISP_MODULE_RDMA0, 1 << 3},
-		 {DISP_MODULE_WDMA_VIRTUAL0, 1 << 4}, {DISP_MODULE_RDMA_VIRTUAL0, 1 << 5},
-		 {-1, 0} },
-		0, 0},
+	/* RSZ0_MOUT */
+	[4] = {
+		DISP_MODULE_RSZ0,
+		{
+			{DISP_MODULE_OVL0, 1 << 0},
+			{DISP_MODULE_OVL0_2L, 1 << 1},
+			{DISP_MODULE_OVL1_2L, 1 << 2},
+			{DISP_MODULE_RDMA0, 1 << 3},
+			{DISP_MODULE_WDMA_VIRTUAL0, 1 << 4},
+			{DISP_MODULE_RDMA_VIRTUAL0, 1 << 5},
+			{-1, 0}
+		},
+		0, 0
+	},
 };
 
 static struct sel_s sel_out_map[] = {
 	/* RDMA0_SOUT */
-	{DISP_MODULE_RDMA_VIRTUAL0, {DISP_MODULE_DSI0, DISP_MODULE_COLOR0,
-						DISP_MODULE_CCORR0, DISP_MODULE_DPI_VIRTUAL}, 0, 0},
+	[0] = {
+		DISP_MODULE_RDMA_VIRTUAL0,
+		{
+			DISP_MODULE_DSI0, DISP_MODULE_COLOR0,
+			DISP_MODULE_CCORR0, DISP_MODULE_DPI_VIRTUAL,
+		},
+		0, 0
+	},
 
 	/* RDMA1_SOUT */
-	{DISP_MODULE_RDMA1, {DISP_MODULE_DPI, DISP_MODULE_DSI0}, 0, 0},
+	[1] = {
+		DISP_MODULE_RDMA1,
+		{
+			DISP_MODULE_DPI_VIRTUAL, DISP_MODULE_DSI0
+		},
+		0, 0
+	},
 
 	/* RDMA0_RSZ_SOUT */
-	{DISP_MODULE_RDMA0, {DISP_MODULE_RDMA_VIRTUAL0, DISP_MODULE_RSZ0}, 0, 0},
+	[2] = {
+		DISP_MODULE_RDMA0,
+		{
+			DISP_MODULE_RDMA_VIRTUAL0, DISP_MODULE_RSZ0
+		},
+		0, 0
+	},
 
 	/* DPI_SOUT */
-	{DISP_MODULE_DPI_VIRTUAL, {DISP_MODULE_DPI, DISP_MODULE_DBI}, 0, 0},
+	[3] = {
+		DISP_MODULE_DPI_VIRTUAL,
+		{
+			DISP_MODULE_DPI, DISP_MODULE_DBI
+		},
+		0, 0
+	},
 };
 
 /* 1st para is sout's output, 2nd para is sout's input */
 static struct sel_s sel_in_map[] = {
 	/* CCORR_SEL */
-	{DISP_MODULE_CCORR0, {DISP_MODULE_COLOR0, DISP_MODULE_RDMA_VIRTUAL0, -1}, 0, 0},
+	[0] = {
+		DISP_MODULE_CCORR0,
+		{
+			DISP_MODULE_COLOR0, DISP_MODULE_RDMA_VIRTUAL0, -1
+		},
+		0, 0
+	},
 
 	/* RDMA_SEL / PATH0_SEL */
-	{DISP_MODULE_RDMA0, {DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L,
-						 DISP_MODULE_OVL1_2L, DISP_MODULE_RSZ0, -1}, 0, 0},
+	[1] = {
+		DISP_MODULE_RDMA0,
+		{
+			DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L,
+			DISP_MODULE_OVL1_2L, DISP_MODULE_RSZ0, -1
+		},
+		0, 0
+	},
 
-	/* WDMA_SEL */
-	{DISP_MODULE_WDMA_VIRTUAL1, {DISP_MODULE_WDMA_VIRTUAL0,
-						DISP_MODULE_DITHER0, -1}, 0, 0},
+	/* WDMA0_PRE_SEL */
+	[2] = {
+		DISP_MODULE_WDMA_VIRTUAL1,
+		{
+			DISP_MODULE_WDMA_VIRTUAL0, DISP_MODULE_DITHER0, -1
+		},
+		0, 0
+	},
 
 	/* OVL_TO_WDMA_SEL */
-	{DISP_MODULE_WDMA_VIRTUAL0, {DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L,
-						DISP_MODULE_OVL1_2L, DISP_MODULE_RSZ0, -1}, 0, 0},
+	[3] = {
+		DISP_MODULE_WDMA_VIRTUAL0,
+		{
+			DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L,
+			DISP_MODULE_OVL1_2L, DISP_MODULE_RSZ0, -1
+		},
+		0, 0
+	},
 
 	/* WDMA0_SEL */
-	{DISP_MODULE_WDMA0, {DISP_MODULE_NUM, DISP_MODULE_NUM,
-						 DISP_MODULE_NUM, DISP_MODULE_WDMA_VIRTUAL1, -1}, 0, 0},
+	[4] = {
+		DISP_MODULE_WDMA0,
+		{
+			DISP_MODULE_NUM, DISP_MODULE_NUM,
+			DISP_MODULE_NUM, DISP_MODULE_WDMA_VIRTUAL1, -1
+		},
+		0, 0
+	},
+
 	/* DSI_SEL */
-	{DISP_MODULE_DSI0, {DISP_MODULE_DITHER0, DISP_MODULE_RDMA_VIRTUAL0,
-						DISP_MODULE_NUM, DISP_MODULE_RDMA1, -1}, 0, 0},
+	[5] = {
+		DISP_MODULE_DSI0,
+		{
+			DISP_MODULE_DITHER0, DISP_MODULE_RDMA_VIRTUAL0,
+			DISP_MODULE_NUM,
+			DISP_MODULE_RDMA1, -1
+		},
+		0, 0
+	},
 
 	/* DPI_SEL */
-	{DISP_MODULE_DPI_VIRTUAL, {DISP_MODULE_NUM, DISP_MODULE_RDMA_VIRTUAL0, DISP_MODULE_RDMA1,
-					   DISP_MODULE_DITHER0, -1}, 0, 0},
+	[6] = {
+		DISP_MODULE_DPI_VIRTUAL,
+		{
+			DISP_MODULE_NUM,
+			DISP_MODULE_RDMA_VIRTUAL0, DISP_MODULE_RDMA1,
+			DISP_MODULE_DITHER0, -1
+		},
+		0, 0
+	},
 
 	/* RSZ_SEL */
-	{DISP_MODULE_RSZ0, {DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL1_2L,
-						DISP_MODULE_RDMA0, -1}, 0, 0},
+	[7] = {
+		DISP_MODULE_RSZ0,
+		{
+			DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L,
+			DISP_MODULE_OVL1_2L, DISP_MODULE_RDMA0, -1
+		},
+		0, 0
+	},
 
 	/* RSZ_OUT_SEL */
-	{DISP_MODULE_RDMA_VIRTUAL0, {DISP_MODULE_RDMA0, DISP_MODULE_RSZ0, -1}, 0, 0},
-
+	[8] = {
+		DISP_MODULE_RDMA_VIRTUAL0,
+		{
+			DISP_MODULE_RDMA0, DISP_MODULE_RSZ0, -1
+		},
+		0, 0
+	},
 };
 
-static const int DDP_MOUT_NUM = sizeof(mout_map)/sizeof(struct mout_s);
-static const int DDP_SEL_OUT_NUM = sizeof(sel_out_map)/sizeof(struct sel_s);
-static const int DDP_SEL_IN_NUM = sizeof(sel_in_map)/sizeof(struct sel_s);
+static const int DDP_MOUT_NUM = ARRAY_SIZE(mout_map);
+static const int DDP_SEL_OUT_NUM = ARRAY_SIZE(sel_out_map);
+static const int DDP_SEL_IN_NUM = ARRAY_SIZE(sel_in_map);
 
 int ddp_path_init(void)
 {
@@ -249,21 +363,29 @@ int ddp_path_init(void)
 	mout_map[4].reg = (unsigned long *)DISP_REG_CONFIG_DISP_RSZ_MOUT_EN;
 
 	/* sel_out */
-	sel_out_map[0].reg = (unsigned long *)DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN;
-	sel_out_map[1].reg = (unsigned long *)DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN;
-	sel_out_map[2].reg = (unsigned long *)DISP_REG_CONFIG_DISP_RDMA0_RSZ_SOUT_SEL_IN;
-	sel_out_map[3].reg = (unsigned long *)DISP_REG_CONFIG_DPI0_SEL_SOUT_SEL_IN;
+	sel_out_map[0].reg = (unsigned long *)
+				DISP_REG_CONFIG_DISP_RDMA0_SOUT_SEL_IN;
+	sel_out_map[1].reg = (unsigned long *)
+				DISP_REG_CONFIG_DISP_RDMA1_SOUT_SEL_IN;
+	sel_out_map[2].reg = (unsigned long *)
+				DISP_REG_CONFIG_DISP_RDMA0_RSZ_SOUT_SEL_IN;
+	sel_out_map[3].reg = (unsigned long *)
+				DISP_REG_CONFIG_DPI0_SEL_SOUT_SEL_IN;
 
 	/* sel_in */
-	sel_in_map[0].reg = (unsigned long *)DISP_REG_CONFIG_DISP_COLOR_OUT_SEL_IN;
+	sel_in_map[0].reg = (unsigned long *)
+				DISP_REG_CONFIG_DISP_COLOR_OUT_SEL_IN;
 	sel_in_map[1].reg = (unsigned long *)DISP_REG_CONFIG_DISP_PATH0_SEL_IN;
-	sel_in_map[2].reg = (unsigned long *)DISP_REG_CONFIG_DISP_WDMA0_PRE_SEL_IN;
-	sel_in_map[3].reg = (unsigned long *)DISP_REG_CONFIG_DISP_OVLTOWDMA_SEL_IN;
+	sel_in_map[2].reg = (unsigned long *)
+				DISP_REG_CONFIG_DISP_WDMA0_PRE_SEL_IN;
+	sel_in_map[3].reg = (unsigned long *)
+				DISP_REG_CONFIG_DISP_OVLTOWDMA_SEL_IN;
 	sel_in_map[4].reg = (unsigned long *)DISP_REG_CONFIG_DISP_WDMA0_SEL_IN;
 	sel_in_map[5].reg = (unsigned long *)DISP_REG_CONFIG_DISP_DSI0_SEL_IN;
 	sel_in_map[6].reg = (unsigned long *)DISP_REG_CONFIG_DISP_DPI0_SEL_IN;
 	sel_in_map[7].reg = (unsigned long *)DISP_REG_CONFIG_DISP_RSZ_SEL_IN;
-	sel_in_map[8].reg = (unsigned long *)DISP_REG_CONFIG_DISP_RDMA0_RSZ_OUT_SEL_IN;
+	sel_in_map[8].reg = (unsigned long *)
+				DISP_REG_CONFIG_DISP_RDMA0_RSZ_OUT_SEL_IN;
 
 	return 0;
 }
@@ -297,6 +419,7 @@ char *ddp_get_scenario_name(enum DDP_SCENARIO_ENUM scenario)
 		return "sub_ovl_memout";
 	case DDP_SCENARIO_SUB_ALL:
 		return "sub_all";
+
 	/* others */
 	default:
 		DDPMSG("invalid scenario id=%d\n", scenario);
@@ -308,7 +431,7 @@ char *ddp_get_mode_name(enum DDP_MODE ddp_mode)
 {
 	switch (ddp_mode) {
 	case DDP_VIDEO_MODE:
-		return "vido_mode";
+		return "video_mode";
 	case DDP_CMD_MODE:
 		return "cmd_mode";
 	default:
@@ -342,97 +465,112 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 
 	DDPDBG("connect_path: %s to %s\n", ddp_get_module_name(module_list[0]),
 	       ddp_get_module_name(module_list[module_num - 1]));
+
 	/* connect mout */
 	for (i = 0; i < module_num - 1; i++) {
 		for (j = 0; j < DDP_MOUT_NUM; j++) {
-			if (module_list[i] == mout_map[j].id) {
-				/* find next module which can be connected */
-				step = i + 1;
-				while (_can_connect(module_list[step]) == 0
-				       && step < module_num) {
-					step++;
-				}
-				ASSERT(step < module_num);
-				mout = mout_map[j].reg_val;
-				for (k = 0; k < BIT_NUM; k++) {
-					if (mout_map[j].out_id_bit_map[k].m == -1)
-						break;
-					if (mout_map[j].out_id_bit_map[k].m == module_list[step]) {
-						mout |= mout_map[j].out_id_bit_map[k].v;
-						reg_mout |= mout;
-						mout_idx = j;
-						DDPDBG("connect mout %s to %s  bits 0x%x\n",
-						       ddp_get_module_name(module_list[i]),
-						       ddp_get_module_name(module_list[step]),
-						       reg_mout);
-						break;
-					}
-				}
-				mout_map[j].reg_val = mout;
-				mout = 0;
+			if (module_list[i] != mout_map[j].id)
+				continue;
+
+			/* find next module which can be connected */
+			step = i + 1;
+			while (_can_connect(module_list[step]) == 0 &&
+			       step < module_num) {
+				step++;
 			}
+			ASSERT(step < module_num);
+			mout = mout_map[j].reg_val;
+			for (k = 0; k < BIT_NUM; k++) {
+				if (mout_map[j].out_id_bit_map[k].m == -1)
+					break;
+				if (mout_map[j].out_id_bit_map[k].m !=
+				    module_list[step])
+					continue;
+
+				mout |= mout_map[j].out_id_bit_map[k].v;
+				reg_mout |= mout;
+				mout_idx = j;
+				DDPDBG("connect mout %s to %s  bits 0x%x\n",
+				       ddp_get_module_name(module_list[i]),
+				       ddp_get_module_name(module_list[step]),
+				       reg_mout);
+				break;
+			}
+			mout_map[j].reg_val = mout;
+			mout = 0;
 		}
+
 		if (reg_mout) {
 			DISP_REG_SET(handle, mout_map[mout_idx].reg, reg_mout);
 			reg_mout = 0;
 			mout_idx = 0;
 		}
 	}
+
 	/* connect out select */
 	for (i = 0; i < module_num - 1; i++) {
 		for (j = 0; j < DDP_SEL_OUT_NUM; j++) {
-			if (module_list[i] == sel_out_map[j].id) {
-				step = i + 1;
-				/* find next module which can be connected */
-				while (_can_connect(module_list[step]) == 0
-				       && step < module_num) {
-					step++;
-				}
-				ASSERT(step < module_num);
-				for (k = 0; k < BIT_NUM; k++) {
-					if (sel_out_map[j].id_bit_map[k] == -1)
-						break;
-					if (sel_out_map[j].id_bit_map[k] == module_list[step]) {
-						DDPDBG("connect out_s %s to %s, value=%d\n",
-						       ddp_get_module_name(module_list[i]),
-						       ddp_get_module_name(module_list[step]), k);
-						DISP_REG_SET(handle, sel_out_map[j].reg,
-							     (uint16_t) k);
-						break;
-					}
-				}
+			if (module_list[i] != sel_out_map[j].id)
+				continue;
+
+			step = i + 1;
+			/* find next module which can be connected */
+			while (_can_connect(module_list[step]) == 0 &&
+			       step < module_num) {
+				step++;
+			}
+			ASSERT(step < module_num);
+			for (k = 0; k < BIT_NUM; k++) {
+				if (sel_out_map[j].id_bit_map[k] == -1)
+					break;
+				if (sel_out_map[j].id_bit_map[k] !=
+				    module_list[step])
+					continue;
+
+				DDPDBG("connect out_s %s to %s, value=%d\n",
+				       ddp_get_module_name(module_list[i]),
+				       ddp_get_module_name(module_list[step]),
+				       k);
+				DISP_REG_SET(handle, sel_out_map[j].reg,
+					     (uint16_t)k);
+				break;
 			}
 		}
 	}
+
 	/* connect input select */
 	for (i = 1; i < module_num; i++) {
 		for (j = 0; j < DDP_SEL_IN_NUM; j++) {
-			if (module_list[i] == sel_in_map[j].id) {
-				int found = 0;
+			int found = 0;
 
-				step = i - 1;
-				/* find next module which can be connected */
-				while (_can_connect(module_list[step]) == 0 && step > 0)
-					step--;
+			if (module_list[i] != sel_in_map[j].id)
+				continue;
 
-				ASSERT(step >= 0);
-				for (k = 0; k < BIT_NUM; k++) {
-					if (sel_in_map[j].id_bit_map[k] == -1)
-						break;
-					if (sel_in_map[j].id_bit_map[k] == module_list[step]) {
-						DDPDBG("connect in_s %s to %s, value=%d\n",
-						       ddp_get_module_name(module_list[step]),
-						       ddp_get_module_name(module_list[i]), k);
-						DISP_REG_SET(handle, sel_in_map[j].reg,
-							     (uint16_t) k);
-						found = 1;
-						break;
-					}
-				}
-				if (!found)
-					DDPPR_ERR("%s error: %s sel_in not set\n", __func__,
-					       ddp_get_module_name(module_list[i]));
+			step = i - 1;
+			/* find next module which can be connected */
+			while (_can_connect(module_list[step]) == 0 && step > 0)
+				step--;
+
+			ASSERT(step >= 0);
+			for (k = 0; k < BIT_NUM; k++) {
+				if (sel_in_map[j].id_bit_map[k] == -1)
+					break;
+				if (sel_in_map[j].id_bit_map[k] !=
+				    module_list[step])
+					continue;
+
+				DDPDBG("connect in_s %s to %s, value=%d\n",
+				       ddp_get_module_name(module_list[step]),
+				       ddp_get_module_name(module_list[i]), k);
+				DISP_REG_SET(handle, sel_in_map[j].reg,
+					     (uint16_t)k);
+				found = 1;
+				break;
 			}
+			if (!found)
+				DDPPR_ERR("%s error: %s sel_in not set\n",
+				       __func__,
+				       ddp_get_module_name(module_list[i]));
 		}
 	}
 }
@@ -446,47 +584,51 @@ static void ddp_check_path_l(int *module_list)
 	unsigned int path_error = 0;
 	unsigned int module_num = ddp_get_module_num_l(module_list);
 
-	DDPDUMP("check_path: %s to %s\n", ddp_get_module_name(module_list[0])
-		, ddp_get_module_name(module_list[module_num - 1]));
+	DDPDUMP("check_path: %s to %s\n", ddp_get_module_name(module_list[0]),
+		ddp_get_module_name(module_list[module_num - 1]));
+
 	/* check mout */
 	for (i = 0; i < module_num - 1; i++) {
 		for (j = 0; j < DDP_MOUT_NUM; j++) {
-			if (module_list[i] == mout_map[j].id) {
-				mout = 0;
-				/* find next module which can be connected */
-				step = i + 1;
-				while (_can_connect(module_list[step]) == 0
-				       && step < module_num) {
-					step++;
-				}
-				ASSERT(step < module_num);
-				for (k = 0; k < BIT_NUM; k++) {
-					if (mout_map[j].out_id_bit_map[k].m == -1)
-						break;
-					if (mout_map[j].out_id_bit_map[k].m == module_list[step]) {
-						mout |= mout_map[j].out_id_bit_map[k].v;
-						valid = 1;
-						break;
-					}
-				}
-				if (valid) {
-					valid = 0;
-					if ((DISP_REG_GET(mout_map[j].reg) & mout) == 0) {
-						path_error += 1;
-						DDPDUMP("error:%s mout, expect=0x%x, real=0x%x\n",
-							ddp_get_module_name(module_list[i]),
-							mout, DISP_REG_GET(mout_map[j].reg));
-					} else if (DISP_REG_GET(mout_map[j].reg) != mout) {
-						DDPDUMP
-						    ("warning: %s mout expect=0x%x, real=0x%x\n",
-						     ddp_get_module_name(module_list[i]), mout,
-						     DISP_REG_GET(mout_map[j].reg));
-					}
-				}
-				break;
+			if (module_list[i] != mout_map[j].id)
+				continue;
+
+			mout = 0;
+			/* find next module which can be connected */
+			step = i + 1;
+			while (_can_connect(module_list[step]) == 0 &&
+			       step < module_num) {
+				step++;
 			}
+			ASSERT(step < module_num);
+			for (k = 0; k < BIT_NUM; k++) {
+				if (mout_map[j].out_id_bit_map[k].m == -1)
+					break;
+				if (mout_map[j].out_id_bit_map[k].m ==
+				    module_list[step]) {
+					mout |= mout_map[j].out_id_bit_map[k].v;
+					valid = 1;
+					break;
+				}
+			}
+			if (!valid)
+				break;
+
+			valid = 0;
+			if ((DISP_REG_GET(mout_map[j].reg) & mout) == 0) {
+				path_error += 1;
+				DDPDUMP("error:%s mout, expect=0x%x, real=0x%x\n",
+					ddp_get_module_name(module_list[i]),
+					mout, DISP_REG_GET(mout_map[j].reg));
+			} else if (DISP_REG_GET(mout_map[j].reg) != mout) {
+				DDPDUMP("warning: %s mout expect=0x%x, real=0x%x\n",
+					ddp_get_module_name(module_list[i]),
+					mout, DISP_REG_GET(mout_map[j].reg));
+			}
+			break;
 		}
 	}
+
 	/* check out select */
 	for (i = 0; i < module_num - 1; i++) {
 		for (j = 0; j < DDP_SEL_OUT_NUM; j++) {
@@ -494,28 +636,30 @@ static void ddp_check_path_l(int *module_list)
 				continue;
 			/* find next module which can be connected */
 			step = i + 1;
-			while (_can_connect(module_list[step]) == 0
-			       && step < module_num) {
+			while (_can_connect(module_list[step]) == 0 &&
+			       step < module_num) {
 				step++;
 			}
 			ASSERT(step < module_num);
 			for (k = 0; k < BIT_NUM; k++) {
 				if (sel_out_map[j].id_bit_map[k] == -1)
 					break;
-				if (sel_out_map[j].id_bit_map[k] == module_list[step]) {
-					if (DISP_REG_GET(sel_out_map[j].reg) != k) {
-						path_error += 1;
-						DDPDUMP
-						    ("error:out_s %s not connect to %s, expect=0x%x, real=0x%x\n",
-						     ddp_get_module_name(module_list[i]),
-						     ddp_get_module_name(module_list[step]),
-						     k, DISP_REG_GET(sel_out_map[j].reg));
-					}
+				if (sel_out_map[j].id_bit_map[k] !=
+				    module_list[step])
+					continue;
+				if (DISP_REG_GET(sel_out_map[j].reg) == k)
 					break;
-				}
+
+				path_error += 1;
+				DDPDUMP("error:out_s %s not connect to %s, expect=0x%x, real=0x%x\n",
+					ddp_get_module_name(module_list[i]),
+					ddp_get_module_name(module_list[step]),
+					k, DISP_REG_GET(sel_out_map[j].reg));
+				break;
 			}
 		}
 	}
+
 	/* check input select */
 	for (i = 1; i < module_num; i++) {
 		for (j = 0; j < DDP_SEL_IN_NUM; j++) {
@@ -529,24 +673,30 @@ static void ddp_check_path_l(int *module_list)
 			for (k = 0; k < BIT_NUM; k++) {
 				if (sel_in_map[j].id_bit_map[k] == -1)
 					break;
-				if (sel_in_map[j].id_bit_map[k] == module_list[step]) {
-					if (DISP_REG_GET(sel_in_map[j].reg) != k) {
-						path_error += 1;
-						DDPDUMP("error:in_s %s not conn to %s,expect0x%x,real0x%x\n",
-						     ddp_get_module_name(module_list[step]),
-						     ddp_get_module_name(module_list[i]), k,
-						     DISP_REG_GET(sel_in_map[j].reg));
-					}
+				if (sel_in_map[j].id_bit_map[k] !=
+				    module_list[step])
+					continue;
+
+				if (DISP_REG_GET(sel_in_map[j].reg) == k)
 					break;
-				}
+
+				path_error += 1;
+				DDPDUMP("error:in_s %s not conn to %s,expect0x%x,real0x%x\n",
+					ddp_get_module_name(module_list[step]),
+					ddp_get_module_name(module_list[i]), k,
+					DISP_REG_GET(sel_in_map[j].reg));
+				break;
 			}
 		}
 	}
+
 	if (path_error == 0) {
-		DDPDUMP("path: %s to %s is connected\n", ddp_get_module_name(module_list[0]),
+		DDPDUMP("path: %s to %s is connected\n",
+			ddp_get_module_name(module_list[0]),
 			ddp_get_module_name(module_list[module_num - 1]));
 	} else {
-		DDPDUMP("path: %s to %s not connected!!!\n", ddp_get_module_name(module_list[0]),
+		DDPDUMP("path: %s to %s not connected!!!\n",
+			ddp_get_module_name(module_list[0]),
 			ddp_get_module_name(module_list[module_num - 1]));
 	}
 }
@@ -560,38 +710,45 @@ static void ddp_disconnect_path_l(int *module_list, void *handle)
 	unsigned int mout_idx = 0;
 	unsigned int module_num = ddp_get_module_num_l(module_list);
 
-	DDPDBG("disconnect_path: %s to %s\n", ddp_get_module_name(module_list[0]),
+	DDPDBG("disconnect_path: %s to %s\n",
+	       ddp_get_module_name(module_list[0]),
 	       ddp_get_module_name(module_list[module_num - 1]));
 	for (i = 0; i < module_num - 1; i++) {
 		for (j = 0; j < DDP_MOUT_NUM; j++) {
-			if (module_list[i] == mout_map[j].id) {
-				/* find next module which can be connected */
-				step = i + 1;
-				while (_can_connect(module_list[step]) == 0
-				       && step < module_num) {
-					step++;
-				}
-				ASSERT(step < module_num);
-				for (k = 0; k < BIT_NUM; k++) {
-					if (mout_map[j].out_id_bit_map[k].m == -1)
-						break;
-					if (mout_map[j].out_id_bit_map[k].m == module_list[step]) {
-						mout |= mout_map[j].out_id_bit_map[k].v;
-						reg_mout |= mout;
-						mout_idx = j;
-						DDPDBG("disconnect mout %s to %s\n",
-						       ddp_get_module_name(module_list[i]),
-						       ddp_get_module_name(module_list[step]));
-						break;
-					}
-				}
-				/* update mout_value */
-				mout_map[j].reg_val &= ~mout;
-				mout = 0;
+			if (module_list[i] != mout_map[j].id)
+				continue;
+
+			/* find next module which can be connected */
+			step = i + 1;
+			while (_can_connect(module_list[step]) == 0 &&
+			       step < module_num) {
+				step++;
 			}
+			ASSERT(step < module_num);
+			for (k = 0; k < BIT_NUM; k++) {
+				if (mout_map[j].out_id_bit_map[k].m == -1)
+					break;
+
+				if (mout_map[j].out_id_bit_map[k].m !=
+				    module_list[step])
+					continue;
+
+				mout |= mout_map[j].out_id_bit_map[k].v;
+				reg_mout |= mout;
+				mout_idx = j;
+				DDPDBG("disconnect mout %s to %s\n",
+				       ddp_get_module_name(module_list[i]),
+				       ddp_get_module_name(module_list[step]));
+				break;
+			}
+			/* update mout_value */
+			mout_map[j].reg_val &= ~mout;
+			mout = 0;
 		}
+
 		if (reg_mout) {
-			DISP_REG_SET(handle, mout_map[mout_idx].reg, mout_map[mout_idx].reg_val);
+			DISP_REG_SET(handle, mout_map[mout_idx].reg,
+				     mout_map[mout_idx].reg_val);
 			reg_mout = 0;
 			mout_idx = 0;
 		}
@@ -610,34 +767,42 @@ static void ddp_print_scenario(enum DDP_SCENARIO_ENUM scenario)
 	int num = ddp_get_module_num(scenario);
 
 	for (i = 0; i < num; i++)
-		strncat(path, ddp_get_module_name(module_list_scenario[scenario][i]),
-			(sizeof(path) - strlen(path) - 1));
-	DDPMSG("scenario %s have modules: %s\n", ddp_get_scenario_name(scenario), path);
+		strncat(path, ddp_get_module_name(
+					module_list_scenario[scenario][i]),
+					(sizeof(path) - strlen(path) - 1));
+	DDPMSG("scenario %s have modules: %s\n",
+	       ddp_get_scenario_name(scenario), path);
 }
 
-static int ddp_find_module_index(enum DDP_SCENARIO_ENUM ddp_scenario, enum DISP_MODULE_ENUM module)
+static int ddp_find_module_index(enum DDP_SCENARIO_ENUM scn,
+				 enum DISP_MODULE_ENUM module)
 {
 	int i = 0;
 
 	for (i = 0; i < DDP_ENING_NUM; i++) {
-		if (module_list_scenario[ddp_scenario][i] == module)
+		if (module_list_scenario[scn][i] == module)
 			return i;
 
 	}
-	DDPDBG("find module: can not find module %s on scenario %s\n", ddp_get_module_name(module),
-	       ddp_get_scenario_name(ddp_scenario));
+	DDPDBG("find module: can not find module %s on scenario %s\n",
+	       ddp_get_module_name(module),
+	       ddp_get_scenario_name(scn));
 	return -1;
 }
 
 /* set display interface when kernel init */
-int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario, enum DISP_MODULE_ENUM dst_module)
+int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario,
+		       enum DISP_MODULE_ENUM dst_module)
 {
 	int i = 0;
 
-	DDPDBG("ddp_set_dst_module, scenario=%s, dst_module=%s\n",
-	       ddp_get_scenario_name(scenario), ddp_get_module_name(dst_module));
+	DDPDBG("%s, scenario=%s, dst_module=%s\n",
+	       __func__, ddp_get_scenario_name(scenario),
+	       ddp_get_module_name(dst_module));
+
 	if (ddp_find_module_index(scenario, dst_module) != -1) {
-		DDPDBG("%s is already on path\n", ddp_get_module_name(dst_module));
+		DDPDBG("%s is already on path\n",
+		       ddp_get_module_name(dst_module));
 		return 0;
 	}
 	i = ddp_get_module_num_l(module_list_scenario[scenario]) - 1;
@@ -645,7 +810,7 @@ int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario, enum DISP_MODULE_ENUM ds
 
 	if (dst_module == DISP_MODULE_DSIDUAL) {
 		if (i < (DDP_ENING_NUM - 1)) {
-			/* module_list_scenario[scenario][i++] = DISP_MODULE_SPLIT0; */
+			;
 		} else {
 			DDPPR_ERR("set dst module over up bound\n");
 			return -1;
@@ -672,76 +837,106 @@ int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario, enum DISP_MODULE_ENUM ds
 	return 0;
 }
 
-enum DISP_MODULE_ENUM ddp_get_dst_module(enum DDP_SCENARIO_ENUM ddp_scenario)
+enum DISP_MODULE_ENUM ddp_get_dst_module(enum DDP_SCENARIO_ENUM scn)
 {
 	enum DISP_MODULE_ENUM module_name = DISP_MODULE_UNKNOWN;
-	int module_num = ddp_get_module_num_l(module_list_scenario[ddp_scenario]) - 1;
+	int module_num = ddp_get_module_num_l(module_list_scenario[scn]) - 1;
 
 	if (module_num >= 0)
-		module_name = module_list_scenario[ddp_scenario][module_num];
+		module_name = module_list_scenario[scn][module_num];
 
 	return module_name;
 }
 
-int *ddp_get_scenario_list(enum DDP_SCENARIO_ENUM ddp_scenario)
+int *ddp_get_scenario_list(enum DDP_SCENARIO_ENUM scn)
 {
-	return module_list_scenario[ddp_scenario];
+	return module_list_scenario[scn];
 }
 
-int ddp_is_module_in_scenario(enum DDP_SCENARIO_ENUM ddp_scenario, enum DISP_MODULE_ENUM module)
+int ddp_is_module_in_scenario(enum DDP_SCENARIO_ENUM scn,
+			      enum DISP_MODULE_ENUM module)
 {
 	int i = 0;
 
 	for (i = 0; i < DDP_ENING_NUM; i++) {
-		if (module_list_scenario[ddp_scenario][i] == module)
+		if (module_list_scenario[scn][i] == module)
 			return 1;
-
 	}
 	return 0;
 }
 
 void ddp_connect_path(enum DDP_SCENARIO_ENUM scenario, void *handle)
 {
-	DDPDBG("path connect on scenario %s\n", ddp_get_scenario_name(scenario));
+	int *m_list = NULL;
+
+	DDPDBG("path connect on scenario %s\n",
+	       ddp_get_scenario_name(scenario));
+
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
-		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], handle);
-		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT], handle);
+		m_list = module_list_scenario[DDP_SCENARIO_PRIMARY_DISP];
+		ddp_connect_path_l(m_list, handle);
+
+		m_list = module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT];
+		ddp_connect_path_l(m_list, handle);
 	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
-		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP], handle);
-		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT], handle);
+		m_list = module_list_scenario[DDP_SCENARIO_SUB_DISP];
+		ddp_connect_path_l(m_list, handle);
+
+		m_list = module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT];
+		ddp_connect_path_l(m_list, handle);
 	} else {
-		ddp_connect_path_l(module_list_scenario[scenario], handle);
+		m_list = module_list_scenario[scenario];
+		ddp_connect_path_l(m_list, handle);
 	}
 }
 
 void ddp_disconnect_path(enum DDP_SCENARIO_ENUM scenario, void *handle)
 {
-	DDPDBG("path disconnect on scenario %s\n", ddp_get_scenario_name(scenario));
+	int *m_list = NULL;
+
+	DDPDBG("path disconnect on scenario %s\n",
+	       ddp_get_scenario_name(scenario));
 
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
-		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], handle);
-		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT],
-				      handle);
+		m_list = module_list_scenario[DDP_SCENARIO_PRIMARY_DISP];
+		ddp_disconnect_path_l(m_list, handle);
+
+		m_list = module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT];
+		ddp_disconnect_path_l(m_list, handle);
 	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
-		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP], handle);
-		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT], handle);
+		m_list = module_list_scenario[DDP_SCENARIO_SUB_DISP];
+		ddp_disconnect_path_l(m_list, handle);
+
+		m_list = module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT];
+		ddp_disconnect_path_l(m_list, handle);
 	} else {
-		ddp_disconnect_path_l(module_list_scenario[scenario], handle);
+		m_list = module_list_scenario[scenario];
+		ddp_disconnect_path_l(m_list, handle);
 	}
 }
 
 void ddp_check_path(enum DDP_SCENARIO_ENUM scenario)
 {
-	DDPDBG("path check path on scenario %s\n", ddp_get_scenario_name(scenario));
+	int *m_list = NULL;
+
+	DDPDBG("path check path on scenario %s\n",
+	       ddp_get_scenario_name(scenario));
 
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT]);
+		m_list = module_list_scenario[DDP_SCENARIO_PRIMARY_DISP];
+		ddp_check_path_l(m_list);
+
+		m_list = module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT];
+		ddp_check_path_l(m_list);
 	} else if (scenario == DDP_SCENARIO_SUB_ALL) {
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_SUB_DISP]);
-		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT]);
+		m_list = module_list_scenario[DDP_SCENARIO_SUB_DISP];
+		ddp_check_path_l(m_list);
+
+		m_list = module_list_scenario[DDP_SCENARIO_SUB_OVL_MEMOUT];
+		ddp_check_path_l(m_list);
 	} else {
-		ddp_check_path_l(module_list_scenario[scenario]);
+		m_list = module_list_scenario[scenario];
+		ddp_check_path_l(m_list);
 	}
 }
 
@@ -760,32 +955,38 @@ int ddp_check_smi_status(void)
 	for (i = 0; i < 2 ; ++i) {
 		ret = 0;
 		/* check LARB0 display port ostd*/
-		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x280); /* ovl0 */
+		/* ovl0 */
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x280);
 		if (reg_value != 0) {
 			DDPERR("smi larb0 ovl0 port ostd not 0\n");
 			ret = -1;
 		}
-		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x284); /* ovl0_2L */
+		/* ovl0_2L */
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x284);
 		if (reg_value != 0) {
 			DDPERR("smi larb0 ovl0_2L port ostd not 0\n");
 			ret = -1;
 		}
-		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x288); /* ovl1_2L */
+		/* ovl1_2L */
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x288);
 		if (reg_value != 0) {
 			DDPERR("smi larb0 ovl1_2L port ostd not 0\n");
 			ret = -1;
 		}
-		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x28c); /* rdma0 */
+		/* rdma0 */
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x28c);
 		if (reg_value != 0) {
 			DDPERR("smi larb0 rdma0 port ostd not 0\n");
 			ret = -1;
 		}
-		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x290); /* rdma1 */
+		/* rdma1 */
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x290);
 		if (reg_value != 0) {
 			DDPERR("smi larb0 rdma1 port ostd not 0\n");
 			ret = -1;
 		}
-		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x294); /* wdma0 */
+		/* wdma0 */
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x294);
 		if (reg_value != 0) {
 			DDPERR("smi larb0 wdma0 port ostd not 0\n");
 			ret = -1;
@@ -802,20 +1003,12 @@ int ddp_check_smi_status(void)
 	return ret;
 }
 
-int ddp_check_engine_status(int mutexID)
-{
-	/* check engines' clock bit &  enable bit & status bit before unlock mutex */
-	/* should not needed, in comdq do? */
-	int result = 0;
-	return result;
-}
-
 int ddp_path_top_clock_on(void)
 {
 	DDPDBG("ddp path top clock on\n");
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
-		;/*ddp_clk_prepare_enable(MM_VENCPLL);*/
+		; /* ddp_clk_prepare_enable(MM_VENCPLL); */
 	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
 	/*ddp_clk_prepare_enable(TOP_26M);*/
 	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
@@ -831,11 +1024,12 @@ int ddp_path_top_clock_on(void)
 	/* hw workaround : end */
 
 	/* MMSYS golden setting */
-	DISP_REG_SET_FIELD(NULL, REG_FLD(5, 0), DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK, 0x3);
+	DISP_REG_SET_FIELD(NULL, REG_FLD(5, 0),
+			DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK, 0x3);
 
-	/* enable_clock(MT_CG_DISP0_MUTEX_32K, "DDP_MUTEX"); */
-	DDPDBG("ddp CG0:%x, CG1:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
-		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
+	DDPDBG("ddp CG0:%x, CG1:%x\n",
+	       DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
+	       DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON1));
 
 	return 0;
 }
@@ -852,7 +1046,7 @@ int ddp_path_top_clock_off(void)
 	ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
-		;/*ddp_clk_disable_unprepare(MM_VENCPLL);*/
+		; /* ddp_clk_disable_unprepare(MM_VENCPLL); */
 
 	return 0;
 }
@@ -861,8 +1055,7 @@ int ddp_insert_config_allow_rec(void *handle)
 {
 	int ret = 0;
 
-	if (handle == NULL)
-		ASSERT(0);
+	ASSERT(handle);
 
 	if (primary_display_is_video_mode())
 		ret = cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
@@ -876,13 +1069,13 @@ int ddp_insert_config_dirty_rec(void *handle)
 {
 	int ret = 0;
 
-	if (handle == NULL)
-		ASSERT(0);
+	ASSERT(handle);
 
 	if (primary_display_is_video_mode()) /* TODO: modify this */
-		;/* do nothing */
+		; /* do nothing */
 	else
-		ret = cmdqRecSetEventToken(handle, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+		ret = cmdqRecSetEventToken(handle,
+					   CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
 
 	return ret;
 }
@@ -893,7 +1086,8 @@ int disp_get_dst_module(enum DDP_SCENARIO_ENUM scenario)
 }
 
 int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg,
-				  struct OVL_CONFIG_STRUCT *ovl_cfg, int dst_w, int dst_h)
+				  struct OVL_CONFIG_STRUCT *ovl_cfg,
+				  int dst_w, int dst_h)
 {
 	unsigned int Bpp = ufmt_get_Bpp(ovl_cfg->fmt);
 	unsigned int offset;
@@ -950,13 +1144,17 @@ bool ddp_path_need_mmsys_sw_reset(enum DISP_MODULE_ENUM module)
 			DISP_REG_SMI_COMMON_SMI_DEBUG_M0);
 		smi_larb_ostd = DISP_REG_GET_FIELD(FLD_OSTD_MON_PORT,
 			DISP_REG_SMI_LARB0_SMI_LARB_OSTD_MON_PORT4);
+
 		DDPMSG("%s, module:%d, rdma_smi_busy:%d, smi_common_ostd:%d, smi_larb_ostd:%d\n",
-			__func__, module, rdma_smi_busy, smi_common_ostd, smi_larb_ostd);
-		if (rdma_smi_busy == 1 && smi_common_ostd == 0 && smi_common_ostd == 0)
+			__func__, module, rdma_smi_busy,
+			smi_common_ostd, smi_larb_ostd);
+		if (rdma_smi_busy == 1 && smi_common_ostd == 0 &&
+				smi_common_ostd == 0)
 			return true;
 		else
 			return false;
-	} else if ((module == DISP_MODULE_OVL0) || (module == DISP_MODULE_OVL0_2L) ||
+	} else if ((module == DISP_MODULE_OVL0) ||
+				(module == DISP_MODULE_OVL0_2L) ||
 				(module == DISP_MODULE_OVL1_2L)) {
 		int ovl_smi_busy = 0, ovl_state, smi_common_ostd, smi_larb_ostd;
 		int i, ovl_reg_value;
@@ -964,15 +1162,18 @@ bool ddp_path_need_mmsys_sw_reset(enum DISP_MODULE_ENUM module)
 
 		ovl_state = DISP_REG_GET(DISP_REG_OVL_FLOW_CTRL_DBG + ovl_base);
 		for (i = 0 ; i < ovl_layer_num_for_debug(module) ; i++)	{
-			ovl_reg_value =	DISP_REG_GET(DISP_REG_OVL_RDMA0_DBG + ovl_base + 0x4 * i);
+			ovl_reg_value =	DISP_REG_GET(DISP_REG_OVL_RDMA0_DBG +
+					ovl_base + 0x4 * i);
 			ovl_smi_busy |= (ovl_reg_value >> 30) & 0x1;
 		}
 		smi_common_ostd = DISP_REG_GET_FIELD(FLD_SMI_DEBUG_M0,
 			DISP_REG_SMI_COMMON_SMI_DEBUG_M0);
 		smi_larb_ostd = DISP_REG_GET_FIELD(FLD_OSTD_MON_PORT,
-			DISP_REG_SMI_LARB0_SMI_LARB_OSTD_MON_PORT0 + ovl_to_index(module) * 4);
+			DISP_REG_SMI_LARB0_SMI_LARB_OSTD_MON_PORT0 +
+			ovl_to_index(module) * 4);
 		DDPMSG("%s, module:%d, ovl_state:%x, ovl_smi_busy:%d, smi_common_ostd:%d, smi_larb_ostd:%d\n",
-			__func__, module, ovl_state, ovl_smi_busy, smi_common_ostd, smi_larb_ostd);
+			__func__, module, ovl_state, ovl_smi_busy,
+			smi_common_ostd, smi_larb_ostd);
 		if (ovl_state != 1 && ovl_smi_busy != 0 &&
 			smi_common_ostd == 0 && smi_common_ostd == 0)
 			return true;
@@ -990,7 +1191,8 @@ bool ddp_path_need_mmsys_sw_reset(enum DISP_MODULE_ENUM module)
 		smi_larb_ostd = DISP_REG_GET_FIELD(FLD_OSTD_MON_PORT,
 			DISP_REG_SMI_LARB0_SMI_LARB_OSTD_MON_PORT6);
 		DDPMSG("%s, module:%d, wdma_state:%d, wdma_smi_busy:%d, smi_common_ostd:%d, smi_larb_ostd:%d\n",
-			__func__, module, wdma_state, wdma_smi_busy, smi_common_ostd, smi_larb_ostd);
+			__func__, module, wdma_state, wdma_smi_busy,
+			smi_common_ostd, smi_larb_ostd);
 		if (wdma_state != 1 && wdma_smi_busy != 0 &&
 			smi_common_ostd == 0 && smi_common_ostd == 0)
 			return true;
@@ -1062,8 +1264,10 @@ int ddp_path_mmsys_sw_reset(enum DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x290),
 		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x294));
 
-	DISP_REG_SET_FIELD(NULL, REG_FLD(1, bit), DISP_REG_CONFIG_MMSYS_SW0_RST_B, 0x0);
-	DISP_REG_SET_FIELD(NULL, REG_FLD(1, bit), DISP_REG_CONFIG_MMSYS_SW0_RST_B, 0x1);
+	DISP_REG_SET_FIELD(NULL, REG_FLD(1, bit),
+			DISP_REG_CONFIG_MMSYS_SW0_RST_B, 0x0);
+	DISP_REG_SET_FIELD(NULL, REG_FLD(1, bit),
+			DISP_REG_CONFIG_MMSYS_SW0_RST_B, 0x1);
 
 	pr_info("after access smi_larb0 + 0x280: %8x %8x %8x\n",
 		DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x280),

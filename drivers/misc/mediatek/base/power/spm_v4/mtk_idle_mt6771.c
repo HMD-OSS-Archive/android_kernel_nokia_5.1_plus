@@ -14,14 +14,15 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
+#include <mtk_spm_internal.h>
 #include <mtk_idle_internal.h>
-#include <ddp_pwm.h>
+//#include <ddp_pwm.h>
 
 #include <mt-plat/mtk_secure_api.h>
 #include <mtk_spm_reg.h>
 
-#define IDLE_TAG     "Power/swap"
-#define idle_err(fmt, args...)		pr_info(IDLE_TAG fmt, ##args)
+#define IDLE_TAG     "[name:spm&]Power/swap"
+#define idle_err(fmt, args...)		printk_deferred(IDLE_TAG fmt, ##args)
 
 #define NF_CLKMUX_PASS_CRITERIA     8
 #define NF_CLKMUX_COND_SET          9 /* NF_CLKMUX_PASS_CRITERIA + 1 */
@@ -350,26 +351,26 @@ bool __attribute__((weak)) disp_pwm_is_osc(void)
  */
 const char *mtk_get_idle_name(int id)
 {
-	if (id >= 0 && id < NR_TYPES)
+	WARN_ON(INVALID_IDLE_ID(id));
+	if ((id >= 0) && (id < NR_TYPES))
 		return idle_name[id];
-	else
-		return NULL;
+	return "Invalid_Name";
 }
 
 const char *mtk_get_reason_name(int id)
 {
-	if (id >= 0 && id < NR_REASONS)
+	WARN_ON(INVALID_REASON_ID(id));
+	if ((id >= 0) && (id < NR_REASONS))
 		return reason_name[id];
-	else
-		return NULL;
+	return "Invalid_Name";
 }
 
 const char *mtk_get_cg_group_name(int id)
 {
-	if (id >= 0 && id < NR_GRPS)
+	WARN_ON(INVALID_GRP_ID(id));
+	if ((id >= 0) && (id < NR_GRPS))
 		return cg_group_name[id];
-	else
-		return NULL;
+	return "Invalid_Name";
 }
 
 static int sys_is_on(enum subsys_id id)
@@ -381,14 +382,12 @@ static int sys_is_on(enum subsys_id id)
 		VEN_PWR_STA_MASK,
 	};
 
-#if 0
-	if (id >= NR_SYSS__)
-		/* BUG(); */
-#endif
-
 	u32 mask = pwr_sta_mask[id];
 	u32 sta = idle_readl(SPM_PWR_STATUS);
 	u32 sta_s = idle_readl(SPM_PWR_STATUS_2ND);
+
+	/* if (id >= NR_SYSS__) */
+		/* BUG(); */
 
 	return (sta & mask) && (sta_s & mask);
 }
@@ -430,7 +429,10 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	clks[CG_PWR_STATE] = idle_readl(SPM_PWR_STATUS);
 }
 
-static inline void mtk_idle_check_cg_internal(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD], int idle_type)
+static inline void
+	mtk_idle_check_cg_internal(
+		unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD],
+		int idle_type)
 {
 	int a, b;
 
@@ -442,12 +444,13 @@ static inline void mtk_idle_check_cg_internal(unsigned int block_mask[NR_TYPES][
 	}
 }
 
-bool mtk_idle_check_secure_cg(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD])
+bool mtk_idle_check_secure_cg(
+		unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD])
 {
 	int ret = 0;
 	int i;
 
-	ret = mt_secure_call(MTK_SIP_KERNEL_CHECK_SECURE_CG, 0, 0, 0);
+	ret = SMC_CALL(MTK_SIP_KERNEL_CHECK_SECURE_CG, 0, 0, 0);
 
 	if (ret)
 		for (i = 0; i < NR_TYPES; i++)
@@ -485,12 +488,14 @@ bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD])
 #endif
 			/* CG status */
 			for (j = 0; j < NR_GRPS; j++) {
-				block_mask[i][j] = idle_condition_mask[i][j] & clks[j];
+				block_mask[i][j] =
+					idle_condition_mask[i][j] & clks[j];
 				if (block_mask[i][j])
 					block_mask[i][NR_GRPS] |= 0x2;
 			}
 			if (i == IDLE_TYPE_DP)
-				mtk_idle_check_cg_internal(block_mask, IDLE_TYPE_DP);
+				mtk_idle_check_cg_internal(block_mask,
+								IDLE_TYPE_DP);
 
 			/* mtcmos */
 			if (i == IDLE_TYPE_DP && !dpidle_by_pass_pg) {
@@ -498,15 +503,18 @@ bool mtk_idle_check_cg(unsigned int block_mask[NR_TYPES][NF_CG_STA_RECORD])
 
 				if (sta & flag) {
 					block_mask[i][NR_GRPS + 0] |= 0x4;
-					block_mask[i][NR_GRPS + 1] = (sta & flag);
+					block_mask[i][NR_GRPS + 1] =
+								(sta & flag);
 				}
 			}
-			if ((i == IDLE_TYPE_SO || i == IDLE_TYPE_SO3) && !soidle_by_pass_pg) {
+			if ((i == IDLE_TYPE_SO || i == IDLE_TYPE_SO3) &&
+				!soidle_by_pass_pg) {
 				unsigned int flag = SO_PWR_STA_MASK;
 
 				if (sta & flag) {
 					block_mask[i][NR_GRPS + 0] |= 0x4;
-					block_mask[i][NR_GRPS + 1] = (sta & flag);
+					block_mask[i][NR_GRPS + 1] =
+								(sta & flag);
 				}
 			}
 			if (block_mask[i][NR_GRPS])
@@ -539,7 +547,8 @@ bool mtk_idle_check_pll(unsigned int *condition_mask, unsigned int *block_mask)
 	for (i = 0; i < NR_PLLS; i++) {
 		if (is_pll_on(i) & condition_mask[i]) {
 			for (j = 0; j < NR_PLLS; j++)
-				block_mask[j] = is_pll_on(j) & condition_mask[j];
+				block_mask[j] =
+					is_pll_on(j) & condition_mask[j];
 			return false;
 		}
 	}
@@ -550,7 +559,8 @@ bool mtk_idle_check_pll(unsigned int *condition_mask, unsigned int *block_mask)
 #if 0
 /* No need to get audio base */
 static int __init get_base_from_matching_node(
-				     const struct of_device_id *ids, void __iomem **pbase, int idx, const char *cmp)
+		const struct of_device_id *ids, void __iomem **pbase, int idx,
+		const char *cmp)
 {
 	struct device_node *node;
 
@@ -677,7 +687,8 @@ bool mtk_idle_check_clkmux(
 
 			final_result = false;
 
-			block_mask[idle_type][idx] |= (clkmux_val << shifts[offset]);
+			block_mask[idle_type][idx] |=
+				(clkmux_val << shifts[offset]);
 		}
 	}
 

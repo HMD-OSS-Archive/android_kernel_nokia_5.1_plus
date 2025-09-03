@@ -93,12 +93,15 @@
 #define MD_BUSREC_LAY_BASE		(0x0D0C2500)
 #define MD_BUSREC_LAY_LEN		0x8
 
- /* ECT */
-#define MD_ECT_REG_BASE0		(0x0D0CC130)/* MD ECT triggerIn/Out status */
+/* ECT */
+/* MD ECT triggerIn/Out status */
+#define MD_ECT_REG_BASE0		(0x0D0CC130)
 #define MD_ECT_REG_LEN0			0x8
-#define MD_ECT_REG_BASE1		(0x0D0CD130)/* ModemSys ECT triggerIn/Out status */
+/* ModemSys ECT triggerIn/Out status */
+#define MD_ECT_REG_BASE1		(0x0D0CD130)
 #define MD_ECT_REG_LEN1			0x8
-#define MD_ECT_REG_BASE2		(0x0D0CE000)/* MD32 ECT status */
+/* MD32 ECT status */
+#define MD_ECT_REG_BASE2		(0x0D0CE000)
 #define MD_ECT_REG_LEN2			0x20
  /* TOPSM reg */
 #define MD_TOPSM_REG_BASE		(0x0200D0000)
@@ -127,11 +130,11 @@
 #define MD_SRAM_PD_PSMCUSYS_SRAM_LEN	(0xB00)
 
 /*
-* ============================================================
-*  Modem 3 part
-* ============================================================
-* need modify, haow
-*/
+ * ============================================================
+ *  Modem 3 part
+ * ============================================================
+ * need modify, haow
+ */
 #define MD3_BOOT_VECTOR 0x30190000
 #define MD3_BOOT_VECTOR_KEY 0x3019379C
 #define MD3_BOOT_VECTOR_EN 0x30195488

@@ -322,8 +322,7 @@ static int _ged_gpu_tuner_custom_hint_set_seq_show(
 	char buf[BUF_LEN];
 
 	seq_puts(psSeqFile, "support cmd list\n");
-	seq_puts(psSeqFile,
-	"anisotropic_disable => MTK_GPU_TUNER_ANISOTROPIC_DISABLE\n");
+	seq_puts(psSeqFile, "anisotropic_disable => MTK_GPU_TUNER_ANISOTROPIC_DISABLE\n");
 	seq_puts(psSeqFile, "trilinear_disable => MTK_GPU_TUNER_TRILINEAR_DISABLE\n");
 	seq_puts(psSeqFile, "========================================\n");
 	if (gpu_tuner_last_custom_hint.packagename[0]) {
@@ -590,7 +589,7 @@ ERROR:
 
 GED_ERROR ged_gpu_tuner_init(void)
 {
-	GED_ERROR err = GED_TRUE;
+	GED_ERROR err = GED_OK;
 
 	GPU_TUNER_DEBUG("[%s] In\n", __func__);
 
@@ -674,12 +673,12 @@ GED_ERROR ged_gpu_tuner_exit(void)
 
 	GPU_TUNER_DEBUG("[%s] Out\n", __func__);
 
-	return GED_TRUE;
+	return GED_OK;
 }
 
 int ged_bridge_gpu_tuner_status(
-		GED_BRIDGE_IN_GPU_TUNER_STATUS *in,
-		GED_BRIDGE_OUT_GPU_TUNER_STATUS *out)
+		struct GED_BRIDGE_IN_GPU_TUNER_STATUS *in,
+		struct GED_BRIDGE_OUT_GPU_TUNER_STATUS *out)
 {
 	struct GED_GPU_TUNER_ITEM item;
 	GED_ERROR err = GED_ERROR_FAIL;

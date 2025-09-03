@@ -73,7 +73,8 @@ DEFINE_SEMAPHORE(mtkfb_vsync_sem);
 void mtkfb_vsync_log_enable(int enable)
 {
 	mtkfb_vsync_on = enable;
-	MTKFB_VSYNC_LOG("mtkfb_vsync log %s\n", enable ? "enabled" : "disabled");
+	MTKFB_VSYNC_LOG("mtkfb_vsync log %s\n",
+			enable ? "enabled" : "disabled");
 }
 
 static int mtkfb_vsync_open(struct inode *inode, struct file *file)
@@ -82,7 +83,8 @@ static int mtkfb_vsync_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static ssize_t mtkfb_vsync_read(struct file *file, char __user *data, size_t len, loff_t *ppos)
+static ssize_t mtkfb_vsync_read(struct file *file, char __user *data,
+				size_t len, loff_t *ppos)
 {
 	VSYNC_DBG("driver read\n");
 	return 0;
@@ -101,46 +103,51 @@ static int mtkfb_vsync_flush(struct file *a_pstFile, fl_owner_t a_id)
 	return 0;
 }
 
-static long mtkfb_vsync_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static long mtkfb_vsync_unlocked_ioctl(struct file *file, unsigned int cmd,
+				       unsigned long arg)
 {
 	int ret = 0;
 
 	MTKFB_VSYNC_FUNC();
 	switch (cmd) {
 	case MTKFB_VSYNC_IOCTL:
-		{
-			MTKFB_VSYNC_LOG("[MTKFB_VSYNC]: enter MTKFB_VSYNC_IOCTL\n");
+	{
+		MTKFB_VSYNC_LOG("[MTKFB_VSYNC]: enter MTKFB_VSYNC_IOCTL\n");
 #ifdef CONFIG_MTK_HDMI_SUPPORT
-			extd_driver[DEV_MHL] = EXTD_HDMI_Driver();
-			extd_driver[DEV_EINK] = EXTD_EPD_Driver();
-			if (arg == MTKFB_VSYNC_SOURCE_HDMI || arg == MTKFB_VSYNC_SOURCE_EPD) {
-				if (down_interruptible(&mtkfb_vsync_sem)) {
-					pr_err("[mtkfb_vsync_ioctl] can't get semaphore,%d\n", __LINE__);
-					msleep(20);
-					return ret;
-				}
-
-				if (extd_driver[arg-1]->wait_vsync)
-					ret = extd_driver[arg-1]->wait_vsync();
-				else
-					ret = -EFAULT;
-
-				up(&mtkfb_vsync_sem);
-				pr_debug("[MTKFB_VSYNC]: leave MTKFB_VSYNC_IOCTL, %d, ret:%d\n", __LINE__, ret);
-
-				return ret;
-			}
-#endif
-
+		extd_driver[DEV_MHL] = EXTD_HDMI_Driver();
+		extd_driver[DEV_EINK] = EXTD_EPD_Driver();
+		if (arg == MTKFB_VSYNC_SOURCE_HDMI ||
+			arg == MTKFB_VSYNC_SOURCE_EPD) {
 			if (down_interruptible(&mtkfb_vsync_sem)) {
-				pr_err("[mtkfb_vsync_ioctl] can't get semaphore,%d\n", __LINE__);
+				pr_err("[mtkfb_vsync_ioctl] can't get semaphore,%d\n",
+				       __LINE__);
 				msleep(20);
 				return ret;
 			}
-			primary_display_wait_for_vsync(NULL);
+
+			if (extd_driver[arg-1]->wait_vsync)
+				ret = extd_driver[arg-1]->wait_vsync();
+			else
+				ret = -EFAULT;
+
 			up(&mtkfb_vsync_sem);
-			MTKFB_VSYNC_LOG("[MTKFB_VSYNC]: leave MTKFB_VSYNC_IOCTL\n");
+			pr_debug("[MTKFB_VSYNC]: leave MTKFB_VSYNC_IOCTL, %d, ret:%d\n",
+				 __LINE__, ret);
+
+			return ret;
 		}
+#endif
+
+		if (down_interruptible(&mtkfb_vsync_sem)) {
+			pr_err("[mtkfb_vsync_ioctl] can't get semaphore,%d\n",
+				__LINE__);
+			msleep(20);
+			return ret;
+		}
+		primary_display_wait_for_vsync(NULL);
+		up(&mtkfb_vsync_sem);
+		MTKFB_VSYNC_LOG("[MTKFB_VSYNC]: leave MTKFB_VSYNC_IOCTL\n");
+	}
 		break;
 	}
 	return ret;
@@ -164,7 +171,8 @@ static int mtkfb_vsync_probe(struct platform_device *pdev)
 
 	pr_info("\n=== MTKFB_VSYNC probe ===\n");
 
-	if (alloc_chrdev_region(&mtkfb_vsync_devno, 0, 1, MTKFB_VSYNC_DEVNAME)) {
+	if (alloc_chrdev_region(&mtkfb_vsync_devno, 0,
+				1, MTKFB_VSYNC_DEVNAME)) {
 		VSYNC_ERR("can't get device major number...\n");
 		return -EFAULT;
 	}
@@ -183,9 +191,9 @@ static int mtkfb_vsync_probe(struct platform_device *pdev)
 	}
 
 	mtkfb_vsync_class = class_create(THIS_MODULE, MTKFB_VSYNC_DEVNAME);
-	class_dev =
-	    (struct class_device *)device_create(mtkfb_vsync_class, NULL, mtkfb_vsync_devno, NULL,
-						 MTKFB_VSYNC_DEVNAME);
+	class_dev = (struct class_device *)device_create(mtkfb_vsync_class,
+						NULL, mtkfb_vsync_devno, NULL,
+						MTKFB_VSYNC_DEVNAME);
 
 	VSYNC_INF("probe is done\n");
 	return 0;

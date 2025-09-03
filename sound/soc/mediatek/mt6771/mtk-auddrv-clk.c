@@ -36,7 +36,7 @@
  *------------------------------------------------------------------------------
  *
  *
- *******************************************************************************/
+ ******************************************************************************/
 
 
 /*****************************************************************************
@@ -66,6 +66,7 @@
 /*****************************************************************************
  *                         D A T A   T Y P E S
  *****************************************************************************/
+#define PRINTK_AUD_CLK(format, args...)
 
 static int APLL1Counter;
 static int APLL2Counter;
@@ -159,11 +160,11 @@ struct audio_clock_attr {
 
 static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[CLOCK_AFE] = {"aud_afe_clk", false, false, NULL},
-	[CLOCK_DAC] = {"aud_dac_clk", false, false, NULL},			/* AudDrv_Clk_On only */
-	[CLOCK_DAC_PREDIS] = {"aud_dac_predis_clk", false, false, NULL},	/* AudDrv_Clk_On only */
-	[CLOCK_ADC] = {"aud_adc_clk", false, false, NULL},			/* AudDrv_ADC_Clk_On only */
+	[CLOCK_DAC] = {"aud_dac_clk", false, false, NULL},
+	[CLOCK_DAC_PREDIS] = {"aud_dac_predis_clk", false, false, NULL},
+	[CLOCK_ADC] = {"aud_adc_clk", false, false, NULL},
 	[CLOCK_ADC_ADDA6] = {"aud_adc_adda6_clk", false, false, NULL},
-	[CLOCK_TML] = {"aud_tml_clk", false, false, NULL},			/* NOT USED */
+	[CLOCK_TML] = {"aud_tml_clk", false, false, NULL},
 	[CLOCK_APLL22M] = {"aud_apll22m_clk", false, false, NULL},
 	[CLOCK_APLL24M] = {"aud_apll24m_clk", false, false, NULL},
 	[CLOCK_APLL1_TUNER] = {"aud_apll1_tuner_clk", false, false, NULL},
@@ -172,8 +173,8 @@ static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[CLOCK_INFRA_SYS_AUDIO] = {"aud_infra_clk", false, false, NULL},
 	[CLOCK_MTKAIF_26M_CLK] = {"mtkaif_26m_clk", false, false, NULL},
 	[CLOCK_MUX_AUDIO] = {"top_mux_audio", false, false, NULL},
-	[CLOCK_MUX_AUDIOINTBUS] = {"top_mux_audio_int", false, false, NULL},	/* AudDrv_AUDINTBUS_Sel */
-	[CLOCK_TOP_SYSPLL_D2_D4] = {"top_syspll_d2_d4", false, false, NULL},	/* AudDrv_AUDINTBUS_Sel */
+	[CLOCK_MUX_AUDIOINTBUS] = {"top_mux_audio_int", false, false, NULL},
+	[CLOCK_TOP_SYSPLL_D2_D4] = {"top_syspll_d2_d4", false, false, NULL},
 	[CLOCK_TOP_MUX_AUD_1] = {"top_mux_aud_1", false, false, NULL},
 	[CLOCK_TOP_APLL1_CK] = {"top_apll1_ck", false, false, NULL},
 	[CLOCK_TOP_MUX_AUD_2] = {"top_mux_aud_2", false, false, NULL},
@@ -221,7 +222,8 @@ int AudDrv_Clk_probe(void *dev)
 		aud_clks[i].clock = devm_clk_get(dev, aud_clks[i].name);
 		if (IS_ERR(aud_clks[i].clock)) {
 			ret = PTR_ERR(aud_clks[i].clock);
-			pr_err("%s devm_clk_get %s fail %d\n", __func__, aud_clks[i].name, ret);
+			pr_err("%s devm_clk_get %s fail %d\n",
+				__func__, aud_clks[i].name, ret);
 		} else {
 			aud_clks[i].clk_status = true;
 		}
@@ -261,7 +263,8 @@ void AudDrv_Clk_Deinit(void *dev)
 		if (i == CLOCK_SCP_SYS_AUD)  /* CLOCK_SCP_SYS_AUD is MTCMOS */
 			continue;
 
-		if (aud_clks[i].clock && !IS_ERR(aud_clks[i].clock) && aud_clks[i].clk_prepare) {
+		if (aud_clks[i].clock && !IS_ERR(aud_clks[i].clock)
+		    && aud_clks[i].clk_prepare) {
 			clk_unprepare(aud_clks[i].clock);
 			aud_clks[i].clk_prepare = false;
 		}
@@ -343,7 +346,7 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 		goto EXIT;
 	}
 
-	PRINTK_AUD_CLK("+AudDrv_AUDINTBUS_Sel, parentidx = %d\n", parentidx);
+	PRINTK_AUD_CLK("+%s(), parentidx = %d\n", __func__, parentidx);
 	if (parentidx == 1) {
 		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock,
 				     aud_clks[CLOCK_TOP_SYSPLL_D2_D4].clock);
@@ -521,21 +524,23 @@ EXIT:
  *  Enable/Disable PLL(26M clock) \ AFE clock
  *
  *****************************************************************************
-*/
+ */
 
 void AudDrv_Clk_On(void)
 {
 	int ret = 0;
 
-	pr_debug("+AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+	pr_debug("+%s(), Aud_AFE_Clk_cntr:%d\n", __func__, Aud_AFE_Clk_cntr);
 	mutex_lock(&auddrv_clk_mutex);
 	Aud_AFE_Clk_cntr++;
 	if (Aud_AFE_Clk_cntr == 1) {
 		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status) {
-			ret = clk_prepare_enable(aud_clks[CLOCK_SCP_SYS_AUD].clock);
+			ret = clk_prepare_enable(
+				aud_clks[CLOCK_SCP_SYS_AUD].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud clk_prepare_enable %s fail\n", __func__,
-					aud_clks[CLOCK_SCP_SYS_AUD].name);
+				pr_err("%s [CCF]Aud clk_prepare_enable %s fail\n",
+					__func__,
+				       aud_clks[CLOCK_SCP_SYS_AUD].name);
 				goto EXIT;
 			}
 		}
@@ -573,17 +578,17 @@ void AudDrv_Clk_On(void)
 		/* enable audio sys DCM for power saving */
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 29, 0x1 << 29);
 
-		/* TODO: apmixed apll rate is set in preloader, consider set it using CCF */
 	}
 EXIT:
 	mutex_unlock(&auddrv_clk_mutex);
-	PRINTK_AUD_CLK("-AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+	PRINTK_AUD_CLK("-%s(), Aud_AFE_Clk_cntr:%d\n",
+		__func__, Aud_AFE_Clk_cntr);
 }
 EXPORT_SYMBOL(AudDrv_Clk_On);
 
 void AudDrv_Clk_Off(void)
 {
-	pr_debug("+!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+	pr_debug("+!! %s(), Aud_AFE_Clk_cntr:%d\n", __func__, Aud_AFE_Clk_cntr);
 	mutex_lock(&auddrv_clk_mutex);
 
 	Aud_AFE_Clk_cntr--;
@@ -617,26 +622,19 @@ void AudDrv_Clk_Off(void)
 			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
 
 		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status)
-			clk_disable_unprepare(aud_clks[CLOCK_SCP_SYS_AUD].clock);
+			clk_disable_unprepare(
+			aud_clks[CLOCK_SCP_SYS_AUD].clock);
 	} else if (Aud_AFE_Clk_cntr < 0) {
-		pr_warn("!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr<0 (%d)\n",
+		pr_warn("!! %s(), Aud_AFE_Clk_cntr<0 (%d)\n", __func__,
 			Aud_AFE_Clk_cntr);
 		Aud_AFE_Clk_cntr = 0;
 	}
 	mutex_unlock(&auddrv_clk_mutex);
-	PRINTK_AUD_CLK("-!! AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+	PRINTK_AUD_CLK("-!! %s(), Aud_AFE_Clk_cntr:%d\n", __func__,
+		Aud_AFE_Clk_cntr);
 }
 EXPORT_SYMBOL(AudDrv_Clk_Off);
 
-
-/*****************************************************************************
- * FUNCTION
- *  AudDrv_ANA_Clk_On / AudDrv_ANA_Clk_Off
- *
- * DESCRIPTION
- *  Enable/Disable analog part clock
- *
- *****************************************************************************/
 void AudDrv_ANA_Clk_On(void)
 {
 }
@@ -647,15 +645,6 @@ void AudDrv_ANA_Clk_Off(void)
 }
 EXPORT_SYMBOL(AudDrv_ANA_Clk_Off);
 
-/*****************************************************************************
- * FUNCTION
-  *  AudDrv_ADC_Clk_On / AudDrv_ADC_Clk_Off
-  *
-  * DESCRIPTION
-  *  Enable/Disable analog part clock
-  *
-  *****************************************************************************/
-
 void AudDrv_ADC_Clk_On(void)
 {
 	int ret = 0;
@@ -664,16 +653,16 @@ void AudDrv_ADC_Clk_On(void)
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
 	if (Aud_ADC_Clk_cntr == 0) {
-		PRINTK_AUDDRV("+%s enable_clock ADC clk(%x)\n", __func__,
-			      Aud_ADC_Clk_cntr);
 		if (aud_clks[CLOCK_ADC].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_ADC].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock %s fail", __func__, aud_clks[CLOCK_ADC].name);
+				pr_err("%s [CCF]Aud enable_clock %s fail",
+					__func__, aud_clks[CLOCK_ADC].name);
 				goto EXIT;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error %s fail", __func__, aud_clks[CLOCK_ADC].name);
+			pr_err("%s [CCF]clk_prepare error %s fail",
+				__func__, aud_clks[CLOCK_ADC].name);
 			goto EXIT;
 		}
 	}
@@ -699,15 +688,6 @@ void AudDrv_ADC_Clk_Off(void)
 	}
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
-
-/*****************************************************************************
- * FUNCTION
-  *  AudDrv_ADC2_Clk_On / AudDrv_ADC2_Clk_Off
-  *
-  * DESCRIPTION
-  *  Enable/Disable clock
-  *
-  *****************************************************************************/
 
 void AudDrv_ADC2_Clk_On(void)
 {
@@ -742,16 +722,6 @@ void AudDrv_ADC2_Clk_Off(void)
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
-
-/*****************************************************************************
- * FUNCTION
-  *  AudDrv_ADC3_Clk_On / AudDrv_ADC3_Clk_Off
-  *
-  * DESCRIPTION
-  *  Enable/Disable clock
-  *
-  *****************************************************************************/
-
 void AudDrv_ADC3_Clk_On(void)
 {
 }
@@ -759,15 +729,6 @@ void AudDrv_ADC3_Clk_On(void)
 void AudDrv_ADC3_Clk_Off(void)
 {
 }
-
-/*****************************************************************************
- * FUNCTION
-  *  AudDrv_ADC_Hires_Clk_On / AudDrv_ADC_Hires_Clk_Off
-  *
-  * DESCRIPTION
-  *  Enable/Disable analog part clock
-  *
-  *****************************************************************************/
 
 void AudDrv_ADC_Hires_Clk_On(void)
 {
@@ -777,15 +738,6 @@ void AudDrv_ADC_Hires_Clk_Off(void)
 {
 }
 
-/*****************************************************************************
- * FUNCTION
-  *  AudDrv_ADC2_Hires_Clk_On / AudDrv_ADC2_Hires_Clk_Off
-  *
-  * DESCRIPTION
-  *  Enable/Disable analog part clock
-  *
-  *****************************************************************************/
-
 void AudDrv_ADC2_Hires_Clk_On(void)
 {
 
@@ -794,15 +746,6 @@ void AudDrv_ADC2_Hires_Clk_On(void)
 void AudDrv_ADC2_Hires_Clk_Off(void)
 {
 }
-
-/*****************************************************************************
- * FUNCTION
-  *  AudDrv_APLL22M_Clk_On / AudDrv_APLL22M_Clk_Off
-  *
-  * DESCRIPTION
-  *  Enable/Disable clock
-  *
-  *****************************************************************************/
 
 void AudDrv_APLL22M_Clk_On(void)
 {
@@ -863,15 +806,6 @@ EXIT:
 }
 
 
-/*****************************************************************************
- * FUNCTION
-  *  AudDrv_APLL24M_Clk_On / AudDrv_APLL24M_Clk_Off
-  *
-  * DESCRIPTION
-  *  Enable/Disable clock
-  *
-  *****************************************************************************/
-
 void AudDrv_APLL24M_Clk_On(void)
 {
 	int ret = 0;
@@ -929,21 +863,12 @@ EXIT:
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
-/*****************************************************************************
-  * FUNCTION
-  *  AudDrv_I2S_Clk_On / AudDrv_I2S_Clk_Off
-  *
-  * DESCRIPTION
-  * Enable I2S In clock (bck)
-  * This should be enabled in slave i2s mode.
-  *
-  *****************************************************************************/
 void aud_top_con_pdn_i2s(bool _pdn)
 {
 	if (_pdn)
-		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 6, 0x1 << 6); /* power off I2S clock */
+		Afe_Set_Reg(AUDIO_TOP_CON0, 0x1 << 6, 0x1 << 6);
 	else
-		Afe_Set_Reg(AUDIO_TOP_CON0, 0x0 << 6, 0x1 << 6); /* power on I2S clock */
+		Afe_Set_Reg(AUDIO_TOP_CON0, 0x0 << 6, 0x1 << 6);
 }
 
 void AudDrv_I2S_Clk_On(void)
@@ -969,7 +894,7 @@ void AudDrv_I2S_Clk_Off(void)
 	if (Aud_I2S_Clk_cntr == 0) {
 		aud_top_con_pdn_i2s(true);
 	} else if (Aud_I2S_Clk_cntr < 0) {
-		pr_warn("!! AudDrv_I2S_Clk_Off, Aud_I2S_Clk_cntr<0 (%d)\n",
+		pr_warn("!! %s(), Aud_I2S_Clk_cntr<0 (%d)\n", __func__,
 			Aud_I2S_Clk_cntr);
 		Aud_I2S_Clk_cntr = 0;
 	}
@@ -977,17 +902,9 @@ void AudDrv_I2S_Clk_Off(void)
 }
 EXPORT_SYMBOL(AudDrv_I2S_Clk_Off);
 
-/*****************************************************************************
-  * FUNCTION
-  *  AudDrv_TDM_Clk_On / AudDrv_TDM_Clk_Off
-  *
-  * DESCRIPTION
-  *  Enable/Disable TDM clock
-  *
-  *****************************************************************************/
 void aud_top_con_pdn_tdm_ck(bool _pdn)
 {
-	Afe_Set_Reg(AUDIO_TOP_CON0, _pdn << 20, 0x1 << 20); /* power on I2S clock */
+	Afe_Set_Reg(AUDIO_TOP_CON0, _pdn << 20, 0x1 << 20);
 }
 
 void AudDrv_TDM_Clk_On(void)
@@ -1033,7 +950,8 @@ void AudDrv_APLL1Tuner_Clk_On(void)
 			ret = clk_enable(aud_clks[CLOCK_APLL1_TUNER].clock);
 			if (ret) {
 				pr_err("%s [CCF]Aud enable_clock %s fail\n",
-				       __func__, aud_clks[CLOCK_APLL1_TUNER].name);
+				       __func__,
+				       aud_clks[CLOCK_APLL1_TUNER].name);
 				goto EXIT;
 			}
 		} else {
@@ -1082,7 +1000,8 @@ void AudDrv_APLL2Tuner_Clk_On(void)
 			ret = clk_enable(aud_clks[CLOCK_APLL2_TUNER].clock);
 			if (ret) {
 				pr_err("%s [CCF]Aud enable_clock %s fail\n",
-				       __func__, aud_clks[CLOCK_APLL2_TUNER].name);
+				       __func__,
+				       aud_clks[CLOCK_APLL2_TUNER].name);
 				goto EXIT;
 			}
 		} else {
@@ -1116,18 +1035,10 @@ void AudDrv_APLL2Tuner_Clk_Off(void)
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
-/*****************************************************************************
-  * FUNCTION
-  *  AudDrv_HDMI_Clk_On / AudDrv_HDMI_Clk_Off
-  *
-  * DESCRIPTION
-  *  Enable/Disable analog part clock
-  *
-  *****************************************************************************/
-
 void AudDrv_HDMI_Clk_On(void)
 {
-	PRINTK_AUD_CLK("+AudDrv_HDMI_Clk_On, Aud_I2S_Clk_cntr:%d\n", Aud_HDMI_Clk_cntr);
+	PRINTK_AUD_CLK("+%s(), Aud_I2S_Clk_cntr:%d\n", __func__,
+		Aud_HDMI_Clk_cntr);
 	if (Aud_HDMI_Clk_cntr == 0) {
 		AudDrv_ANA_Clk_On();
 		AudDrv_Clk_On();
@@ -1137,18 +1048,19 @@ void AudDrv_HDMI_Clk_On(void)
 
 void AudDrv_HDMI_Clk_Off(void)
 {
-	PRINTK_AUD_CLK("+AudDrv_HDMI_Clk_Off, Aud_I2S_Clk_cntr:%d\n",
+	PRINTK_AUD_CLK("+%s(), Aud_I2S_Clk_cntr:%d\n", __func__,
 		       Aud_HDMI_Clk_cntr);
 	Aud_HDMI_Clk_cntr--;
 	if (Aud_HDMI_Clk_cntr == 0) {
 		AudDrv_ANA_Clk_Off();
 		AudDrv_Clk_Off();
 	} else if (Aud_HDMI_Clk_cntr < 0) {
-		pr_warn("!! AudDrv_Linein_Clk_Off, Aud_I2S_Clk_cntr<0 (%d)\n",
-		Aud_HDMI_Clk_cntr);
+		pr_warn("!! %s(), Aud_I2S_Clk_cntr<0 (%d)\n", __func__,
+			Aud_HDMI_Clk_cntr);
 		Aud_HDMI_Clk_cntr = 0;
 	}
-	PRINTK_AUD_CLK("-AudDrv_I2S_Clk_Off, Aud_I2S_Clk_cntr:%d\n", Aud_HDMI_Clk_cntr);
+	PRINTK_AUD_CLK("-%s(), Aud_I2S_Clk_cntr:%d\n", __func__,
+		Aud_HDMI_Clk_cntr);
 }
 
 void AudDrv_Emi_Clk_On(void)
@@ -1182,15 +1094,6 @@ void AudDrv_Emi_Clk_Off(void)
 	mutex_unlock(&auddrv_pmic_mutex);
 }
 
-/*****************************************************************************
- * FUNCTION
-  *  AudDrv_ANC_Clk_On / AudDrv_ANC_Clk_Off
-  *
-  * DESCRIPTION
-  *  Enable/Disable ANC clock
-  *
-  *****************************************************************************/
-
 void AudDrv_ANC_Clk_On(void)
 {
 }
@@ -1201,7 +1104,8 @@ void AudDrv_ANC_Clk_Off(void)
 
 unsigned int GetApllbySampleRate(unsigned int SampleRate)
 {
-	if (SampleRate == 176400 || SampleRate == 88200 || SampleRate == 44100 ||
+	if (SampleRate == 176400 || SampleRate == 88200 ||
+	    SampleRate == 44100 ||
 	    SampleRate == 22050 || SampleRate == 11025)
 		return Soc_Aud_APLL1;
 	else
@@ -1234,7 +1138,8 @@ void SetckSel(unsigned int I2snum, unsigned int SampleRate)
 		pr_warn("%s(), not support I2snum %u\n", __func__, I2snum);
 		break;
 	}
-	pr_debug("%s I2snum = %d ApllSource = %d\n", __func__, I2snum, ApllSource);
+	pr_debug("%s I2snum = %d ApllSource = %d\n",
+		__func__, I2snum, ApllSource);
 }
 
 void EnableALLbySampleRate(unsigned int SampleRate)
@@ -1303,20 +1208,23 @@ void EnableI2SDivPower(unsigned int Diveder_name, bool bEnable)
 		 __func__, bEnable, Diveder_name);
 
 	if (bEnable)
-		clksys_set_reg(CLK_AUDDIV_0, 0 << Diveder_name, 1 << Diveder_name);
+		clksys_set_reg(CLK_AUDDIV_0, 0 << Diveder_name,
+			1 << Diveder_name);
 	else
-		clksys_set_reg(CLK_AUDDIV_0, 1 << Diveder_name, 1 << Diveder_name);
+		clksys_set_reg(CLK_AUDDIV_0, 1 << Diveder_name,
+			1 << Diveder_name);
 }
 
 void EnableI2SCLKDiv(unsigned int I2snum, bool bEnable)
 {
-	pr_debug("%s mI2SAPLLDivSelect = %d, i2snum = %d\n", __func__, mI2SAPLLDivSelect[I2snum], I2snum);
+	pr_debug("%s mI2SAPLLDivSelect = %d, i2snum = %d\n", __func__,
+		 mI2SAPLLDivSelect[I2snum], I2snum);
 	EnableI2SDivPower(mI2SAPLLDivSelect[I2snum], bEnable);
 }
 
 void EnableApll1(bool enable)
 {
-	pr_aud("%s enable = %d\n", __func__, enable);
+	pr_debug("%s enable = %d\n", __func__, enable);
 
 	if (enable) {
 		if (Aud_APLL_DIV_APLL1_cntr == 0) {
@@ -1341,7 +1249,7 @@ void EnableApll1(bool enable)
 
 void EnableApll2(bool enable)
 {
-	pr_aud("%s enable = %d\n", __func__, enable);
+	pr_debug("%s enable = %d\n", __func__, enable);
 
 	if (enable) {
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {
@@ -1392,8 +1300,8 @@ unsigned int SetCLkMclk(unsigned int I2snum, unsigned int SampleRate)
 		clksys_set_reg(CLK_AUDDIV_1, I2s_ck_div << 24, 0xff << 24);
 		break;
 	default:
-		pr_warn("[AudioWarn] SetCLkMclk: I2snum = %d not recognized\n",
-				I2snum);
+		pr_warn("[AudioWarn] %s(): I2snum = %d not recognized\n",
+			__func__, I2snum);
 		break;
 	}
 
@@ -1403,7 +1311,8 @@ unsigned int SetCLkMclk(unsigned int I2snum, unsigned int SampleRate)
 	return I2s_ck_div;
 }
 
-void SetCLkBclk(unsigned int MckDiv, unsigned int SampleRate, unsigned int Channels, unsigned int Wlength)
+void SetCLkBclk(unsigned int MckDiv, unsigned int SampleRate,
+		unsigned int Channels, unsigned int Wlength)
 {
 }
 

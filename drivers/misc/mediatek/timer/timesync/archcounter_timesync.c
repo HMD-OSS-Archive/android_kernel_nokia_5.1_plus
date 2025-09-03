@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2017 MediaTek Inc.
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
-*/
+ * Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 #include <linux/module.h>
 #include <asm/arch_timer.h>
@@ -17,6 +17,7 @@
 #include <linux/timer.h>
 #include <linux/workqueue.h>
 #include <linux/spinlock.h>
+#include <linux/math64.h>
 
 #define FILTER_DATAPOINTS	16
 #define FILTER_FREQ		10000000ULL /* 10 ms */
@@ -55,7 +56,7 @@ static void moving_average_filter(struct moving_average *filter,
 	uint64_t base_time, uint64_t archcounter_time)
 {
 	int i = 0;
-	int32_t avg;
+	int64_t avg = 0;
 	int64_t ret_avg = 0;
 
 	if (base_time < filter->last_time + FILTER_FREQ)
@@ -69,8 +70,8 @@ static void moving_average_filter(struct moving_average *filter,
 		filter->cnt++;
 
 	for (i = 1, avg = 0; i < filter->cnt; i++)
-		avg += (int32_t)(filter->input[i] - filter->input[0]);
-	ret_avg = (avg / filter->cnt) + filter->input[0];
+		avg += (filter->input[i] - filter->input[0]);
+	ret_avg = div_s64(avg, filter->cnt) + filter->input[0];
 	WRITE_ONCE(filter->output, ret_avg);
 }
 
@@ -92,6 +93,11 @@ void archcounter_timesync_init(uint8_t status)
 		filter_algo_init(&moving_average_algo_mono);
 		filter_algo_init(&moving_average_algo_boot);
 	}
+}
+
+u64 mtk_get_archcounter_time(u64 cyc)
+{
+	return arch_counter_to_ns(cyc);
 }
 
 uint64_t archcounter_timesync_to_monotonic(uint64_t hwclock)
@@ -197,7 +203,7 @@ static void timesync_test_timer_timeout(unsigned long data)
 
 static int __init archcounter_timesync_entry(void)
 {
-	pr_debug("[archcounter_timesync] archcounter_timesync_entry\n");
+	pr_debug("[archcounter_timesync] %s\n", __func__);
 
 	filter_algo_init(&moving_average_algo_mono);
 	filter_algo_init(&moving_average_algo_boot);

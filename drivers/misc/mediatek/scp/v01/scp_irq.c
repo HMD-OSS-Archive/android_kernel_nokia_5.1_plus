@@ -1,17 +1,15 @@
 /*
-* Copyright (C) 2011-2015 MediaTek Inc.
-*
-* This program is free software: you can redistribute it and/or modify it under the terms of the
-* GNU General Public License version 2 as published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See the GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
-*/
-
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 #include <linux/spinlock.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
@@ -21,8 +19,12 @@
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
+#if SCP_DVFS_INIT_ENABLE
 #include "scp_dvfs.h"
+#endif
 
+
+#define SCP_WAIT_LOOP_FOR_WDT		20000
 
 /*
  * handler for wdt irq for scp
@@ -43,11 +45,11 @@ static void scp_A_wdt_handler(void)
 irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 {
 	unsigned int reg = readl(SCP_A_TO_HOST_REG);
+
 #if SCP_RECOVERY_SUPPORT
 	/* if WDT and IPI triggered on the same time, ignore the IPI */
 	if (reg & SCP_IRQ_WDT) {
 		int retry;
-		unsigned long spin_flags;
 		unsigned long tmp;
 
 		scp_A_wdt_handler();
@@ -58,19 +60,16 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 			pr_notice("scp_A_wdt_handler: scp resetting\n");
 
 		/* clr after SCP side INT trigger,
-		 * or SCP may lost INT max wait 5000*40u = 200ms
+		 * or SCP may lost INT max wait 20000 * 10 us = 200 ms
 		 */
-		for (retry = SCP_AWAKE_TIMEOUT; retry > 0; retry--) {
-			spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+		for (retry = SCP_WAIT_LOOP_FOR_WDT; retry > 0; retry--) {
 			tmp = readl(SCP_GPR_CM4_A_REBOOT);
-			spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 			if (tmp == CM4_A_READY_TO_REBOOT)
 				break;
-			udelay(40);
+			udelay(10);
 		}
 		if (retry == 0)
 			pr_debug("[SCP] SCP_A wakeup timeout\n");
-		udelay(10);
 		writel(SCP_IRQ_WDT, SCP_A_TO_HOST_REG);
 	} else if (reg & SCP_IRQ_SCP2HOST) {
 		/* if WDT and IPI triggered on the same time, ignore the IPI */
@@ -78,13 +77,11 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 		writel(SCP_IRQ_SCP2HOST, SCP_A_TO_HOST_REG);
 	}
 #else
-	scp_excep_id reset_type;
 	int reboot = 0;
 
 	if (reg & SCP_IRQ_WDT) {
 		scp_A_wdt_handler();
 		reboot = 1;
-		reset_type = EXCEP_RUNTIME;
 		reg &= SCP_IRQ_WDT;
 	}
 
@@ -98,8 +95,9 @@ irqreturn_t scp_A_irq_handler(int irq, void *dev_id)
 	writel(reg, SCP_A_TO_HOST_REG);
 
 	if (reboot)
-		scp_aed_reset(reset_type, SCP_A_ID);
-#endif
+		scp_aed_reset(EXCEP_RUNTIME, SCP_A_ID);
+#endif  // SCP_RECOVERY_SUPPORT
+
 	return IRQ_HANDLED;
 }
 

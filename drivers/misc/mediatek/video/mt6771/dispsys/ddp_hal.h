@@ -15,14 +15,16 @@
 #define _H_DDP_HAL_
 
 /* DISP Mutex */
-#define DISP_MUTEX_TOTAL      (12)
-#define DISP_MUTEX_DDP_FIRST  (0)
-#define DISP_MUTEX_DDP_LAST   (3)	/* modify from 4 to 3, cause 4 is used for OVL0/OVL1 SW trigger */
-#define DISP_MUTEX_DDP_COUNT  (DISP_MUTEX_DDP_LAST - DISP_MUTEX_DDP_FIRST + 1)
-#define DISP_MUTEX_MDP_FIRST  (DISP_MUTEX_DDP_LAST + 1)
-#define DISP_MUTEX_MDP_COUNT  (3)
+#define DISP_MUTEX_TOTAL	(12)
+#define DISP_MUTEX_DDP_FIRST	(0)
+/* modify from 4 to 3, cause 4 is used for OVL0/OVL1 SW trigger */
+#define DISP_MUTEX_DDP_LAST	(3)
+#define DISP_MUTEX_DDP_COUNT	(DISP_MUTEX_DDP_LAST - DISP_MUTEX_DDP_FIRST + 1)
+#define DISP_MUTEX_MDP_FIRST	(DISP_MUTEX_DDP_LAST + 1)
+#define DISP_MUTEX_MDP_COUNT	(3)
 #define __DISP_MUTEX_INT_MSK	((1 << (DISP_MUTEX_DDP_COUNT)) - 1)
-#define DISP_MUTEX_INT_MSK	((__DISP_MUTEX_INT_MSK << DISP_MUTEX_TOTAL) | __DISP_MUTEX_INT_MSK)
+#define DISP_MUTEX_INT_MSK	\
+	((__DISP_MUTEX_INT_MSK << DISP_MUTEX_TOTAL) | __DISP_MUTEX_INT_MSK)
 
 /* DISP MODULE */
 enum DISP_MODULE_ENUM {
@@ -65,7 +67,6 @@ enum DISP_MODULE_ENUM {
 	DISP_MODULE_NUM
 };
 
-
 /* DISP MODULE */
 enum DISP_MODULE_TYPE_ENUM {
 	DISP_T_OVL = 0, /* must start from 0 */
@@ -79,14 +80,14 @@ enum DISP_MODULE_TYPE_ENUM {
 	DISP_T_GAMMA,
 	DISP_T_DITHER,
 	DISP_T_SPLIT,
-	DISP_T_DSI,  /* 10 */
 
+	DISP_T_DSI,  /* 10 */
 	DISP_T_DPI,
 	DISP_T_DBI,
 	DISP_T_PWM,
 	DISP_T_UNKNOWN,
-	DISP_T_NUM,
 
+	DISP_T_NUM,
 };
 
 enum dst_module_type {
@@ -145,5 +146,4 @@ enum DDP_IRQ_LEVEL {
 	DDP_IRQ_LEVEL_ERROR
 };
 
-
-#endif
+#endif /* _H_DDP_HAL_ */

@@ -41,8 +41,9 @@ int Is_MD_EMI_voilation(void)
 unsigned long infra_ao_base;
 
 /*
- * when MD attached its codeviser for debuging, this bit will be set. so CCCI should disable some
- * checkings and operations as MD may not respond to us.
+ * when MD attached its codeviser for debuging, this bit will be set.
+ * so CCCI should disable some checkings and
+ * operations as MD may not respond to us.
  */
 unsigned int ccci_get_md_debug_mode(struct ccci_modem *md)
 {
@@ -53,19 +54,22 @@ EXPORT_SYMBOL(ccci_get_md_debug_mode);
 void ccci_get_platform_version(char *ver)
 {
 #ifdef ENABLE_CHIP_VER_CHECK
-	sprintf(ver, "MT%04x_S%02x", get_chip_hw_ver_code(), (get_chip_hw_subcode() & 0xFF));
+	sprintf(ver, "MT%04x_S%02x",
+		get_chip_hw_ver_code(), (get_chip_hw_subcode() & 0xFF));
 #else
 	sprintf(ver, "MT6735_S00");
 #endif
 }
 
 #ifdef FEATURE_LOW_BATTERY_SUPPORT
-static int ccci_md_low_power_notify(struct ccci_modem *md, LOW_POEWR_NOTIFY_TYPE type, int level)
+static int ccci_md_low_power_notify(struct ccci_modem *md,
+	enum LOW_POEWR_NOTIFY_TYPE type, int level)
 {
 	unsigned int reserve = 0xFFFFFFFF;
 	int ret = 0;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "low power notification type=%d, level=%d\n", type, level);
+	CCCI_NORMAL_LOG(md->index, TAG,
+		"low power notification type=%d, level=%d\n", type, level);
 	/*
 	 * byte3 byte2 byte1 byte0
 	 *    0   4G   3G   2G
@@ -74,20 +78,25 @@ static int ccci_md_low_power_notify(struct ccci_modem *md, LOW_POEWR_NOTIFY_TYPE
 	case LOW_BATTERY:
 		if (level == LOW_BATTERY_LEVEL_0)
 			reserve = 0;	/* 0 */
-		else if (level == LOW_BATTERY_LEVEL_1 || level == LOW_BATTERY_LEVEL_2)
+		else if (level == LOW_BATTERY_LEVEL_1
+						|| level == LOW_BATTERY_LEVEL_2)
 			reserve = (1 << 6);	/* 64 */
-		ret = port_proxy_send_msg_to_md(md->port_proxy, CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
+		ret = port_proxy_send_msg_to_md(md->port_proxy,
+			CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
 		if (ret)
-			CCCI_ERROR_LOG(md->index, TAG, "send low battery notification fail, ret=%d\n", ret);
+			CCCI_ERROR_LOG(md->index, TAG,
+			 "send low battery notification fail, ret=%d\n", ret);
 		break;
 	case BATTERY_PERCENT:
 		if (level == BATTERY_PERCENT_LEVEL_0)
 			reserve = 0;	/* 0 */
 		else if (level == BATTERY_PERCENT_LEVEL_1)
 			reserve = (1 << 6);	/* 64 */
-		ret = port_proxy_send_msg_to_md(md->port_proxy, CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
+		ret = port_proxy_send_msg_to_md(md->port_proxy,
+			CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
 		if (ret)
-			CCCI_ERROR_LOG(md->index, TAG, "send battery percent notification fail, ret=%d\n", ret);
+			CCCI_ERROR_LOG(md->index, TAG,
+			"send battery percent info fail, ret=%d\n", ret);
 		break;
 	default:
 		break;
@@ -127,7 +136,8 @@ static void ccci_md_battery_percent_cb(BATTERY_PERCENT_LEVEL level)
 #define PCCIF_CHDATA (0x100)
 #define PCCIF_SRAM_SIZE (512)
 
-void ccci_reset_ccif_hw(unsigned char md_id, int ccif_id, void __iomem *baseA, void __iomem *baseB)
+void ccci_reset_ccif_hw(unsigned char md_id,
+			int ccif_id, void __iomem *baseA, void __iomem *baseB)
 {
 	int i;
 	struct ccci_smem_region *region;
@@ -145,7 +155,10 @@ void ccci_reset_ccif_hw(unsigned char md_id, int ccif_id, void __iomem *baseA, v
 		if (reset_bit == -1)
 			return;
 
-		/* this reset bit will clear CCIF's busy/wch/irq, but not SRAM */
+		/*
+		 *this reset bit will clear
+		 *CCIF's busy/wch/irq, but not SRAM
+		 */
 		/*set reset bit*/
 		reg_value = ccci_read32(infra_ao_base, 0x150);
 		reg_value &= ~(1 << reset_bit);
@@ -165,11 +178,20 @@ void ccci_reset_ccif_hw(unsigned char md_id, int ccif_id, void __iomem *baseA, v
 	}
 
 	/* extend from 36bytes to 72bytes in CCIF SRAM */
-	/* 0~60bytes for bootup trace, last 12bytes for magic pattern,smem address and size */
-	region = ccci_md_get_smem_by_user_id(md_id, SMEM_USER_RAW_MDSS_DBG);
-	ccci_write32(baseA, PCCIF_CHDATA + PCCIF_SRAM_SIZE - 3 * sizeof(u32), 0x7274626E);
-	ccci_write32(baseA, PCCIF_CHDATA + PCCIF_SRAM_SIZE - 2 * sizeof(u32), region->base_md_view_phy);
-	ccci_write32(baseA, PCCIF_CHDATA + PCCIF_SRAM_SIZE - sizeof(u32), region->size);
+	/* 0~60bytes for bootup trace,
+	 *last 12bytes for magic pattern,smem address and size
+	 */
+	region = ccci_md_get_smem_by_user_id(md_id,
+		SMEM_USER_RAW_MDSS_DBG);
+	ccci_write32(baseA,
+		PCCIF_CHDATA + PCCIF_SRAM_SIZE - 3 * sizeof(u32),
+		0x7274626E);
+	ccci_write32(baseA,
+		PCCIF_CHDATA + PCCIF_SRAM_SIZE - 2 * sizeof(u32),
+		region->base_md_view_phy);
+	ccci_write32(baseA,
+		PCCIF_CHDATA + PCCIF_SRAM_SIZE - sizeof(u32),
+		region->size);
 }
 
 int ccci_platform_init(struct ccci_modem *md)
@@ -178,10 +200,17 @@ int ccci_platform_init(struct ccci_modem *md)
 	/* Get infra cfg ao base */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
 	infra_ao_base = (unsigned long)of_iomap(node, 0);
+	if (!infra_ao_base) {
+		CCCI_ERROR_LOG(md->index, TAG,
+			"%s: infra_ao_base of_iomap failed\n", node->full_name);
+		return -1;
+	}
 	CCCI_INIT_LOG(-1, TAG, "infra_ao_base:0x%p\n", (void *)infra_ao_base);
 #ifdef FEATURE_LOW_BATTERY_SUPPORT
-	register_low_battery_notify(&ccci_md_low_battery_cb, LOW_BATTERY_PRIO_MD);
-	register_battery_percent_notify(&ccci_md_battery_percent_cb, BATTERY_PERCENT_PRIO_MD);
+	register_low_battery_notify(
+		&ccci_md_low_battery_cb, LOW_BATTERY_PRIO_MD);
+	register_battery_percent_notify(
+		&ccci_md_battery_percent_cb, BATTERY_PERCENT_PRIO_MD);
 #endif
 	return 0;
 }
@@ -229,36 +258,57 @@ int ccci_platform_init(struct ccci_modem *md)
 #define AP_META_PAGE_NUM (8)
 
 struct ccci_ccb_config ccb_configs[] = {
-	{SMEM_USER_CCB_DHL, P_CORE, CTRL_PAGE_SIZE, CTRL_PAGE_SIZE, CTRL_PAGE_SIZE*CTRL_PAGE_NUM,
-			CTRL_PAGE_SIZE*CTRL_PAGE_NUM},	/* Ctrl */
-	{SMEM_USER_CCB_DHL, P_CORE, MD_EX_PAGE_SIZE, DUMMY_PAGE_SIZE, MD_EX_PAGE_SIZE*MD_EX_PAGE_NUM,
-			DUMMY_PAGE_SIZE},	/* exception */
-	{SMEM_USER_CCB_DHL, P_CORE, MD_BUF1_PAGE_SIZE, AP_BUF1_PAGE_SIZE, (MD_BUF1_PAGE_SIZE*MD_BUF1_PAGE_NUM),
-			AP_BUF1_PAGE_SIZE*AP_BUF1_PAGE_NUM},/*  PS */
-	{SMEM_USER_CCB_DHL, P_CORE, MD_BUF2_0_PAGE_SIZE, DUMMY_PAGE_SIZE, MD_BUF2_0_PAGE_SIZE*MD_BUF2_0_PAGE_NUM,
+	{SMEM_USER_CCB_DHL, P_CORE, CTRL_PAGE_SIZE,
+			CTRL_PAGE_SIZE, CTRL_PAGE_SIZE*CTRL_PAGE_NUM,
+			CTRL_PAGE_SIZE*CTRL_PAGE_NUM}, /* Ctrl */
+	{SMEM_USER_CCB_DHL, P_CORE, MD_EX_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, MD_EX_PAGE_SIZE*MD_EX_PAGE_NUM,
+			DUMMY_PAGE_SIZE},			/* exception */
+	{SMEM_USER_CCB_DHL, P_CORE, MD_BUF1_PAGE_SIZE,
+	 AP_BUF1_PAGE_SIZE, (MD_BUF1_PAGE_SIZE*MD_BUF1_PAGE_NUM),
+			AP_BUF1_PAGE_SIZE*AP_BUF1_PAGE_NUM},/* PS */
+	{SMEM_USER_CCB_DHL, P_CORE, MD_BUF2_0_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, MD_BUF2_0_PAGE_SIZE*MD_BUF2_0_PAGE_NUM,
 			DUMMY_PAGE_SIZE},     /* HWLOGGER1 */
-	{SMEM_USER_CCB_DHL, P_CORE, MD_BUF2_1_PAGE_SIZE, DUMMY_PAGE_SIZE, MD_BUF2_1_PAGE_SIZE*MD_BUF2_1_PAGE_NUM,
+	{SMEM_USER_CCB_DHL, P_CORE, MD_BUF2_1_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, MD_BUF2_1_PAGE_SIZE*MD_BUF2_1_PAGE_NUM,
 			DUMMY_PAGE_SIZE},     /* HWLOGGER2  */
-	{SMEM_USER_CCB_DHL, P_CORE, MD_BUF2_2_PAGE_SIZE, DUMMY_PAGE_SIZE, MD_BUF2_2_PAGE_SIZE*MD_BUF2_2_PAGE_NUM,
+	{SMEM_USER_CCB_DHL, P_CORE, MD_BUF2_2_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, MD_BUF2_2_PAGE_SIZE*MD_BUF2_2_PAGE_NUM,
 			DUMMY_PAGE_SIZE},     /* HWLOGGER3 */
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE*DUMMY_PADDING_CNT,
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE},
+	{SMEM_USER_CCB_DHL, P_CORE, DUMMY_PAGE_SIZE,
+		 DUMMY_PAGE_SIZE, DUMMY_PAGE_SIZE*DUMMY_PADDING_CNT,
 		DUMMY_PAGE_SIZE},
-	{SMEM_USER_CCB_MD_MONITOR, P_CORE, MD_MDM_PAGE_SIZE, AP_MDM_PAGE_SIZE, MD_MDM_PAGE_SIZE*MD_MDM_PAGE_NUM,
-		AP_MDM_PAGE_SIZE*AP_MDM_PAGE_NUM},         /* MDM */
-	{SMEM_USER_CCB_META, P_CORE, MD_META_PAGE_SIZE, AP_META_PAGE_SIZE, MD_META_PAGE_SIZE*MD_META_PAGE_NUM,
+	{SMEM_USER_CCB_MD_MONITOR, P_CORE, MD_MDM_PAGE_SIZE,
+		 AP_MDM_PAGE_SIZE, MD_MDM_PAGE_SIZE*MD_MDM_PAGE_NUM,
+		AP_MDM_PAGE_SIZE*AP_MDM_PAGE_NUM},     /* MDM */
+	{SMEM_USER_CCB_META, P_CORE, MD_META_PAGE_SIZE,
+		AP_META_PAGE_SIZE, MD_META_PAGE_SIZE*MD_META_PAGE_NUM,
 		AP_META_PAGE_SIZE*AP_META_PAGE_NUM},   /* META */
 };
-unsigned int ccb_configs_len = sizeof(ccb_configs)/sizeof(struct ccci_ccb_config);
+unsigned int ccb_configs_len =
+			sizeof(ccb_configs)/sizeof(struct ccci_ccb_config);
 
 

@@ -45,7 +45,8 @@ const unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_di_data[] = {
 	0x1BC8, 0x1, 0x0,/* LDO_VSRAM_GPU_CON0 */
 };
 
-const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_di = AP_MT6358_PMIC_Register_Mapping_E2_gs_di_data;
+const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_di =
+AP_MT6358_PMIC_Register_Mapping_E2_gs_di_data;
 
 unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_di_len = 72;
 
@@ -189,11 +190,13 @@ const unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_w_key_data[] = {
 	0x1F14, 0x7, 0x0,/* DUMMYLOAD_ELR_0 */
 };
 
-const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_w_key = AP_MT6358_PMIC_Register_Mapping_E2_gs_w_key_data;
+const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_w_key =
+AP_MT6358_PMIC_Register_Mapping_E2_gs_w_key_data;
 
 unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_w_key_len = 291;
 
-const unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_sodi3p0_32kless_data[] = {
+const unsigned int
+AP_MT6358_PMIC_Register_Mapping_E2_gs_sodi3p0_32kless_data[] = {
 /*  Address     Mask        Golden Setting Value */
 	0x1E, 0xA, 0xA,/* TOP_CON */
 	0x22, 0x1F00, 0x1F00,/* TEST_CON0 */
@@ -351,7 +354,8 @@ const unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_clkon_data[] = {
 	0x1334, 0x100, 0x100,/* BUCK_TOP_K_CON0 */
 };
 
-const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_clkon = AP_MT6358_PMIC_Register_Mapping_E2_gs_clkon_data;
+const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_clkon =
+AP_MT6358_PMIC_Register_Mapping_E2_gs_clkon_data;
 
 unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_clkon_len = 15;
 
@@ -423,7 +427,8 @@ const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_pmic_lp_idle =
 
 unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_pmic_lp_idle_len = 177;
 
-const unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless_data[] = {
+const unsigned int
+AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless_data[] = {
 /*  Address     Mask        Golden Setting Value */
 	0x1E, 0xA, 0xA,/* TOP_CON */
 	0x22, 0x1F00, 0x1F00,/* TEST_CON0 */
@@ -566,10 +571,12 @@ const unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kle
 	0x1DA6, 0x8, 0x0,/* LDO_VBIF28_OP_CFG */
 };
 
-const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless =
+const unsigned int
+*AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless =
 	AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless_data;
 
-unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless_len = 417;
+unsigned int
+AP_MT6358_PMIC_Register_Mapping_E2_gs_deepidle___lp_mp3_32kless_len = 417;
 
 const unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_dcm_off_data[] = {
 /*  Address     Mask        Golden Setting Value */
@@ -614,11 +621,13 @@ const unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_dcm_off_data[] = {
 	0x1A4E, 0x1, 0x0,/* LDO_TOP_CLK_VBIF28_CON0 */
 };
 
-const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_dcm_off = AP_MT6358_PMIC_Register_Mapping_E2_gs_dcm_off_data;
+const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_dcm_off =
+AP_MT6358_PMIC_Register_Mapping_E2_gs_dcm_off_data;
 
 unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_dcm_off_len = 117;
 
-const unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_pmic_lp_active_data[] = {
+const unsigned int
+AP_MT6358_PMIC_Register_Mapping_E2_gs_pmic_lp_active_data[] = {
 /*  Address     Mask        Golden Setting Value */
 	0x1E, 0xA, 0xA,/* TOP_CON */
 	0x22, 0x1F00, 0x1F00,/* TEST_CON0 */
@@ -800,11 +809,13 @@ const unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_elr_data[] = {
 	0x242A, 0x1FFF, 0x0 /* AUDDEC_ELR_0 */
 };
 
-const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_elr = AP_MT6358_PMIC_Register_Mapping_E2_gs_elr_data;
+const unsigned int *AP_MT6358_PMIC_Register_Mapping_E2_gs_elr =
+AP_MT6358_PMIC_Register_Mapping_E2_gs_elr_data;
 
 unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_elr_len = 330;
 
-const unsigned int AP_MT6358_PMIC_Register_Mapping_E2_gs_suspend_32kless_data[] = {
+const unsigned int
+AP_MT6358_PMIC_Register_Mapping_E2_gs_suspend_32kless_data[] = {
 /*  Address     Mask        Golden Setting Value */
 	0x1E, 0xA, 0xA,/* TOP_CON */
 	0x22, 0x1F00, 0x1F00,/* TEST_CON0 */

@@ -1,16 +1,15 @@
 /*
-* Copyright (C) 2011-2015 MediaTek Inc.
-*
-* This program is free software: you can redistribute it and/or modify it under the terms of the
-* GNU General Public License version 2 as published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See the GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
-*/
+ * Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
 
 #include <linux/module.h>       /* needed by all modules */
 #include "scp_feature_define.h"
@@ -19,7 +18,7 @@
 struct scp_feature_tb feature_table[NUM_FEATURE_ID] = {
 	{
 		.feature     = VOW_FEATURE_ID,
-		.freq        = 75,
+		.freq        = 5,
 		.enable      = 0,
 		.sub_feature = 0,
 	},
@@ -59,6 +58,45 @@ struct scp_feature_tb feature_table[NUM_FEATURE_ID] = {
 		.enable      = 0,
 		.sub_feature = 0,
 	},
+#ifdef CONFIG_MTK_VOW_DUAL_MIC_SUPPORT
+	{
+		.feature     = VOW_BARGEIN_FEATURE_ID,
+		.freq        = 200,
+		.enable      = 0,
+		.sub_feature = 0,
+	},
+#else
+	{
+		.feature     = VOW_BARGEIN_FEATURE_ID,
+		.freq        = 120,
+		.enable      = 0,
+		.sub_feature = 0,
+	},
+#endif
+	{
+		.feature     = VOW_DUMP_FEATURE_ID,
+		.freq        = 10,
+		.enable      = 0,
+		.sub_feature = 0,
+	},
+	{
+		.feature     = VOW_VENDOR_M_FEATURE_ID,
+		.freq        = 43,
+		.enable      = 0,
+		.sub_feature = 0,
+	},
+	{
+		.feature     = VOW_VENDOR_A_FEATURE_ID,
+		.freq        = 43,
+		.enable      = 0,
+		.sub_feature = 0,
+	},
+	{
+		.feature     = VOW_VENDOR_G_FEATURE_ID,
+		.freq        = 22,
+		.enable      = 0,
+		.sub_feature = 0,
+	},
 #if SCP_VCORE_TEST_ENABLE
 	{
 		.feature     = VCORE_TEST_FEATURE_ID,
@@ -91,12 +129,6 @@ struct scp_feature_tb feature_table[NUM_FEATURE_ID] = {
 		.sub_feature = 0,
 	},
 #endif
-	{
-		.feature     = VOW_BARGEIN_FEATURE_ID,
-		.freq        = 100,
-		.enable      = 0,
-		.sub_feature = 0,
-	},
 };
 
 
