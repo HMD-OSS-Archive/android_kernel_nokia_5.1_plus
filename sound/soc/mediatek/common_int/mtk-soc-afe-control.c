@@ -506,13 +506,6 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 			Afe_Set_Reg(AFE_IRQ_MCU_CLR, irq_scp_en, irq_scp_en);
 		}
 
-		pr_warn("%s(), [AudioWarn] u4RegValue = 0x%x, irqcount = %d, AFE_IRQ_MCU_EN = 0x%x irq_scp_en = 0x%x\n",
-			__func__,
-			u4RegValue,
-			irqcount,
-			irq_mcu_en,
-			irq_scp_en);
-
 		/* only clear IRQ which is sent to MCU */
 		irq_mcu_en &= irqMcuEnReg->mask;
 		Afe_Set_Reg(AFE_IRQ_MCU_CLR, irq_mcu_en, irq_mcu_en);
@@ -534,6 +527,13 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 			}
 			irqcount = 0;
 		}
+
+		pr_debug("%s(), [AudioWarn] u4RegValue = 0x%x, irqcount = %d, irq_mcu_en = 0x%x irq_scp_en = 0x%x\n",
+			 __func__,
+			 u4RegValue,
+			 irqcount,
+			 irq_mcu_en,
+			 irq_scp_en);
 
 		goto AudDrv_IRQ_handler_exit;
 	}
@@ -570,13 +570,13 @@ void EnableAPLLTunerbySampleRate(unsigned int SampleRate)
 	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) {
 		APLL1TunerCounter++;
 		if (APLL1TunerCounter == 1) {
-			Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x00000832, 0x0000FFF7);
+			Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x00000432, 0x0000FFF7);
 			Afe_Set_Reg(AFE_APLL1_TUNER_CFG, 0x1, 0x1);
 		}
 	} else if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2) {
 		APLL2TunerCounter++;
 		if (APLL2TunerCounter == 1) {
-			Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x00000634, 0x0000FFF7);
+			Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x00000434, 0x0000FFF7);
 			Afe_Set_Reg(AFE_APLL2_TUNER_CFG, 0x1, 0x1);
 		}
 	}
