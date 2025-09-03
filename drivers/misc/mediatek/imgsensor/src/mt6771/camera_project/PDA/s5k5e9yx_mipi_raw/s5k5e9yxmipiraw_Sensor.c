@@ -133,7 +133,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.frame_time_delay_frame = 1, /* The delay frame of setting frame length  */ //samsung modify from 2 to 1
 	.ihdr_support = 0,	  //1, support; 0,not support
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
-	.sensor_mode_num = 7,	  //support sensor mode num
+	.sensor_mode_num = 3,	  //support sensor mode num
 	
 	.cap_delay_frame = 2,
 	.pre_delay_frame = 2,
