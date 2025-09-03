@@ -415,7 +415,7 @@ void rtc_mark_fast(void)
 }
 
 #if 0
-/*Begin, for reboot command, 20171106*/
+/*Begin, Sunyongshan, for reboot command, 20171106*/
 void rtc_mark_ftm(void)
 {
         unsigned long flags;

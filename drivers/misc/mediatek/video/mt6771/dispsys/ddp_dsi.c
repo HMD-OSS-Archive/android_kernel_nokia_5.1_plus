@@ -148,12 +148,12 @@ do {	\
 #define DSI_MODULE_to_ID(x) (x == DISP_MODULE_DSI0 ? 0 : 1)
 #define DIFF_CLK_LANE_LP (0x10)
 
-// Add BBox {
+//PDA: Add BBox {
 #define BBOX_LCM_DISPLAY_ON_FAIL		do {printk("BBox;%s: LCM DISPLAY ON fail\n", __func__); printk("BBox::UEC;0::2\n");} while (0);
 #define BBOX_LCM_DISPLAY_OFF_FAIL		do {printk("BBox;%s: LCM DISPLAY ON fail\n", __func__); printk("BBox::UEC;0::3\n");} while (0);
 #define BBOX_LCM_MIPI_FAIL		do {printk("BBox;%s: LCM MIPI fail\n", __func__); printk("BBox::UEC;0::5\n");} while (0);
 #define BBOX_LCM_INIT_FAIL		do {printk("BBox;%s: LCM INIT fail\n", __func__); printk("BBox::UEC;0::7\n");} while (0);
-// Add BBox }
+//PDA: Add BBox }
 
 /*****************************************************************************/
 struct t_condition_wq {
@@ -208,7 +208,7 @@ unsigned int mipitx_impedance_backup[5];
 atomic_t PMaster_enable = ATOMIC_INIT(0);
 static ddp_module_notify g_dsi_ddp_notify;
 
-static int dsi_err_cnt = 0; // for lcm runin
+static int dsi_err_cnt = 0; //PDA: for lcm runin
 
 static void _init_condition_wq(struct t_condition_wq *waitq)
 {
@@ -412,10 +412,10 @@ void _dump_dsi_params(struct LCM_DSI_PARAMS *dsi_config)
 	}
 }
 
-/* for lcm runin { */
+/* PDA: for lcm runin { */
 extern void fih_awer_cnt_set(char *info);
 extern void fih_awer_status_set(char *info);
-/* for lcm runin } */
+/* PDA: for lcm runin } */
 
 static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module,
 				      unsigned int param)
@@ -456,13 +456,13 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module,
 
 	if (status.BUFFER_UNDERRUN_INT_EN) {
 		if (dsi_underflow == 0) {
-			/* for lcm runin { */
+			/* PDA: for lcm runin { */
 			sprintf(page_cnt, "%d\n", ++dsi_err_cnt);
 			sprintf(page_status, "DSI:underrun\n");
 			fih_awer_cnt_set(page_cnt);
 			fih_awer_status_set(page_status);
-			/* for lcm runin } */
-			BBOX_LCM_MIPI_FAIL //Add BBox
+			/* PDA: for lcm runin } */
+			BBOX_LCM_MIPI_FAIL //PDA:Add BBox
 			DDPPR_ERR("%s:buffer underrun\n",
 					ddp_get_module_name(module));
 			primary_display_diagnose();
@@ -490,13 +490,13 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module,
 
 	if (status.INP_UNFINISH_INT_EN) {
 		if (dsi_inp_relay_not_ready == 0) {
-			/* for lcm runin { */
+			/* PDA: for lcm runin { */
 			sprintf(page_cnt, "%d\n", ++dsi_err_cnt);
 			sprintf(page_status, "DSI:unfinish\n");
 			fih_awer_cnt_set(page_cnt);
 			fih_awer_status_set(page_status);
-			/* for lcm runin } */
-			BBOX_LCM_MIPI_FAIL //Add BBox
+			/* PDA: for lcm runin } */
+			BBOX_LCM_MIPI_FAIL //PDA:Add BBox
 			DDPPR_ERR("%s:input relay unfinish\n",
 					ddp_get_module_name(module));
 			dsi_inp_relay_not_ready = 1;
@@ -5050,7 +5050,7 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 
 	if (cmdq_trigger_handle == NULL) {
 		DDPPR_ERR("cmdq_trigger_handle is NULL\n");
-		BBOX_LCM_INIT_FAIL // Add BBox
+		BBOX_LCM_INIT_FAIL //PDA: Add BBox
 		return -1;
 	}
 
@@ -5195,7 +5195,7 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 				ret = 0; /* esd pass */
 			} else {
 				/* esd fail */
-				BBOX_LCM_DISPLAY_ON_FAIL // Add BBox
+				BBOX_LCM_DISPLAY_ON_FAIL //PDA: Add BBox
 				DDPPR_ERR("[DSI]cmp fail:read(0x%x)!=expect(0x%x)\n",
 					read_data0.byte1,
 					lcm_esd_tb->para_list[0]);

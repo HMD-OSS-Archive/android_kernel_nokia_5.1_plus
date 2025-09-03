@@ -75,7 +75,7 @@ struct imgsensor_struct {
 struct imgsensor_info_struct {
 	kal_uint16 sensor_id;			/*record sensor id defined in Kd_imgsensor.h*/
 /*#ifdef VENDOR_EDIT*/
-/* 2016/02/19,modify for different module*/
+/*zhaozhengtao 2016/02/19,modify for different module*/
 	kal_uint16 module_id;
 /*#endif*/
 	kal_uint16 sensor_ver;

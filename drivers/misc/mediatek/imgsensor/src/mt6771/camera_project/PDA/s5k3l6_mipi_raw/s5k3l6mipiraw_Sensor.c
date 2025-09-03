@@ -66,7 +66,7 @@
  //#define NONCONTINUEMODE
 /*===FEATURE SWITH===*/
 
-// 
+//shawn
 #define dual_cam 1
 
 /****************************Modify Following Strings for Debug****************************/
@@ -196,7 +196,7 @@ static imgsensor_struct imgsensor = {
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,//current scenario id
 	.ihdr_en = KAL_FALSE, //sensor need support LE, SE with HDR feature
 	.i2c_write_id = 0x20,/* record current sensor's i2c write id */
-	.current_ae_effective_frame = 1,// OEM add
+	.current_ae_effective_frame = 1,//fihtdc,derekcwwu add
 };
 
 
@@ -434,12 +434,12 @@ static void write_shutter(kal_uint32 shutter)
 
 	LOG_INF("[MIMI@]Enter! Write Shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 #if 1	
-	//1. Command Streaming off, 20180525
+	//1. Command Streaming off, Mike 20180525
 	write_cmos_sensor_8(0x0100, 0x00);
 	msleep(10);
 
 	  	
-	//2. Check Streaming off operation did well, 20180525			
+	//2. Check Streaming off operation did well, Mike 20180525			
 	for (i = 0; i < 100; i++) {
 	 	framecnt = read_cmos_sensor_byte(0x0005); // waiting for sensor to  stop output  then  set the  setting
 	 	if (framecnt == 0xFF)
@@ -454,7 +454,7 @@ static void write_shutter(kal_uint32 shutter)
   	}
  	}
 				 	  
-	//3. Apply mode change setting, 20180525
+	//3. Apply mode change setting, Mike 20180525
 	if(framecnt == 0xFF)	
 #endif		
 	{	
@@ -470,7 +470,7 @@ static void write_shutter(kal_uint32 shutter)
 	}
 				
 #if 1
-	//4. Streaming on, 20180525				
+	//4. Streaming on, Mike 20180525				
 	write_cmos_sensor_8(0x3C1E, 0x01);
 	write_cmos_sensor_8(0x0100, 0x01);
 	write_cmos_sensor_8(0x3C1E, 0x00);
@@ -536,7 +536,7 @@ static void set_shutter(kal_uint32 shutter)
 	}
 
 	// Update Shutter
-	/*OEM, 20180517*/
+	/*FIH Mike, 20180517*/
 	if(shutter >= 196077)
 	{
 		write_shutter(shutter);
@@ -546,7 +546,7 @@ static void set_shutter(kal_uint32 shutter)
 		write_cmos_sensor(0x0340, imgsensor.frame_length & 0xFFFF);
 		write_cmos_sensor(0X0202, shutter & 0xFFFF);
 	}
-	/*OEM, 20180517*/
+	/*FIH Mike, 20180517*/
 	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 
 }
@@ -2525,7 +2525,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					break;
 			}
 			break;
-		// 	
+		//shawn	
 		#if 0
 		case SENSOR_FEATURE_SET_PDAF:
 			LOG_INF("PDAF mode :%d\n", (kal_uint16 )(*feature_data));
@@ -2553,7 +2553,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			streaming_control(KAL_TRUE);
 		break;
 #endif
-//OEM add
+//fihtdc,derekcwwu add
 		case SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE:
 			pr_err("SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE\n");
 			memcpy(feature_return_para_32,
@@ -2563,7 +2563,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			pr_err("SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE\n");
 			*feature_return_para_32 =  imgsensor.current_ae_effective_frame;
 		break;
-//OEM add
+//fihtdc,derekcwwu add
 		default:
 			break;
 	}

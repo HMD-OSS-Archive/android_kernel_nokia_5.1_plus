@@ -59,7 +59,7 @@ extern void rtc_irq_handler(void);
 extern bool crystal_exist_status(void);
 extern void mt_power_off(void);
 
-/*Begin, for reboot condition, 20171106*/
+/*Begin, Sunyongshan, for reboot condition, 20171106*/
 #if 0
 extern void rtc_mark_ftm(void);
 extern void rtc_mark_meta(void);

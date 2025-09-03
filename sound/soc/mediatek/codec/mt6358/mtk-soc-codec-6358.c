@@ -91,19 +91,19 @@
 /* #define EFUSE_HP_IMPEDANCE */
 
 #if defined(CONFIG_SND_SOC_AW87329)
-/* OEM: add for AW87329 --- st, */
+/* fihtdc@Ray: add for AW87329 --- st, */
 extern unsigned char aw87329_audio_off(void);
 extern unsigned char aw87329_audio_kspk(void);
 extern unsigned char aw87329_audio_kspk_call(void);
 extern unsigned char aw87329_audio_kspk_ringtone(void);
 
 static int aw87329_cur_mode = 0;
-/* OEM: add for AW87329 --- ed, */
+/* fihtdc@Ray: add for AW87329 --- ed, */
 
-/* OEM: add for Hac receiver amplifier --- st. */
+/* fihtdc@Ray: add for Hac receiver amplifier --- st. */
 extern unsigned char hac_hw_on(void);
 extern unsigned char hac_hw_off(void);
-/* OEM: add for Hac receiver amplifier --- ed. */
+/* fihtdc@Ray: add for Hac receiver amplifier --- ed. */
 #endif //CONFIG_SND_SOC_AW87329
 
 /* static function declaration */
@@ -140,7 +140,7 @@ static unsigned int mBlockSampleRate[ANA_DEV_IN_OUT_MAX] = {
 #define MAX_UL_SAMPLE_RATE (192000)
 
 /*******************************************************************************
- * BBS LOG marcro definition
+ * FIH BBS LOG marcro definition
  ******************************************************************************/
 #define BBOX_AUDIO_CODEC_PROBE_FAIL do {printk("BBox::UEC;2::3\n");} while (0);
 
@@ -4100,7 +4100,7 @@ static int Voice_Amp_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-/* OEM: add for HAC receiver ------------------------------- st. */
+/* fihtdc@ray: add for HAC receiver ------------------------------- st. */
 #if defined(CONFIG_SND_SOC_AW87329)
 static int Hac_Receiver_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
@@ -4127,7 +4127,7 @@ static int Hac_Receiver_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
     return 0;
 }
 #endif //CONFIG_SND_SOC_AW87329
-/* OEM: add for HAC receiver ------------------------------- ed. */
+/* fihtdc@ray: add for HAC receiver ------------------------------- ed. */
 
 static void Speaker_Amp_Change(bool enable)
 {
@@ -4273,18 +4273,18 @@ static void Ext_Speaker_Amp_Change(bool enable)
 	if (enable) {
 		pr_debug("%s() ON+\n", __func__);
 
-  /* OEM: add for AW87329 --- st, */
+  /* fihtdc@Ray: add for AW87329 --- st, */
   #if defined(CONFIG_SND_SOC_AW87329)
 		aw87329_audio_off();
   #else
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
   #endif
-  /* OEM: add for AW87329 --- ed, */
+  /* fihtdc@Ray: add for AW87329 --- ed, */
 
 		/*udelay(1000); */
 		usleep_range(1 * 1000, 20 * 1000);
 
-  /* OEM: add for AW87329 --- st, */
+  /* fihtdc@Ray: add for AW87329 --- st, */
   #if defined(CONFIG_SND_SOC_AW87329)
    if (aw87329_cur_mode == 0) {
 	  // Normal mode
@@ -4307,7 +4307,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		AudDrv_GPIO_EXTAMP_Select(true, 3);
 
   #endif
-  /* OEM: add for AW87329 --- ed, */
+  /* fihtdc@Ray: add for AW87329 --- ed, */
 
 		msleep(SPK_WARM_UP_TIME);
 
@@ -4315,13 +4315,13 @@ static void Ext_Speaker_Amp_Change(bool enable)
 	} else {
 		pr_debug("%s(), OFF+\n", __func__);
 
-  /* OEM: add for AW87329 --- st, */
+  /* fihtdc@Ray: add for AW87329 --- st, */
   #if defined(CONFIG_SND_SOC_AW87329)
 		aw87329_audio_off();
   #else
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
   #endif
-  /* OEM: add for AW87329 --- ed, */
+  /* fihtdc@Ray: add for AW87329 --- ed, */
 
 		udelay(500);
 
@@ -4352,7 +4352,7 @@ static int Ext_Speaker_Amp_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-/* OEM: add for awinic mode -------------------------------- st. */
+/* fihtdc@ray: add for awinic mode -------------------------------- st. */
 #if defined(CONFIG_SND_SOC_AW87329)
 static const char *const AWINIC_Mode_function[] = {	"NORMAL", "CALL", "RINGTONE" };
 
@@ -4378,7 +4378,7 @@ static int awinic_Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_
 	return 0;
 }
 #endif //CONFIG_SND_SOC_AW87329
-/* OEM: add for awinic mode -------------------------------- ed. */
+/* fihtdc@ray: add for awinic mode -------------------------------- ed. */
 
 static void Receiver_Speaker_Switch_Change(bool enable)
 {
@@ -5368,12 +5368,12 @@ static const struct soc_enum Audio_DL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(dctrim_control_state),
 	dctrim_control_state),
 #if defined(CONFIG_SND_SOC_AW87329)
-/* OEM: add for HAC receiver ------------------------------- st. */
+/* fihtdc@ray: add for HAC receiver ------------------------------- st. */
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
-/* OEM: add for HAC receiver ------------------------------- ed. */
-/* OEM: add for awinic mode -------------------------------- st. */
+/* fihtdc@ray: add for HAC receiver ------------------------------- ed. */
+/* fihtdc@ray: add for awinic mode -------------------------------- st. */
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(AWINIC_Mode_function), AWINIC_Mode_function)
-/* OEM: add for awinic mode -------------------------------- ed. */
+/* fihtdc@ray: add for awinic mode -------------------------------- ed. */
 #endif //CONFIG_SND_SOC_AW87329
 };
 
@@ -5435,14 +5435,14 @@ static const struct snd_kcontrol_new mt6358_snd_controls[] = {
 		     disable_pmic_dctrim_set),
 #endif
 #if defined(CONFIG_SND_SOC_AW87329)
-/* OEM: add for HAC receiver ------------------------------- st. */
+/* fihtdc@ray: add for HAC receiver ------------------------------- st. */
   SOC_ENUM_EXT("Hac_Receiver_Switch", Audio_DL_Enum[14],
                  Hac_Receiver_Get, Hac_Receiver_Set),
-/* OEM: add for HAC receiver ------------------------------- ed. */
-/* OEM: add for awinic mode -------------------------------- st. */
+/* fihtdc@ray: add for HAC receiver ------------------------------- ed. */
+/* fihtdc@ray: add for awinic mode -------------------------------- st. */
   SOC_ENUM_EXT("awinic_Speaker_Amp_Switch", Audio_DL_Enum[15],
                  awinic_Speaker_Amp_Get, awinic_Speaker_Amp_Set),
-/* OEM: add for awinic mode -------------------------------- ed. */
+/* fihtdc@ray: add for awinic mode -------------------------------- ed. */
 #endif//CONFIG_SND_SOC_AW87329
 };
 

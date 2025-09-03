@@ -690,7 +690,7 @@ void arch_reset(char mode, const char *cmd)
 		rtc_mark_kpoc();
 	}
 
-        /*Begin: add for ScsiCmdAgent tool */
+        /*Begin: Sunyongshan add for ScsiCmdAgent tool */
 #if 0
         else if(cmd && !strcmp(cmd, "ftm"))      //FTM
         {
@@ -709,7 +709,7 @@ void arch_reset(char mode, const char *cmd)
         {
         rtc_mark_ramtest();
 
-        /*End:add for ScsiCmdAgent tool ,2016/02/29*/
+        /*End:add for ScsiCmdAgent tool of FIH,johnny,2016/02/29*/
 
 	} else {
 		reboot = WD_SW_RESET_BYPASS_PWR_KEY;

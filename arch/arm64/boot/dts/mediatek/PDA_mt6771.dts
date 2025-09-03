@@ -4128,7 +4128,7 @@ firmware_class.path=/vendor/firmware";
 		max_charge_temp = <55>;
 		max_charge_temp_minus_x_degree = <54>;
 
-		/*  jeita */
+		/* fih jeita */
 		en_fih_jeita;
 		fih_fv_h = <4100000>;
 		fih_fv_l = <4400000>;
@@ -4139,19 +4139,19 @@ firmware_class.path=/vendor/firmware";
 		fih_cool = <15>;
 		fih_cold = <0>;
 
-		/*  step charging */
+		/* fih step charging */
 		en_fih_step_charging;
 		fih_step_vol_h = <4200000>;
 		fih_step_vol_l = <4150000>;
 		fih_step_cur_h = <2000000>;
 		fih_step_cur_l = <1500000>;
 
-		/*  typec current */
+		/* fih typec current */
 		en_fih_typec_current;
 		fih_typec_cable_c = <2000000>;
 		fih_typec_bat_c = <2000000>;
 
-		/*  pd current */
+		/* fih pd current */
 		en_fih_pd_current;
 
 		/* PE */

@@ -1787,7 +1787,7 @@ int do_syslog(int type, char __user *buf, int len, int source)
 	case SYSLOG_ACTION_SIZE_BUFFER:
 		error = log_buf_len;
 		break;
-/* BBS log buffer */
+/* marx BBS log buffer */
 	case SYSLOG_ACTION_GET_KERNEL_BUFFER:
 		{
 			unsigned i;
@@ -1827,7 +1827,7 @@ int do_syslog(int type, char __user *buf, int len, int source)
 				error = i;
 			break;
 		}
-/* BBS log buffer */
+/* marx BBS log buffer */
 	default:
 		error = -EINVAL;
 		break;
@@ -2337,7 +2337,7 @@ asmlinkage __visible int printk(const char *fmt, ...)
 
 	va_start(args, fmt);
 	r = vprintk_func(fmt, args);
-//OEM
+//marxchen
 	if(strstr(fmt,"BBox") != NULL){
 		int i;
 		char printk_bbsbuf[512];
@@ -2357,7 +2357,7 @@ asmlinkage __visible int printk(const char *fmt, ...)
 		if(waitqueue_active(&bbs_log_wait))
 			wake_up_interruptible(&bbs_log_wait);
 	}
-//OEM
+//marxchen
 
 	va_end(args);
 

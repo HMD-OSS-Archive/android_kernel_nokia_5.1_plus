@@ -136,6 +136,12 @@ config U_SERIAL_CONSOLE
 
 source "drivers/usb/gadget/udc/Kconfig"
 
+config FIH_USB
+	bool "fih usb"
+	default y
+	help
+	  support fih emmc function
+
 #
 # USB Gadget Drivers
 #

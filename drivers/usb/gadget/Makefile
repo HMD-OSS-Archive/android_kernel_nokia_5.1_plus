@@ -12,6 +12,8 @@ ifdef CONFIG_MTPROF
 ccflags-y += -Idrivers/misc/mediatek/mtprof/
 endif
 
+obj-$(CONFIG_FIH_USB)  += fih_usb.o
+
 obj-$(CONFIG_USB_LIBCOMPOSITE)	+= libcomposite.o
 libcomposite-y			:= usbstring.o config.o epautoconf.o
 libcomposite-y			+= composite.o functions.o configfs.o u_f.o
